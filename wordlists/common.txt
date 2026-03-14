@@ -1,0 +1,32 @@
+# Common wordlist for directory fuzzing
+# Embedded in Warden binary
+
+admin
+api
+dashboard
+login
+panel
+user
+users
+config
+backup
+test
+tmp
+static
+uploads
+files
+assets
+css
+js
+img
+images
+admin panel
+administrator
+wp-admin
+phpmyadmin
+console
+.git
+.svn
+.env
+config.php
+web.config
