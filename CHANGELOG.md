@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.2] - 2025-03-15
+
+### Fixed
+- **Excluded Directories** - Static analyzer now excludes dependency directories by default
+  - `node_modules/` - JavaScript/TypeScript dependencies
+  - `vendor/`, `vendor/bundle/` - PHP/Ruby dependencies
+  - `target/`, `dist/`, `build/` - Build outputs
+  - `.git/`, `.idea/`, `.vscode/` - VCS and IDE folders
+  - `__pycache__/`, `.venv/`, `venv/` - Python cache and virtual environments
+  - `.next/`, `.nuxt/`, `out/` - Framework build caches
+  - `coverage/`, `.terraform/` - Test and infrastructure caches
+
+### Improved
+- **Security Scan Accuracy** - No more false positives from third-party dependencies
+- **Scan Performance** - Faster scans by excluding unnecessary directories
+- **Relevant Findings** - Only reports vulnerabilities in your actual source code
+
 ## [0.6.1] - 2025-03-15
 
 ### Added

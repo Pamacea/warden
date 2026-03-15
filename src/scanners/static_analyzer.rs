@@ -6,6 +6,35 @@ use std::path::Path;
 use walkdir::WalkDir;
 use std::fs;
 
+/// Directories to exclude from security scanning
+/// These are dependency directories, build outputs, and version control
+const EXCLUDED_DIRS: &[&str] = &[
+    "node_modules",      // JavaScript/TypeScript dependencies
+    ".git",              // Version control
+    "target",            // Rust build output
+    "dist",              // JavaScript/TypeScript build output
+    "build",             // General build output
+    "vendor",            // PHP/Composer dependencies
+    "vendor/bundle",     // Ruby/Bundler dependencies
+    "__pycache__",       // Python cache
+    ".venv",             // Python virtual environment
+    "venv",              // Python virtual environment
+    ".idea",             // IDE config
+    ".vscode",           // IDE config
+    "coverage",          // Test coverage reports
+    ".next",             // Next.js build cache
+    ".nuxt",             // Nuxt.js build cache
+    "out",               // Build output
+    ".terraform",        // Terraform cache
+];
+
+/// Check if a path should be excluded from scanning
+fn should_exclude_path(path: &Path) -> bool {
+    path.components()
+        .filter_map(|c| c.as_os_str().to_str())
+        .any(|component| EXCLUDED_DIRS.contains(&component))
+}
+
 pub struct StaticScanner {
     #[allow(dead_code)]
     config: ScannerConfig,
@@ -35,6 +64,7 @@ impl StaticScanner {
         let entries = WalkDir::new(path)
             .into_iter()
             .filter_map(|e| e.ok())
+            .filter(|e| !should_exclude_path(e.path()))
             .filter(|e| e.path().extension().map(|s| s == "rs").unwrap_or(false));
 
         for entry in entries {
@@ -76,6 +106,7 @@ impl StaticScanner {
         let entries = WalkDir::new(path)
             .into_iter()
             .filter_map(|e| e.ok())
+            .filter(|e| !should_exclude_path(e.path()))
             .filter(|e| {
                 e.path().extension().map(|s| s == "js" || s == "jsx" || s == "ts" || s == "tsx").unwrap_or(false)
             });
@@ -133,6 +164,7 @@ impl StaticScanner {
         let entries = WalkDir::new(path)
             .into_iter()
             .filter_map(|e| e.ok())
+            .filter(|e| !should_exclude_path(e.path()))
             .filter(|e| e.path().extension().map(|s| s == "py").unwrap_or(false));
 
         for entry in entries {
@@ -173,6 +205,7 @@ impl StaticScanner {
         let entries = WalkDir::new(path)
             .into_iter()
             .filter_map(|e| e.ok())
+            .filter(|e| !should_exclude_path(e.path()))
             .filter(|e| {
                 e.path().extension().map(|s| s == "ts" || s == "tsx").unwrap_or(false)
             });
@@ -261,6 +294,7 @@ impl StaticScanner {
         let entries = WalkDir::new(path)
             .into_iter()
             .filter_map(|e| e.ok())
+            .filter(|e| !should_exclude_path(e.path()))
             .filter(|e| e.path().extension().map(|s| s == "go").unwrap_or(false));
 
         for entry in entries {
@@ -350,6 +384,7 @@ impl StaticScanner {
         let entries = WalkDir::new(path)
             .into_iter()
             .filter_map(|e| e.ok())
+            .filter(|e| !should_exclude_path(e.path()))
             .filter(|e| e.path().extension().map(|s| s == "java").unwrap_or(false));
 
         for entry in entries {
@@ -437,6 +472,7 @@ impl StaticScanner {
         let entries = WalkDir::new(path)
             .into_iter()
             .filter_map(|e| e.ok())
+            .filter(|e| !should_exclude_path(e.path()))
             .filter(|e| e.path().extension().map(|s| s == "php").unwrap_or(false));
 
         for entry in entries {
