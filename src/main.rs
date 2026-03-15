@@ -9,6 +9,7 @@ mod orchestrator;
 mod progress;
 mod reporters;
 mod scanners;
+mod scoring;
 mod utils;
 
 use anyhow::Result;
@@ -88,6 +89,8 @@ async fn main() -> Result<()> {
             concurrency,
             max_file_size: _,
             score,
+            check_secrets,
+            check_deps,
         } => {
             // Prompt for dangerous operations
             if include_ddos || include_stress {
@@ -111,6 +114,8 @@ async fn main() -> Result<()> {
                 auto_save,
                 generate_fixes,
                 score,
+                check_secrets,
+                check_deps,
             )
             .await
         }
@@ -173,6 +178,8 @@ fn handle_config_command(action: cli::ConfigAction, mut config: Config) -> Resul
                     concurrency: 25,
                     aggressive: false,
                     max_file_size: 5 * 1024 * 1024,
+                    check_secrets: false,
+                    check_deps: false,
                 }
             );
 
@@ -183,6 +190,8 @@ fn handle_config_command(action: cli::ConfigAction, mut config: Config) -> Resul
                     concurrency: 100,
                     aggressive: true,
                     max_file_size: 50 * 1024 * 1024,
+                    check_secrets: true,
+                    check_deps: true,
                 }
             );
 

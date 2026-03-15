@@ -98,6 +98,14 @@ pub struct ProfileConfig {
     /// Max file size override
     #[serde(default = "default_max_file_size")]
     pub max_file_size: u64,
+
+    /// Enable secrets leak detection (Premium feature)
+    #[serde(default)]
+    pub check_secrets: bool,
+
+    /// Enable dependency vulnerability checking (Premium feature)
+    #[serde(default)]
+    pub check_deps: bool,
 }
 
 impl Default for ProfileConfig {
@@ -107,6 +115,8 @@ impl Default for ProfileConfig {
             concurrency: default_concurrency(),
             aggressive: false,
             max_file_size: default_max_file_size(),
+            check_secrets: false,
+            check_deps: false,
         }
     }
 }
@@ -121,6 +131,12 @@ struct ConfigFile {
     aggressive: Option<bool>,
     exclude_dirs: Option<Vec<String>>,
     exclude_files: Option<Vec<String>>,
+    /// Enable secrets leak detection (Premium feature)
+    #[serde(default)]
+    check_secrets: bool,
+    /// Enable dependency vulnerability checking (Premium feature)
+    #[serde(default)]
+    check_deps: bool,
     #[serde(default)]
     profiles: HashMap<String, ProfileConfig>,
 }

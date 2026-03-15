@@ -6,8 +6,8 @@ use crate::{
     progress::{ScanProgress, ScannerType, StatusPrinter},
     reporters::ReportFormat,
     scanners::{ScannerEngine, ScanReport, Target},
-    // scoring::SecurityScore,  // TODO: Re-enable when scoring is fully integrated
 };
+use crate::scoring::SecurityScore;
 use anyhow::Result;
 use colored::Colorize;
 
@@ -26,6 +26,8 @@ pub async fn run_scan(
     auto_save: bool,
     generate_fixes: bool,
     show_score: bool,
+    check_secrets: bool,
+    check_deps: bool,
 ) -> Result<()> {
     let status = StatusPrinter::new(verbose);
 
@@ -62,6 +64,12 @@ pub async fn run_scan(
         }
         if include_stress {
             status.print_verbose("Stress testing: Enabled");
+        }
+        if check_secrets {
+            status.print_verbose("Secrets leak detection: Enabled");
+        }
+        if check_deps {
+            status.print_verbose("Dependency vulnerability check: Enabled");
         }
     }
 
@@ -100,6 +108,8 @@ pub async fn run_scan(
     }
     if include_ddos { scanner_count += 1; }
     if include_stress { scanner_count += 1; }
+    if check_secrets { scanner_count += 1; }
+    if check_deps { scanner_count += 1; }
 
     // Create progress manager
     let mut progress = ScanProgress::new(scanner_count);
@@ -110,7 +120,9 @@ pub async fn run_scan(
         .with_timeout(std::time::Duration::from_secs(timeout))
         .with_concurrency(concurrency)
         .with_ddos(include_ddos)
-        .with_stress(include_stress);
+        .with_stress(include_stress)
+        .with_check_secrets(check_secrets)
+        .with_check_deps(check_deps);
 
     let mut engine = ScannerEngine::new(scanner_config);
 
@@ -169,13 +181,39 @@ pub async fn run_scan(
         Target::Path(path) => {
             // Static scanner
             progress.start_scanner(ScannerType::Static, None);
-            let report = engine.scan_static(path).await
+            let mut report = engine.scan_static(path).await
                 .unwrap_or_else(|e| {
                     progress.update_scanner(&format!("Error: {}", e));
                     ScanReport::new(scan_target.clone())
                 });
             progress.finish_scanner();
             status.print_scanner_complete(ScannerType::Static, report.summary.total);
+
+            // Secrets scanner
+            if check_secrets {
+                progress.start_scanner(ScannerType::Secrets, None);
+                let secrets_report = engine.scan_secrets(path).await
+                    .unwrap_or_else(|e| {
+                        progress.update_scanner(&format!("Error: {}", e));
+                        ScanReport::new(scan_target.clone())
+                    });
+                progress.finish_scanner();
+                status.print_scanner_complete(ScannerType::Secrets, secrets_report.summary.total);
+                report.merge(secrets_report);
+            }
+
+            // Dependency scanner
+            if check_deps {
+                progress.start_scanner(ScannerType::Deps, None);
+                let deps_report = engine.scan_dependencies(path).await
+                    .unwrap_or_else(|e| {
+                        progress.update_scanner(&format!("Error: {}", e));
+                        ScanReport::new(scan_target.clone())
+                    });
+                progress.finish_scanner();
+                status.print_scanner_complete(ScannerType::Deps, deps_report.summary.total);
+                report.merge(deps_report);
+            }
 
             // DDoS scanner (for static analysis)
             if include_ddos {
@@ -211,10 +249,8 @@ pub async fn run_scan(
     // Print security score if requested
     if show_score {
         println!();
-        // TODO: Re-enable security scoring when fully integrated
-        // let security_score = SecurityScore::calculate(&report);
-        // println!("{}", security_score.render_terminal());
-        println!("{}", "Security scoring feature - Coming soon in v0.6.4!".yellow());
+        let security_score = SecurityScore::calculate(&report);
+        println!("{}", security_score.render_terminal());
     }
 
     // Save to file if requested

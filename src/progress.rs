@@ -18,6 +18,8 @@ pub enum ScannerType {
     Static,
     Ddos,
     Stress,
+    Secrets,
+    Deps,
 }
 
 impl ScannerType {
@@ -28,6 +30,8 @@ impl ScannerType {
             ScannerType::Static => "Static Analysis",
             ScannerType::Ddos => "DDoS Resistance",
             ScannerType::Stress => "Stress Testing",
+            ScannerType::Secrets => "Secrets Detection",
+            ScannerType::Deps => "Dependency Check",
         }
     }
 
@@ -38,6 +42,8 @@ impl ScannerType {
             ScannerType::Static => "📄",
             ScannerType::Ddos => "🛡️",
             ScannerType::Stress => "⚡",
+            ScannerType::Secrets => "🔑",
+            ScannerType::Deps => "📦",
         }
     }
 }

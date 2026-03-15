@@ -114,6 +114,8 @@ pub enum Commands {
         ///   - json              : Machine-readable JSON format
         ///   - markdown          : Report in Markdown format
         ///   - ai                : AI-optimized format with actionable fixes
+        ///   - html              : Interactive HTML report
+        ///   - sarif             : SARIF format for CI/CD integration
         #[arg(long, default_value = "console", value_parser = validate_format)]
         format: String,
 
@@ -177,6 +179,20 @@ pub enum Commands {
         /// access control, data protection, error handling, communications, and code quality.
         #[arg(long)]
         score: bool,
+
+        /// Enable secrets leak detection
+        ///
+        /// Scans for exposed API keys, tokens, passwords, and other sensitive
+        /// credentials in source code and configuration files.
+        #[arg(long, default_value = "false")]
+        check_secrets: bool,
+
+        /// Check dependency vulnerabilities
+        ///
+        /// Analyzes project dependencies (package.json, Cargo.toml, requirements.txt, etc.)
+        /// for known security vulnerabilities using public vulnerability databases.
+        #[arg(long, default_value = "false")]
+        check_deps: bool,
     },
 
     /// Detect framework and language
@@ -294,9 +310,9 @@ pub enum Shell {
 
 fn validate_format(s: &str) -> Result<String, String> {
     match s.to_lowercase().as_str() {
-        "console" | "json" | "markdown" | "md" | "ai" => Ok(s.to_lowercase()),
+        "console" | "json" | "markdown" | "md" | "ai" | "html" | "sarif" => Ok(s.to_lowercase()),
         _ => Err(format!(
-            "Invalid format '{}'. Valid options: console, json, markdown (md), ai",
+            "Invalid format '{}'. Valid options: console, json, markdown (md), ai, html, sarif",
             s
         )),
     }
@@ -431,6 +447,9 @@ mod tests {
         assert!(validate_format("markdown").is_ok());
         assert!(validate_format("md").is_ok());
         assert!(validate_format("CONSOLE").is_ok());
+        assert!(validate_format("html").is_ok());
+        assert!(validate_format("sarif").is_ok());
+        assert!(validate_format("ai").is_ok());
     }
 
     #[test]

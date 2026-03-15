@@ -8,16 +8,18 @@ use std::fs;
 pub mod ai;
 pub mod console;
 pub mod formats;
+pub mod html;
 pub mod json;
 pub mod markdown;
 
 pub use ai::{AiReadableReporter, generate_ai_json};
 pub use console::ConsoleReporter;
+pub use html::HtmlReporter;
 pub use json::JsonReporter;
 pub use markdown::MarkdownReporter;
 
 // Re-export format generators
-pub use formats::{generate_html_report, generate_sarif_report};
+pub use formats::{generate_html_report as generate_html_report_legacy, generate_sarif_report};
 
 #[allow(unused_imports)]
 use formats::{generate_json_report, generate_markdown_report}; // Kept for potential future use
@@ -56,10 +58,7 @@ impl ScanReport {
             ReportFormat::Json => JsonReporter::print(self),
             ReportFormat::Markdown => MarkdownReporter::print(self),
             ReportFormat::Ai => AiReadableReporter::print(self),
-            ReportFormat::Html => {
-                println!("{}", generate_html_report(self)?);
-                Ok(())
-            }
+            ReportFormat::Html => HtmlReporter::print(self),
             ReportFormat::Sarif => {
                 println!("{}", generate_sarif_report(self)?);
                 Ok(())
@@ -73,7 +72,7 @@ impl ScanReport {
             ReportFormat::Json => JsonReporter::format(self)?,
             ReportFormat::Markdown => MarkdownReporter::format(self)?,
             ReportFormat::Ai => AiReadableReporter::format(self)?,
-            ReportFormat::Html => generate_html_report(self)?,
+            ReportFormat::Html => HtmlReporter::format(self)?,
             ReportFormat::Sarif => generate_sarif_report(self)?,
         };
 

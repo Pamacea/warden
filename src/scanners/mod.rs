@@ -11,6 +11,7 @@ pub mod recon;
 
 // Core security scanners
 pub mod cors;
+pub mod dependencies;
 pub mod disclosure;
 pub mod ddos;
 pub mod enumeration;
@@ -18,6 +19,7 @@ pub mod http;
 pub mod open_redirect;
 pub mod path_traversal;
 pub mod port;
+pub mod secrets;
 pub mod static_analyzer;
 pub mod stress;
 
@@ -25,6 +27,7 @@ pub mod stress;
 // pub use ast_parsers::{FileDiscoverer, JsTsParser, PythonParser, RustParser, SourceLocation};
 pub use api::ApiScanner;
 pub use cors::CorsScanner;
+pub use dependencies::DependencyScanner;
 pub use disclosure::DisclosureScanner;
 pub use ddos::DdosScanner;
 pub use enumeration::EnumerationScanner;
@@ -33,6 +36,7 @@ pub use open_redirect::OpenRedirectScanner;
 pub use path_traversal::PathTraversalScanner;
 pub use port::PortScanner;
 pub use recon::ReconScanner;
+pub use secrets::SecretsScanner;
 pub use static_analyzer::StaticScanner;
 pub use stress::StressScanner;
 
@@ -129,6 +133,20 @@ impl ScannerEngine {
         Ok(scanner.scan(url).await?)
     }
 
+    /// Run Secrets Leak scanner
+    #[allow(dead_code)]
+    pub async fn scan_secrets(&mut self, path: &PathBuf) -> Result<ScanReport> {
+        let scanner = SecretsScanner::new(self.config.clone());
+        Ok(scanner.scan(path).await?)
+    }
+
+    /// Run Dependency Vulnerability scanner
+    #[allow(dead_code)]
+    pub async fn scan_dependencies(&mut self, project_path: &PathBuf) -> Result<ScanReport> {
+        let scanner = DependencyScanner::new(self.config.clone());
+        Ok(scanner.scan(project_path.to_str().unwrap_or(".")).await?)
+    }
+
     /// Run all applicable scanners for the target
     #[allow(dead_code)]
     pub async fn scan(&mut self, target: &Target) -> Result<ScanReport> {
@@ -209,6 +227,14 @@ pub struct ScannerConfig {
     pub ddos: bool,
     #[allow(dead_code)]
     pub stress: bool,
+    #[allow(dead_code)]
+    pub secrets: bool,
+    /// Enable secrets leak detection (Premium feature) - alias for secrets
+    #[allow(dead_code)]
+    pub check_secrets: bool,
+    /// Enable dependency vulnerability checking (Premium feature)
+    #[allow(dead_code)]
+    pub check_deps: bool,
     pub user_agent: String,
 }
 
@@ -227,6 +253,9 @@ impl ScannerConfig {
             recon: true,
             ddos: false,
             stress: false,
+            secrets: false,
+            check_secrets: false,
+            check_deps: false,
             user_agent: format!("Warden/{}", env!("CARGO_PKG_VERSION")),
         }
     }
@@ -280,6 +309,25 @@ impl ScannerConfig {
 
     pub fn with_stress(mut self, stress: bool) -> Self {
         self.stress = stress;
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_secrets(mut self, secrets: bool) -> Self {
+        self.secrets = secrets;
+        self
+    }
+
+    /// Enable secrets leak detection (Premium feature)
+    pub fn with_check_secrets(mut self, check_secrets: bool) -> Self {
+        self.check_secrets = check_secrets;
+        self.secrets = check_secrets; // Keep in sync with legacy field
+        self
+    }
+
+    /// Enable dependency vulnerability checking (Premium feature)
+    pub fn with_check_deps(mut self, check_deps: bool) -> Self {
+        self.check_deps = check_deps;
         self
     }
 }
@@ -623,6 +671,9 @@ mod tests {
         assert!(config.static_analysis);
         assert!(!config.ddos);
         assert!(!config.stress);
+        assert!(!config.secrets);
+        assert!(!config.check_secrets);
+        assert!(!config.check_deps);
     }
 
     #[test]
@@ -632,13 +683,17 @@ mod tests {
             .with_timeout(Duration::from_secs(10))
             .with_concurrency(100)
             .with_ddos(true)
-            .with_stress(true);
+            .with_stress(true)
+            .with_check_secrets(true)
+            .with_check_deps(true);
 
         assert!(config.aggressive);
         assert_eq!(config.timeout, Duration::from_secs(10));
         assert_eq!(config.concurrency, 100);
         assert!(config.ddos);
         assert!(config.stress);
+        assert!(config.check_secrets);
+        assert!(config.check_deps);
     }
 
     #[test]

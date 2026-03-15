@@ -17,7 +17,7 @@ pub use detection::{DetectInfo, Framework, Language};
 pub use progress::{ErrorReporter, Prompt, ScanProgress, ScannerType, StatusPrinter};
 pub use reporters::ReportFormat;
 pub use scanners::{ScannerEngine, ScanReport, Vuln, VulnSeverity};
-pub use scoring::{Grade, SecurityScore};
+pub use scoring::{CategoryScore, Grade, SecurityScore};
 
 /// Warden version
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
