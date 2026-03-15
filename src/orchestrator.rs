@@ -6,6 +6,7 @@ use crate::{
     progress::{ScanProgress, ScannerType, StatusPrinter},
     reporters::ReportFormat,
     scanners::{ScannerEngine, ScanReport, Target},
+    // scoring::SecurityScore,  // TODO: Re-enable when scoring is fully integrated
 };
 use anyhow::Result;
 use colored::Colorize;
@@ -24,6 +25,7 @@ pub async fn run_scan(
     verbose: bool,
     auto_save: bool,
     generate_fixes: bool,
+    show_score: bool,
 ) -> Result<()> {
     let status = StatusPrinter::new(verbose);
 
@@ -204,6 +206,15 @@ pub async fn run_scan(
         report.print(&report_format)?;
     } else {
         report.print(&report_format)?;
+    }
+
+    // Print security score if requested
+    if show_score {
+        println!();
+        // TODO: Re-enable security scoring when fully integrated
+        // let security_score = SecurityScore::calculate(&report);
+        // println!("{}", security_score.render_terminal());
+        println!("{}", "Security scoring feature - Coming soon in v0.6.4!".yellow());
     }
 
     // Save to file if requested

@@ -25,3 +25,7 @@ Thumbs.db
 # Warden specific
 .warden/
 warden-report*.md
+
+.smite/ 
+.ex-g-se/
+.claude/

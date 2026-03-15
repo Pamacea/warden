@@ -168,6 +168,15 @@ pub enum Commands {
         /// Can also be set via WARDEN_MAX_FILE_SIZE environment variable.
         #[arg(long, default_value = "10", env = "WARDEN_MAX_FILE_SIZE", value_name = "MB")]
         max_file_size: u64,
+
+        /// Show security score
+        ///
+        /// Display a comprehensive security score (0-100) with grade (A+ to F)
+        /// based on 10 security categories including input validation,
+        /// authentication, cryptography, headers, session management,
+        /// access control, data protection, error handling, communications, and code quality.
+        #[arg(long)]
+        score: bool,
     },
 
     /// Detect framework and language

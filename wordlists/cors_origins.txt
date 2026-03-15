@@ -1,0 +1,166 @@
+# CORS misconfiguration payload wordlist
+# Embedded in Warden binary
+
+# Malicious origins
+https://evil.com
+http://evil.com
+https://evil.com/
+http://evil.com/
+https://www.evil.com
+http://www.evil.com
+https://api.evil.com
+http://api.evil.com
+
+# Null origin (common in local file attacks)
+null
+null://
+
+# Subdomain bypass attempts
+https://target.com.evil.com
+http://target.com.evil.com
+https://www.target.com.evil.com
+http://www.target.com.evil.com
+https://a.target.com.evil.com
+http://a.target.com.evil.com
+https://api.target.com.evil.com
+http://api.target.com.evil.com
+
+# Subdomain takeover patterns
+https://evil.target.com
+http://evil.target.com
+https://attacker.target.com
+http://attacker.target.com
+https://hack.target.com
+http://hack.target.com
+https://a.b.target.com.evil.com
+http://a.b.target.com.evil.com
+https://x.target.com.evil.com
+http://x.target.com.evil.com
+
+# Multi-level subdomain bypass
+https://com.evil.com
+http://com.evil.com
+https://net.evil.com
+http://net.evil.com
+https://org.evil.com
+http://org.evil.com
+
+# TLD bypass attempts
+https://target.com.evil.com
+http://target.com.evil.com
+https://www.target.com.evil.com
+http://www.target.com.evil.com
+
+# Protocol variations
+https://evil.com:443
+http://evil.com:80
+https://evil.com:8443
+http://evil.com:8080
+
+# IP address origins
+http://127.0.0.1
+https://127.0.0.1
+http://localhost
+https://localhost
+http://0.0.0.0
+https://0.0.0.0
+http://192.168.1.1
+https://192.168.1.1
+http://10.0.0.1
+https://10.0.0.1
+http://172.16.0.1
+https://172.16.0.1
+http://2130706433
+https://2130706433
+http://0x7f000001
+https://0x7f000001
+
+# Unicode and encoding bypasses
+https://ev%69l.com
+http://ev%69l.com
+https://evil%2ecom
+http://evil%2ecom
+https://%65%76%69%6c%2e%63%6f%6d
+http://%65%76%69%6c%2e%63%6f%6d
+
+# Case bypass
+https://EVIL.COM
+http://EVIL.COM
+https://EvIl.CoM
+http://EvIl.CoM
+https://Evil.Com
+http://Evil.Com
+
+# Trailing dot bypass
+https://evil.com.
+http://evil.com.
+https://target.com.evil.com.
+http://target.com.evil.com.
+
+# Underscore bypass
+https://evil_.com
+http://evil_.com
+https://_evil.com
+http://_evil.com
+
+# Common public CORS test services
+https://example.com
+http://example.com
+https://test.com
+http://test.com
+https://example.org
+http://example.org
+https://cors-test.appspot.com
+http://cors-test.appspot.com
+https://cors-anywhere.herokuapp.com
+http://cors-anywhere.herokuapp.com
+
+# Domain prefixes/suffixes bypass
+https://attacker.target.com
+http://attacker.target.com
+https://target.attacker.com
+http://target.attacker.com
+https://target.evil.com
+http://target.evil.com
+https://target.com.attacker.com
+http://target.com.attacker.com
+https://wwwtarget.com
+http://wwwtarget.com
+https://targetx.com
+http://targetx.com
+https://targetx.evil.com
+http://targetx.evil.com
+
+# Punny code (IDN) bypass
+https://xn--evil-6va.com
+http://xn--evil-6va.com
+https://evil%E2%84%A2.com
+http://evil%E2%84%A2.com
+
+# FQDN variations
+https://evil.com.
+http://evil.com.
+https://evil.com./
+http://evil.com./
+https://.evil.com
+http://.evil.com
+https://.evil.com/
+http://.evil.com/
+
+# Common trusted domains (for testing)
+https://google.com
+http://google.com
+https://www.google.com
+http://www.google.com
+https://facebook.com
+http://facebook.com
+https://amazon.com
+http://amazon.com
+https://microsoft.com
+http://microsoft.com
+https://apple.com
+http://apple.com
+https://github.com
+http://github.com
+https://www.github.com
+http://www.github.com

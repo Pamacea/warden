@@ -87,6 +87,7 @@ async fn main() -> Result<()> {
             timeout,
             concurrency,
             max_file_size: _,
+            score,
         } => {
             // Prompt for dangerous operations
             if include_ddos || include_stress {
@@ -109,6 +110,7 @@ async fn main() -> Result<()> {
                 cli.verbose,
                 auto_save,
                 generate_fixes,
+                score,
             )
             .await
         }

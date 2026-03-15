@@ -1,6 +1,6 @@
 [package]
 name = "warden-sec"
-version = "0.6.3"
+version = "0.6.4"
 edition = "2021"
 authors = ["Yanis"]
 license = "MIT"
@@ -27,7 +27,7 @@ tokio = { version = "1.42", features = ["full"] }
 rayon = "1.10"
 
 # HTTP client
-reqwest = { version = "0.12", features = ["json", "cookies"] }
+reqwest = { version = "0.12", features = ["json", "cookies", "blocking"] }
 hyper = "1.5"
 url = "2.5"
 

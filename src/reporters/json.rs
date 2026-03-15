@@ -2,6 +2,7 @@
 
 use super::Reporter;
 use crate::scanners::ScanReport;
+// use crate::scoring::SecurityScore;  // TODO: Re-enable when scoring is fully integrated
 use anyhow::Result;
 use serde_json::json;
 
@@ -14,12 +15,32 @@ impl Reporter for JsonReporter {
     }
 
     fn format(report: &ScanReport) -> Result<String> {
+        // TODO: Re-enable security scoring when fully integrated
+        // let security_score = SecurityScore::calculate(report);
+
         let output = json!({
             "version": env!("CARGO_PKG_VERSION"),
             "target": report.target,
             "timestamp": report.timestamp,
             "findings": report.findings,
             "summary": report.summary,
+            // "securityScore": {
+            //     "score": security_score.score,
+            //     "grade": security_score.grade.as_str(),
+            //     "gradeDescription": security_score.grade.description(),
+            //     "categories": security_score.categories.iter().map(|c| {
+            //         json!({
+            //             "name": c.name,
+            //             "score": c.score,
+            //             "maxPoints": c.max_points,
+            //             "percentage": c.percentage(),
+            //             "grade": c.grade().as_str(),
+            //             "penalties": c.penalties.len(),
+            //             "bonuses": c.bonuses.len(),
+            //         })
+            //     }).collect::<Vec<_>>(),
+            //     "recommendations": security_score.recommendations,
+            // }
         });
 
         Ok(serde_json::to_string_pretty(&output)?)

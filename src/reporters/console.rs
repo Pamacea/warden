@@ -2,6 +2,7 @@
 
 use super::{severity_color, Reporter};
 use crate::scanners::ScanReport;
+// use crate::scoring::SecurityScore;  // TODO: Re-enable when scoring is fully integrated
 use anyhow::Result;
 use colored::Colorize;
 
@@ -16,6 +17,9 @@ impl Reporter for ConsoleReporter {
     fn format(report: &ScanReport) -> Result<String> {
         let mut output = String::new();
 
+        // TODO: Re-enable security scoring when fully integrated
+        // let security_score = SecurityScore::calculate(report);
+
         // Header
         output.push_str(&format!(
             "\n{} {}\n",
@@ -23,6 +27,25 @@ impl Reporter for ConsoleReporter {
             format!("({})", report.timestamp).dimmed()
         ));
         output.push_str(&format!("{} {}\n\n", "Target:".bold(), report.target));
+
+        // Security score summary (TODO: re-enable)
+        /*
+        output.push_str(&format!("{} ", "Security Score:".bold()));
+        let score_colored = if security_score.score >= 80.0 {
+            format!("{:.1}/100", security_score.score).green().bold()
+        } else if security_score.score >= 60.0 {
+            format!("{:.1}/100", security_score.score).yellow().bold()
+        } else {
+            format!("{:.1}/100", security_score.score).red().bold()
+        };
+        output.push_str(&format!("{}\n", score_colored));
+
+        let grade_colored = format!("[{}]", security_score.grade.as_str())
+            .color(security_score.grade.color())
+            .bold();
+        output.push_str(&format!("{} {}\n", "Grade:".bold(), grade_colored));
+        output.push('\n');
+        */
 
         // Findings
         if report.findings.is_empty() {
