@@ -5,6 +5,7 @@ pub mod language;
 pub mod platform;
 
 use anyhow::Result;
+use colored::Colorize;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
@@ -48,29 +49,84 @@ impl DetectInfo {
     pub fn has_language(&self, language: Language) -> bool {
         self.languages.contains(&language)
     }
+
+    /// Format detection info for display
+    pub fn display(&self) -> String {
+        let mut output = vec![];
+
+        output.push(format!("{} {}", "Path:".cyan(), self.path));
+
+        if !self.languages.is_empty() {
+            output.push(format!("{} {}", "Languages:".green(),
+                self.languages.iter().map(|l| l.to_string()).collect::<Vec<_>>().join(", ")));
+        }
+
+        if !self.frameworks.is_empty() {
+            output.push(format!("{} {}", "Frameworks:".blue(),
+                self.frameworks.iter().map(|f| f.to_string()).collect::<Vec<_>>().join(", ")));
+        }
+
+        if let Some(ref pm) = self.package_manager {
+            output.push(format!("{} {}", "Package Manager:".yellow(), pm));
+        }
+
+        output.join("\n")
+    }
 }
 
 /// Run detection on a path
-pub async fn run_detect(path: Option<String>, _config: crate::config::Config) -> Result<()> {
+pub async fn run_detect(path: Option<String>, json: bool, _config: crate::config::Config) -> Result<()> {
     let target_path = path.unwrap_or_else(|| ".".to_string());
     let path = Path::new(&target_path).canonicalize()?;
 
-    println!("{} Scanning: {}", "→".cyan(), path.display());
-
     // Detect language
     let languages = language::detect(&path)?;
-    if languages.is_empty() {
-        println!("  {}", "No language detected".yellow());
-    } else {
-        println!("  {}: {}", "Languages".green(), languages.iter().map(|l| l.to_string()).collect::<Vec<_>>().join(", "));
-    }
 
     // Detect framework
     let frameworks = framework::detect(&path, &languages)?;
-    if frameworks.is_empty() {
-        println!("  {}", "No framework detected".yellow());
+
+    // Create detection info
+    let info = DetectInfo {
+        path: path.display().to_string(),
+        languages,
+        frameworks,
+        package_manager: None,
+        version: None,
+    };
+
+    if json {
+        // Output as JSON
+        println!("{}", serde_json::to_string_pretty(&info)?);
     } else {
-        println!("  {}: {}", "Frameworks".green(), frameworks.iter().map(|f| f.to_string()).collect::<Vec<_>>().join(", "));
+        // Output as human-readable text
+        println!();
+        println!("{}", "┌─ Detection Results ──────────────────────────────".cyan().bold());
+        println!("│");
+
+        if info.languages.is_empty() {
+            println!("│  {}", "No language detected".dimmed());
+        } else {
+            println!("│  {}", "Languages:".green().bold());
+            for lang in &info.languages {
+                println!("│    • {}", lang);
+            }
+        }
+
+        println!("│");
+
+        if info.frameworks.is_empty() {
+            println!("│  {}", "No framework detected".dimmed());
+        } else {
+            println!("│  {}", "Frameworks:".blue().bold());
+            for framework in &info.frameworks {
+                println!("│    • {}", framework);
+            }
+        }
+
+        println!("│");
+        println!("│  {}", format!("Path: {}", info.path).dimmed());
+        println!("{}", "└──────────────────────────────────────────────────".cyan().bold());
+        println!();
     }
 
     Ok(())
@@ -94,5 +150,22 @@ mod tests {
         info.frameworks.push(Framework::NestJS);
         assert!(info.has_framework(Framework::NestJS));
         assert!(!info.has_framework(Framework::Axum));
+    }
+
+    #[test]
+    fn test_detect_info_serialization() {
+        let info = DetectInfo {
+            languages: vec![Language::Rust, Language::JavaScript],
+            frameworks: vec![Framework::Axum],
+            path: "/test".to_string(),
+            package_manager: Some("cargo".to_string()),
+            version: Some("1.0.0".to_string()),
+        };
+
+        let serialized = serde_json::to_string(&info).unwrap();
+        let deserialized: DetectInfo = serde_json::from_str(&serialized).unwrap();
+
+        assert_eq!(info.path, deserialized.path);
+        assert_eq!(info.languages.len(), deserialized.languages.len());
     }
 }

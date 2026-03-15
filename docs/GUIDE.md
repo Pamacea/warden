@@ -5,7 +5,7 @@
 ### Via cargo (Recommended)
 
 ```bash
-cargo install warden
+cargo install warden-sec
 ```
 
 ### Via Pre-built Binary

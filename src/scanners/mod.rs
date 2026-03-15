@@ -1,11 +1,15 @@
 //! Scanner modules
 
+// AST parsers - temporarily disabled
+// pub mod ast_parsers;
 pub mod ddos;
 pub mod http;
 pub mod port;
 pub mod static_analyzer;
 pub mod stress;
 
+// AST parsers exports - temporarily disabled
+// pub use ast_parsers::{FileDiscoverer, JsTsParser, PythonParser, RustParser, SourceLocation};
 pub use ddos::DdosScanner;
 pub use http::HttpScanner;
 pub use port::PortScanner;
@@ -26,6 +30,37 @@ impl ScannerEngine {
         Self { config }
     }
 
+    /// Run HTTP security scanner
+    pub async fn scan_http(&mut self, url: &str) -> Result<ScanReport> {
+        let http_scanner = HttpScanner::new(self.config.clone());
+        Ok(http_scanner.scan(url).await?)
+    }
+
+    /// Run port scanner
+    pub async fn scan_port(&mut self, url: &str) -> Result<ScanReport> {
+        let port_scanner = PortScanner::new(self.config.clone());
+        Ok(port_scanner.scan(url).await?)
+    }
+
+    /// Run static code analyzer
+    pub async fn scan_static(&mut self, path: &PathBuf) -> Result<ScanReport> {
+        let static_scanner = StaticScanner::new(self.config.clone());
+        Ok(static_scanner.scan(path).await?)
+    }
+
+    /// Run DDoS resistance scanner
+    pub async fn scan_ddos(&mut self, target: &Target) -> Result<ScanReport> {
+        let ddos_scanner = DdosScanner::new(self.config.clone());
+        Ok(ddos_scanner.scan(target).await?)
+    }
+
+    /// Run stress testing scanner
+    pub async fn scan_stress(&mut self, target: &Target) -> Result<ScanReport> {
+        let stress_scanner = StressScanner::new(self.config.clone());
+        Ok(stress_scanner.scan(target).await?)
+    }
+
+    /// Run all applicable scanners for the target
     pub async fn scan(&mut self, target: &Target) -> Result<ScanReport> {
         let mut report = ScanReport::new(target.clone());
 
@@ -130,7 +165,7 @@ impl Default for ScannerConfig {
 }
 
 /// Scan target
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub enum Target {
     Url(String),
     Path(PathBuf),
@@ -255,11 +290,171 @@ mod tests {
     fn test_vuln_severity_display() {
         assert_eq!(VulnSeverity::Critical.to_string(), "CRITICAL");
         assert_eq!(VulnSeverity::High.to_string(), "HIGH");
+        assert_eq!(VulnSeverity::Medium.to_string(), "MEDIUM");
+        assert_eq!(VulnSeverity::Low.to_string(), "LOW");
+        assert_eq!(VulnSeverity::Info.to_string(), "INFO");
     }
 
     #[test]
     fn test_scan_report_new() {
         let report = ScanReport::new(Target::Url("http://example.com".to_string()));
         assert_eq!(report.summary.total, 0);
+    }
+
+    #[test]
+    fn test_scan_report_add_finding() {
+        let mut report = ScanReport::new(Target::Url("http://example.com".to_string()));
+
+        report.add_finding(Vuln {
+            severity: VulnSeverity::High,
+            title: "Test".to_string(),
+            description: "Test".to_string(),
+            location: None,
+            recommendation: None,
+            cwe: None,
+            owasp: None,
+        });
+
+        assert_eq!(report.summary.total, 1);
+        assert_eq!(report.summary.high, 1);
+    }
+
+    #[test]
+    fn test_scan_report_merge() {
+        let mut report1 = ScanReport::new(Target::Url("http://example.com".to_string()));
+        let mut report2 = ScanReport::new(Target::Url("http://example.com".to_string()));
+
+        report1.add_finding(Vuln {
+            severity: VulnSeverity::Critical,
+            title: "Critical".to_string(),
+            description: "Test".to_string(),
+            location: None,
+            recommendation: None,
+            cwe: None,
+            owasp: None,
+        });
+
+        report2.add_finding(Vuln {
+            severity: VulnSeverity::High,
+            title: "High".to_string(),
+            description: "Test".to_string(),
+            location: None,
+            recommendation: None,
+            cwe: None,
+            owasp: None,
+        });
+
+        report1.merge(report2);
+
+        assert_eq!(report1.summary.total, 2);
+        assert_eq!(report1.summary.critical, 1);
+        assert_eq!(report1.summary.high, 1);
+    }
+
+    #[test]
+    fn test_vuln_severity_color() {
+        use colored::Color;
+
+        assert_eq!(VulnSeverity::Critical.color(), Color::Red);
+        assert_eq!(VulnSeverity::High.color(), Color::Red);
+        assert_eq!(VulnSeverity::Medium.color(), Color::Yellow);
+        assert_eq!(VulnSeverity::Low.color(), Color::Blue);
+        assert_eq!(VulnSeverity::Info.color(), Color::White);
+    }
+
+    #[test]
+    fn test_target_display() {
+        let url = Target::Url("http://example.com".to_string());
+        assert_eq!(url.to_string(), "http://example.com");
+
+        let path = Target::Path(PathBuf::from("/tmp/test"));
+        assert!(path.to_string().contains("test"));
+    }
+
+    #[test]
+    fn test_vuln_serialization() {
+        let vuln = Vuln {
+            severity: VulnSeverity::Critical,
+            title: "Test Vuln".to_string(),
+            description: "Test".to_string(),
+            location: Some("/test".to_string()),
+            recommendation: Some("Fix".to_string()),
+            cwe: Some("CWE-123".to_string()),
+            owasp: Some("A01:2021".to_string()),
+        };
+
+        let serialized = serde_json::to_string(&vuln).unwrap();
+        let deserialized: Vuln = serde_json::from_str(&serialized).unwrap();
+
+        assert_eq!(vuln.title, deserialized.title);
+        assert_eq!(vuln.severity, deserialized.severity);
+    }
+
+    #[test]
+    fn test_scanner_config_default() {
+        let config = ScannerConfig::default();
+        assert!(!config.aggressive);
+        assert_eq!(config.timeout, Duration::from_secs(5));
+        assert_eq!(config.concurrency, 50);
+        assert!(config.http);
+        assert!(config.port);
+        assert!(config.static_analysis);
+        assert!(!config.ddos);
+        assert!(!config.stress);
+    }
+
+    #[test]
+    fn test_scanner_config_builder() {
+        let config = ScannerConfig::new()
+            .with_aggressive(true)
+            .with_timeout(Duration::from_secs(10))
+            .with_concurrency(100)
+            .with_ddos(true)
+            .with_stress(true);
+
+        assert!(config.aggressive);
+        assert_eq!(config.timeout, Duration::from_secs(10));
+        assert_eq!(config.concurrency, 100);
+        assert!(config.ddos);
+        assert!(config.stress);
+    }
+
+    #[test]
+    fn test_scan_report_serialization() {
+        let mut report = ScanReport::new(Target::Url("http://example.com".to_string()));
+        report.add_finding(Vuln {
+            severity: VulnSeverity::High,
+            title: "Test".to_string(),
+            description: "Test".to_string(),
+            location: None,
+            recommendation: None,
+            cwe: None,
+            owasp: None,
+        });
+
+        let serialized = serde_json::to_string(&report).unwrap();
+        let deserialized: ScanReport = serde_json::from_str(&serialized).unwrap();
+
+        assert_eq!(report.summary.total, deserialized.summary.total);
+    }
+
+    #[test]
+    fn test_scan_report_exit_code() {
+        let mut report = ScanReport::new(Target::Url("http://example.com".to_string()));
+
+        // No vulnerabilities
+        assert_eq!(report.exit_code(), 0);
+
+        // Critical
+        report.add_finding(Vuln {
+            severity: VulnSeverity::Critical,
+            title: "Critical".to_string(),
+            description: "Test".to_string(),
+            location: None,
+            recommendation: None,
+            cwe: None,
+            owasp: None,
+        });
+        assert_eq!(report.exit_code(), 1);
     }
 }

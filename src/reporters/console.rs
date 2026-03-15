@@ -88,3 +88,71 @@ impl Reporter for ConsoleReporter {
         Ok(output)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::scanners::{Target, Vuln, VulnSeverity};
+
+    #[test]
+    fn test_console_format_empty_report() {
+        let report = ScanReport::new(Target::Url("http://example.com".to_string()));
+        let formatted = ConsoleReporter::format(&report).unwrap();
+
+        assert!(formatted.contains("Scan Report"));
+        assert!(formatted.contains("No vulnerabilities found"));
+    }
+
+    #[test]
+    fn test_console_format_with_findings() {
+        let mut report = ScanReport::new(Target::Url("http://example.com".to_string()));
+        report.add_finding(Vuln {
+            severity: VulnSeverity::High,
+            title: "Test Vulnerability".to_string(),
+            description: "Test description".to_string(),
+            location: Some("/test".to_string()),
+            recommendation: Some("Fix it".to_string()),
+            cwe: Some("CWE-123".to_string()),
+            owasp: None,
+        });
+
+        let formatted = ConsoleReporter::format(&report).unwrap();
+
+        assert!(formatted.contains("Test Vulnerability"));
+        assert!(formatted.contains("Test description"));
+        assert!(formatted.contains("/test"));
+        assert!(formatted.contains("Fix it"));
+        assert!(formatted.contains("HIGH"));
+    }
+
+    #[test]
+    fn test_console_format_severity_levels() {
+        let mut report = ScanReport::new(Target::Url("http://example.com".to_string()));
+
+        for severity in [
+            VulnSeverity::Critical,
+            VulnSeverity::High,
+            VulnSeverity::Medium,
+            VulnSeverity::Low,
+            VulnSeverity::Info,
+        ] {
+            report.add_finding(Vuln {
+                severity,
+                title: format!("{:?} Test", severity),
+                description: "Test".to_string(),
+                location: None,
+                recommendation: None,
+                cwe: None,
+                owasp: None,
+            });
+        }
+
+        let formatted = ConsoleReporter::format(&report).unwrap();
+
+        assert!(formatted.contains("CRITICAL"));
+        assert!(formatted.contains("HIGH"));
+        assert!(formatted.contains("MEDIUM"));
+        assert!(formatted.contains("LOW"));
+        assert!(formatted.contains("INFO"));
+    }
+}

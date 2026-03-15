@@ -35,15 +35,53 @@ mod tests {
     #[test]
     fn test_validate_url_valid() {
         assert!(validate_url("https://example.com").is_ok());
+        assert!(validate_url("http://example.com").is_ok());
     }
 
     #[test]
     fn test_validate_url_invalid() {
         assert!(validate_url("not-a-url").is_err());
+        assert!(validate_url("").is_err());
     }
 
     #[test]
     fn test_validate_url_wrong_scheme() {
         assert!(validate_url("ftp://example.com").is_err());
+        assert!(validate_url("file:///path/to/file").is_err());
+    }
+
+    #[test]
+    fn test_validate_url_with_path() {
+        assert!(validate_url("https://example.com/path/to/resource").is_ok());
+    }
+
+    #[test]
+    fn test_validate_url_with_query() {
+        assert!(validate_url("https://example.com?query=test").is_ok());
+    }
+
+    #[test]
+    fn test_validate_url_with_port() {
+        assert!(validate_url("https://example.com:8443").is_ok());
+    }
+
+    #[test]
+    fn test_validate_url_normalizes() {
+        let result = validate_url("http://EXAMPLE.COM").unwrap();
+        assert!(result.contains("example.com"));
+    }
+
+    #[tokio::test]
+    async fn test_check_url_unreachable() {
+        // Use a non-routable IP address
+        let result = check_url("http://192.0.2.1:12345", Duration::from_millis(100)).await;
+        // Should fail or timeout, not crash
+        assert!(result.is_err() || result.unwrap() == false);
+    }
+
+    #[tokio::test]
+    async fn test_check_url_invalid_url() {
+        let result = check_url("not-a-url", Duration::from_secs(1)).await;
+        assert!(result.is_err());
     }
 }

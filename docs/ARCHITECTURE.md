@@ -432,7 +432,7 @@ fn benchmark_http_scan(c: &mut Criterion) {
 ## Deployment
 
 Warden is distributed via:
-1. **crates.io**: `cargo install warden`
+1. **crates.io**: `cargo install warden-sec`
 2. **GitHub Releases**: Pre-built binaries for all platforms
 3. **Homebrew**: `brew install warden`
 4. **Scoop**: `scoop install warden`

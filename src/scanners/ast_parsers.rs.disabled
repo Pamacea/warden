@@ -1,0 +1,1223 @@
+//! AST-based parsers for security analysis
+//!
+//! This module provides tree-sitter based parsers for:
+//! - Rust (unsafe blocks, unwrap, integer overflow, serde validation)
+//! - JavaScript/TypeScript (eval, innerHTML, prototype pollution)
+//! - Python (exec, shell=True, SQL injection)
+
+use anyhow::Result;
+use std::path::{Path, PathBuf};
+use walkdir::WalkDir;
+
+// Re-export language getters for each parser
+pub mod parsers {
+    pub use tree_sitter_rust::language as rust;
+    pub use tree_sitter_javascript::language as javascript;
+    pub use tree_sitter_typescript::language_typescript as typescript;
+    pub use tree_sitter_typescript::language_tsx as tsx;
+    pub use tree_sitter_python::language as python;
+}
+
+/// Location in source code
+#[derive(Debug, Clone, PartialEq)]
+pub struct SourceLocation {
+    pub line: usize,
+    pub column: usize,
+    pub end_line: usize,
+    pub end_column: usize,
+}
+
+impl SourceLocation {
+    pub fn from_node(node: &tree_sitter::Node) -> Self {
+        Self {
+            line: node.start_position().row + 1,
+            column: node.start_position().column,
+            end_line: node.end_position().row + 1,
+            end_column: node.end_position().column,
+        }
+    }
+
+    pub fn format(&self) -> String {
+        if self.line == self.end_line {
+            format!("line {}", self.line)
+        } else {
+            format!("lines {}-{}", self.line, self.end_line)
+        }
+    }
+}
+
+/// Finding from AST analysis
+#[derive(Debug, Clone)]
+pub struct AstFinding {
+    pub severity: VulnSeverity,
+    pub title: String,
+    pub description: String,
+    pub location: SourceLocation,
+    pub code_snippet: String,
+    pub recommendation: String,
+    pub cwe: Option<String>,
+    pub owasp: Option<String>,
+}
+
+/// Severity level
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum VulnSeverity {
+    Critical,
+    High,
+    Medium,
+    Low,
+    Info,
+}
+
+impl From<crate::scanners::VulnSeverity> for VulnSeverity {
+    fn from(value: crate::scanners::VulnSeverity) -> Self {
+        match value {
+            crate::scanners::VulnSeverity::Critical => VulnSeverity::Critical,
+            crate::scanners::VulnSeverity::High => VulnSeverity::High,
+            crate::scanners::VulnSeverity::Medium => VulnSeverity::Medium,
+            crate::scanners::VulnSeverity::Low => VulnSeverity::Low,
+            crate::scanners::VulnSeverity::Info => VulnSeverity::Info,
+        }
+    }
+}
+
+impl From<VulnSeverity> for crate::scanners::VulnSeverity {
+    fn from(value: VulnSeverity) -> Self {
+        match value {
+            VulnSeverity::Critical => crate::scanners::VulnSeverity::Critical,
+            VulnSeverity::High => crate::scanners::VulnSeverity::High,
+            VulnSeverity::Medium => crate::scanners::VulnSeverity::Medium,
+            VulnSeverity::Low => crate::scanners::VulnSeverity::Low,
+            VulnSeverity::Info => crate::scanners::VulnSeverity::Info,
+        }
+    }
+}
+
+/// Rust AST parser
+pub struct RustParser {
+    parser: tree_sitter::Parser,
+}
+
+impl RustParser {
+    pub fn new() -> Result<Self> {
+        let mut parser = tree_sitter::Parser::new();
+        parser.set_language(&parsers::rust())?;
+        Ok(Self { parser })
+    }
+
+    /// Parse a Rust file and find security issues
+    pub fn analyze(&mut self, source: &str, _file_path: &Path) -> Result<Vec<AstFinding>> {
+        let tree = self.parser.parse(source, None)
+            .ok_or_else(|| anyhow::anyhow!("Failed to parse Rust file"))?;
+
+        let mut findings = Vec::new();
+        let root_node = tree.root_node();
+
+        // Find unsafe blocks
+        self.find_unsafe_blocks(&root_node, source, &mut findings);
+
+        // Find unwrap calls
+        self.find_unwrap_calls(&root_node, source, &mut findings);
+
+        // Find potential integer overflow patterns
+        self.find_overflow_patterns(&root_node, source, &mut findings);
+
+        // Find Serde deserialization without validation
+        self.find_unvalidated_deserialization(&root_node, source, &mut findings);
+
+        // Find web framework specific patterns (Axum, Actix, Rocket)
+        // TODO: self.find_web_framework_patterns(&root_node, source, &mut findings);
+
+        Ok(findings)
+    }
+
+    fn find_unsafe_blocks(&self, node: &tree_sitter::Node, source: &str, findings: &mut Vec<AstFinding>) {
+        // Query for unsafe blocks
+        if node.kind() == "unsafe_block" {
+            let location = SourceLocation::from_node(node);
+            let snippet = self.extract_snippet(source, &location);
+
+            findings.push(AstFinding {
+                severity: VulnSeverity::Medium,
+                title: "Unsafe block detected".to_string(),
+                description: "Rust unsafe code bypasses memory safety guarantees".to_string(),
+                location,
+                code_snippet: snippet,
+                recommendation: "Document safety invariants clearly. Consider using safe abstractions.".to_string(),
+                cwe: Some("CWE-242".to_string()),
+                owasp: None,
+            });
+        }
+
+        // Recursively check children
+        let mut cursor = node.walk();
+        for child in node.children(&mut cursor) {
+            self.find_unsafe_blocks(&child, source, findings);
+        }
+    }
+
+    fn find_unwrap_calls(&self, node: &tree_sitter::Node, source: &str, findings: &mut Vec<AstFinding>) {
+        // Look for method calls named "unwrap" or "expect"
+        if node.kind() == "call_expression" {
+            let function_text = self.get_function_name(node, source);
+            if function_text == "unwrap" || function_text == "expect" {
+                let location = SourceLocation::from_node(node);
+                let snippet = self.extract_snippet(source, &location);
+
+                findings.push(AstFinding {
+                    severity: VulnSeverity::Low,
+                    title: format!("Use of {}() - potential panic", function_text),
+                    description: format!("{}() will panic on None/Err", function_text),
+                    location,
+                    code_snippet: snippet,
+                    recommendation: "Use proper error handling with ? or match".to_string(),
+                    cwe: Some("CWE-242".to_string()),
+                    owasp: None,
+                });
+            }
+        }
+
+        let mut cursor = node.walk();
+        for child in node.children(&mut cursor) {
+            self.find_unwrap_calls(&child, source, findings);
+        }
+    }
+
+    fn find_overflow_patterns(&self, node: &tree_sitter::Node, source: &str, findings: &mut Vec<AstFinding>) {
+        // Look for arithmetic operations that might overflow
+        if node.kind() == "binary_expression" {
+            let operator = self.get_operator(node, source);
+            if matches!(operator.as_str(), "+" | "-" | "*" | "/") {
+                // Check if it's in a checked context or wrapping context
+                let parent = match node.parent() {
+                    Some(p) => p,
+                    None => return,
+                };
+
+                // If parent is not a checked_* or wrapping_* operation, flag it
+                if !self.is_safe_context(&parent, source) {
+                    // Check if operating on integers
+                    if self.uses_integer_types(node, source) {
+                        let location = SourceLocation::from_node(node);
+                        let snippet = self.extract_snippet(source, &location);
+
+                        findings.push(AstFinding {
+                            severity: VulnSeverity::Info,
+                            title: "Potential integer overflow".to_string(),
+                            description: "Arithmetic operation may overflow in debug/release builds".to_string(),
+                            location,
+                            code_snippet: snippet,
+                            recommendation: "Use checked_*, wrapping_*, or saturating_* operations".to_string(),
+                            cwe: Some("CWE-190".to_string()),
+                            owasp: None,
+                        });
+                    }
+                }
+            }
+        }
+
+        let mut cursor = node.walk();
+        for child in node.children(&mut cursor) {
+            self.find_overflow_patterns(&child, source, findings);
+        }
+    }
+
+    fn find_unvalidated_deserialization(&self, node: &tree_sitter::Node, source: &str, findings: &mut Vec<AstFinding>) {
+        // Look for serde deserialize attributes without validation
+        if let Some(attrs_node) = node.child_by_field_name("attribute") {
+            let attributes = self.get_node_text(&attrs_node, source);
+            if attributes.contains("#[derive(Deserialize)]") || attributes.contains("#[serde(deserialize)]") {
+                // Check if there's validation logic nearby
+                if !self.has_validation_logic(node, source) {
+                    let location = SourceLocation::from_node(node);
+                    let snippet = self.extract_snippet(source, &location);
+
+                    findings.push(AstFinding {
+                        severity: VulnSeverity::Medium,
+                        title: "Unvalidated deserialization".to_string(),
+                        description: "Struct deserializes data without validation".to_string(),
+                        location,
+                        code_snippet: snippet,
+                        recommendation: "Add validation using serde's validate or custom deserializer".to_string(),
+                        cwe: Some("CWE-502".to_string()),
+                        owasp: Some("A08:2021 - Software and Data Integrity Failures".to_string()),
+                    });
+                }
+            }
+        }
+
+        let mut cursor = node.walk();
+        for child in node.children(&mut cursor) {
+            self.find_unvalidated_deserialization(&child, source, findings);
+        }
+    }
+
+    fn find_web_framework_patterns(&self, node: &tree_sitter::Node, source: &str, findings: &mut Vec<AstFinding>) {
+        // Look for Rust web framework patterns (Axum, Actix, Rocket)
+
+        // Check for extract::Path without validation (Axum)
+        if let Some(attrs_node) = node.child_by_field_name("attribute") {
+            let attributes = self.get_node_text(&attrs_node, source);
+
+            // Axum: Check for Path extractor without validation
+            if attributes.contains("axum::extract::Path") || attributes.contains("Path<") {
+                let func_name = self.get_function_name(node, source);
+                if !self.has_path_validation(node, source) {
+                    let location = SourceLocation::from_node(node);
+                    let snippet = self.extract_snippet(source, &location);
+
+                    findings.push(AstFinding {
+                        severity: VulnSeverity::Medium,
+                        title: "Unvalidated path parameter".to_string(),
+                        description: "Path parameter extracted without validation in Axum handler".to_string(),
+                        location,
+                        code_snippet: snippet,
+                        recommendation: "Validate and sanitize path parameters. Use typed Path with validation middleware.".to_string(),
+                        cwe: Some("CWE-20".to_string()),
+                        owasp: Some("A01:2021".to_string()),
+                    });
+                }
+            }
+
+            // Actix-web: Check for web::Path without validation
+            if attributes.contains("web::Path") || attributes.contains("actix") {
+                let location = SourceLocation::from_node(node);
+                let snippet = self.extract_snippet(source, &location);
+
+                findings.push(AstFinding {
+                    severity: VulnSeverity::Info,
+                    title: "Actix-web path parameter".to_string(),
+                    description: "Consider adding validation for path parameters".to_string(),
+                    location,
+                    code_snippet: snippet,
+                    recommendation: "Use validators from actix-web-validator crate".to_string(),
+                    cwe: Some("CWE-20".to_string()),
+                    owasp: Some("A01:2021".to_string()),
+                });
+            }
+
+            // Rocket: Check for routes without guards
+            if attributes.contains("#[rocket::") || attributes.contains("#[get(") || attributes.contains("#[post(") {
+                if !attributes.contains("Admin") && !attributes.contains("Auth") && !attributes.contains("Guard") {
+                    let location = SourceLocation::from_node(node);
+                    let snippet = self.extract_snippet(source, &location);
+
+                    findings.push(AstFinding {
+                        severity: VulnSeverity::Low,
+                        title: "Unprotected Rocket route".to_string(),
+                        description: "Rocket route without authentication guards".to_string(),
+                        location,
+                        code_snippet: snippet,
+                        recommendation: "Add request guards for authentication and authorization".to_string(),
+                        cwe: Some("CWE-306".to_string()),
+                        owasp: Some("A01:2021".to_string()),
+                    });
+                }
+            }
+        }
+
+        // Check for String interpolation in SQL queries
+        let text = self.get_node_text(node, source);
+        if (text.contains("sqlx::query") || text.contains("SELECT") || text.contains("INSERT"))
+            && (text.contains("format!") || text.contains("concat!") || text.contains("+") || text.contains("&")) {
+            let location = SourceLocation::from_node(node);
+            let snippet = self.extract_snippet(source, &location);
+
+            findings.push(AstFinding {
+                severity: VulnSeverity::High,
+                title: "Potential SQL injection in Rust".to_string(),
+                description: "SQL query built with string concatenation or formatting".to_string(),
+                location,
+                code_snippet: snippet,
+                recommendation: "Use parameterized queries with sqlx::query! or query_as!".to_string(),
+                cwe: Some("CWE-89".to_string()),
+                owasp: Some("A03:2021".to_string()),
+            });
+        }
+
+        let mut cursor = node.walk();
+        for child in node.children(&mut cursor) {
+            self.find_web_framework_patterns(&child, source, findings);
+        }
+    }
+
+    fn has_path_validation(&self, node: &tree_sitter::Node, source: &str) -> bool {
+        let text = self.get_node_text(node, source);
+        // Check for validation patterns
+        text.contains(".parse::<") || text.contains(".validate()") ||
+        text.contains("matches!") || text.contains("regex::")
+    }
+
+    fn is_safe_context(&self, node: &tree_sitter::Node, source: &str) -> bool {
+        let text = self.get_node_text(node, source);
+        text.contains("checked_") || text.contains("wrapping_") || text.contains("saturating_")
+    }
+
+    fn uses_integer_types(&self, node: &tree_sitter::Node, source: &str) -> bool {
+        let text = self.get_node_text(node, source);
+        // Simple heuristic - check for integer type names
+        text.contains("i8") || text.contains("i16") || text.contains("i32")
+            || text.contains("i64") || text.contains("i128") || text.contains("isize")
+            || text.contains("u8") || text.contains("u16") || text.contains("u32")
+            || text.contains("u64") || text.contains("u128") || text.contains("usize")
+    }
+
+    fn has_validation_logic(&self, node: &tree_sitter::Node, source: &str) -> bool {
+        // Look for validation methods in the struct body
+        let text = self.get_node_text(node, source);
+        text.contains("fn validate") || text.contains("Validator")
+    }
+
+    fn get_function_name(&self, node: &tree_sitter::Node, source: &str) -> String {
+        if let Some(func) = node.child_by_field_name("function") {
+            self.get_node_text(&func, source)
+                .split("::")
+                .last()
+                .unwrap_or("")
+                .to_string()
+        } else {
+            String::new()
+        }
+    }
+
+    fn get_operator(&self, node: &tree_sitter::Node, _source: &str) -> String {
+        node.children(&mut node.walk())
+            .find(|c| c.kind() == "+" || c.kind() == "-" || c.kind() == "*" || c.kind() == "/")
+            .map(|c| c.kind().to_string())
+            .unwrap_or_default()
+    }
+
+    fn get_node_text(&self, node: &tree_sitter::Node, source: &str) -> String {
+        source[node.byte_range()].to_string()
+    }
+
+    fn extract_snippet(&self, source: &str, location: &SourceLocation) -> String {
+        let lines: Vec<&str> = source.lines().collect();
+        let start = location.line.saturating_sub(1);
+        let end = location.end_line.min(lines.len());
+
+        lines[start..end]
+            .iter()
+            .enumerate()
+            .map(|(i, line)| {
+                let line_num = start + i + 1;
+                format!("{} | {}", line_num, line)
+            })
+            .collect::<Vec<_>>()
+            .join("\n")
+    }
+}
+
+impl Default for RustParser {
+    fn default() -> Self {
+        Self::new().expect("Failed to create Rust parser")
+    }
+}
+
+/// JavaScript/TypeScript AST parser
+pub struct JsTsParser {
+    parser: tree_sitter::Parser,
+    is_typescript: bool,
+}
+
+impl JsTsParser {
+    pub fn javascript() -> Result<Self> {
+        let mut parser = tree_sitter::Parser::new();
+        parser.set_language(&parsers::javascript())?;
+        Ok(Self { parser, is_typescript: false })
+    }
+
+    pub fn typescript() -> Result<Self> {
+        let mut parser = tree_sitter::Parser::new();
+        parser.set_language(&parsers::typescript().into())?;
+        Ok(Self { parser, is_typescript: true })
+    }
+
+    pub fn tsx() -> Result<Self> {
+        let mut parser = tree_sitter::Parser::new();
+        parser.set_language(&parsers::tsx().into())?;
+        Ok(Self { parser, is_typescript: true })
+    }
+
+    pub fn from_path(path: &Path) -> Result<Self> {
+        match path.extension().and_then(|e| e.to_str()) {
+            Some("ts") => Self::typescript(),
+            Some("tsx") => Self::tsx(),
+            Some("js") | Some("jsx") | Some("mjs") | Some("cjs") => Self::javascript(),
+            _ => Self::javascript(),
+        }
+    }
+
+    /// Parse a JS/TS file and find security issues
+    pub fn analyze(&mut self, source: &str, _file_path: &Path) -> Result<Vec<AstFinding>> {
+        let tree = self.parser.parse(source, None)
+            .ok_or_else(|| anyhow::anyhow!("Failed to parse JS/TS file"))?;
+
+        let mut findings = Vec::new();
+        let root_node = tree.root_node();
+
+        // Find eval() usage
+        self.find_eval_usage(&root_node, source, &mut findings);
+
+        // Find innerHTML/outerHTML assignments
+        self.find_dom_xss_patterns(&root_node, source, &mut findings);
+
+        // Find prototype pollution patterns
+        self.find_prototype_pollution(&root_node, source, &mut findings);
+
+        // Find Function() constructor usage
+        self.find_function_constructor(&root_node, source, &mut findings);
+
+        // Framework-specific patterns
+        self.find_express_patterns(&root_node, source, &mut findings);
+        self.find_nextjs_patterns(&root_node, source, &mut findings);
+
+        Ok(findings)
+    }
+
+    fn find_eval_usage(&self, node: &tree_sitter::Node, source: &str, findings: &mut Vec<AstFinding>) {
+        if node.kind() == "call_expression" {
+            let func = node.child_by_field_name("function");
+            if let Some(func_node) = func {
+                let func_text = self.get_node_text(&func_node, source);
+                if func_text == "eval" {
+                    let location = SourceLocation::from_node(node);
+                    let snippet = self.extract_snippet(source, &location);
+
+                    findings.push(AstFinding {
+                        severity: VulnSeverity::High,
+                        title: "Use of eval() - Code Injection".to_string(),
+                        description: "eval() executes arbitrary code, allowing code injection attacks".to_string(),
+                        location,
+                        code_snippet: snippet,
+                        recommendation: "Use JSON.parse() for JSON, or safer alternatives".to_string(),
+                        cwe: Some("CWE-94".to_string()),
+                        owasp: Some("A03:2021 - Injection".to_string()),
+                    });
+                }
+            }
+        }
+
+        let mut cursor = node.walk();
+        for child in node.children(&mut cursor) {
+            self.find_eval_usage(&child, source, findings);
+        }
+    }
+
+    fn find_dom_xss_patterns(&self, node: &tree_sitter::Node, source: &str, findings: &mut Vec<AstFinding>) {
+        if node.kind() == "assignment_expression" || node.kind() == "call_expression" {
+            let text = self.get_node_text(node, source);
+
+            if text.contains(".innerHTML") || text.contains(".outerHTML") {
+                // Check if the source is user-controlled
+                let has_user_input = text.contains("location")
+                    || text.contains("window.name")
+                    || text.contains("document.cookie")
+                    || text.contains("localStorage")
+                    || text.contains("sessionStorage")
+                    || text.contains("URLSearchParams")
+                    || text.contains("params")
+                    || text.contains("query")
+                    || text.contains("hash");
+
+                let severity = if has_user_input {
+                    VulnSeverity::High
+                } else {
+                    VulnSeverity::Medium
+                };
+
+                let location = SourceLocation::from_node(node);
+                let snippet = self.extract_snippet(source, &location);
+
+                findings.push(AstFinding {
+                    severity,
+                    title: "DOM XSS via innerHTML/outerHTML".to_string(),
+                    description: "Direct assignment to innerHTML/outerHTML can lead to XSS".to_string(),
+                    location,
+                    code_snippet: snippet,
+                    recommendation: "Use textContent, createElement, or sanitize HTML with DOMPurify".to_string(),
+                    cwe: Some("CWE-79".to_string()),
+                    owasp: Some("A03:2021 - Injection".to_string()),
+                });
+            }
+        }
+
+        let mut cursor = node.walk();
+        for child in node.children(&mut cursor) {
+            self.find_dom_xss_patterns(&child, source, findings);
+        }
+    }
+
+    fn find_prototype_pollution(&self, node: &tree_sitter::Node, source: &str, findings: &mut Vec<AstFinding>) {
+        if node.kind() == "call_expression" || node.kind() == "subscript_expression" {
+            let text = self.get_node_text(node, source);
+
+            // Check for dangerous patterns
+            let dangerous_patterns = [
+                ".constructor.prototype",
+                ".__proto__",
+                "[\"__proto__\"]",
+                "['\\'__proto__\\'']",
+                "Object.assign",
+                "merge(",
+                "extend(",
+                "deepExtend(",
+            ];
+
+            for pattern in &dangerous_patterns {
+                if text.contains(pattern) {
+                    let location = SourceLocation::from_node(node);
+                    let snippet = self.extract_snippet(source, &location);
+
+                    findings.push(AstFinding {
+                        severity: VulnSeverity::High,
+                        title: "Prototype Pollution Risk".to_string(),
+                        description: format!("Potential prototype pollution via {}", pattern),
+                        location,
+                        code_snippet: snippet,
+                        recommendation: "Validate and sanitize object keys before merge/extend".to_string(),
+                        cwe: Some("CWE-1321".to_string()),
+                        owasp: Some("A08:2021 - Software and Data Integrity Failures".to_string()),
+                    });
+                    break;
+                }
+            }
+        }
+
+        let mut cursor = node.walk();
+        for child in node.children(&mut cursor) {
+            self.find_prototype_pollution(&child, source, findings);
+        }
+    }
+
+    fn find_function_constructor(&self, node: &tree_sitter::Node, source: &str, findings: &mut Vec<AstFinding>) {
+        if node.kind() == "new_expression" {
+            let text = self.get_node_text(node, source);
+
+            if text.starts_with("new Function(") || text.contains("new Function (") {
+                let location = SourceLocation::from_node(node);
+                let snippet = self.extract_snippet(source, &location);
+
+                findings.push(AstFinding {
+                    severity: VulnSeverity::High,
+                    title: "Use of Function() constructor".to_string(),
+                    description: "Function constructor can execute arbitrary code".to_string(),
+                    location,
+                    code_snippet: snippet,
+                    recommendation: "Use arrow functions or safer alternatives".to_string(),
+                    cwe: Some("CWE-94".to_string()),
+                    owasp: Some("A03:2021 - Injection".to_string()),
+                });
+            }
+        }
+
+        let mut cursor = node.walk();
+        for child in node.children(&mut cursor) {
+            self.find_function_constructor(&child, source, findings);
+        }
+    }
+
+    fn find_express_patterns(&self, node: &tree_sitter::Node, source: &str, findings: &mut Vec<AstFinding>) {
+        if node.kind() == "call_expression" {
+            let text = self.get_node_text(node, source);
+
+            // Check for dangerous Express patterns
+            if text.contains("app.use(") && (text.contains("bodyParser") || text.contains("cookieParser")) {
+                // Check if options are present
+                if !text.contains("extend:") || !text.contains("verify:") {
+                    let location = SourceLocation::from_node(node);
+                    let snippet = self.extract_snippet(source, &location);
+
+                    findings.push(AstFinding {
+                        severity: VulnSeverity::Medium,
+                        title: "Express middleware without proper configuration".to_string(),
+                        description: "bodyParser/cookieParser may need security options".to_string(),
+                        location,
+                        code_snippet: snippet,
+                        recommendation: "Configure extend: false and add proper secret validation".to_string(),
+                        cwe: Some("CWE-639".to_string()),
+                        owasp: Some("A05:2021 - Security Misconfiguration".to_string()),
+                    });
+                }
+            }
+
+            // Check for res.sendFile with user input
+            if text.contains("res.sendFile(") || text.contains("response.sendFile(") {
+                let location = SourceLocation::from_node(node);
+                let snippet = self.extract_snippet(source, &location);
+
+                findings.push(AstFinding {
+                    severity: VulnSeverity::High,
+                    title: "Path Traversal via sendFile".to_string(),
+                    description: "sendFile with user input can lead to path traversal".to_string(),
+                    location,
+                    code_snippet: snippet,
+                    recommendation: "Validate and sanitize file paths, use root option".to_string(),
+                    cwe: Some("CWE-22".to_string()),
+                    owasp: Some("A01:2021 - Broken Access Control".to_string()),
+                });
+            }
+        }
+
+        let mut cursor = node.walk();
+        for child in node.children(&mut cursor) {
+            self.find_express_patterns(&child, source, findings);
+        }
+    }
+
+    fn find_nextjs_patterns(&self, node: &tree_sitter::Node, source: &str, findings: &mut Vec<AstFinding>) {
+        if node.kind() == "call_expression" || node.kind() == "jsx_element" {
+            let text = self.get_node_text(node, source);
+
+            // Check for dangerous Next.js patterns
+            if text.contains("dangerouslySetInnerHTML") {
+                let location = SourceLocation::from_node(node);
+                let snippet = self.extract_snippet(source, &location);
+
+                findings.push(AstFinding {
+                    severity: VulnSeverity::High,
+                    title: "Use of dangerouslySetInnerHTML".to_string(),
+                    description: "Direct HTML injection can lead to XSS".to_string(),
+                    location,
+                    code_snippet: snippet,
+                    recommendation: "Use DOMPurify or find safer alternatives".to_string(),
+                    cwe: Some("CWE-79".to_string()),
+                    owasp: Some("A03:2021 - Injection".to_string()),
+                });
+            }
+
+            // Check for getServerSideProps with redirects
+            if text.contains("redirect:") && (text.contains("req.query") || text.contains("params")) {
+                let location = SourceLocation::from_node(node);
+                let snippet = self.extract_snippet(source, &location);
+
+                findings.push(AstFinding {
+                    severity: VulnSeverity::Medium,
+                    title: "Open Redirect via getServerSideProps".to_string(),
+                    description: "User-controlled redirect can lead to phishing attacks".to_string(),
+                    location,
+                    code_snippet: snippet,
+                    recommendation: "Validate redirect URLs against allowlist".to_string(),
+                    cwe: Some("CWE-601".to_string()),
+                    owasp: Some("A01:2021 - Broken Access Control".to_string()),
+                });
+            }
+        }
+
+        let mut cursor = node.walk();
+        for child in node.children(&mut cursor) {
+            self.find_nextjs_patterns(&child, source, findings);
+        }
+    }
+
+    fn get_node_text(&self, node: &tree_sitter::Node, source: &str) -> String {
+        source[node.byte_range()].to_string()
+    }
+
+    fn extract_snippet(&self, source: &str, location: &SourceLocation) -> String {
+        let lines: Vec<&str> = source.lines().collect();
+        let start = location.line.saturating_sub(1);
+        let end = location.end_line.min(lines.len());
+
+        lines[start..end]
+            .iter()
+            .enumerate()
+            .map(|(i, line)| {
+                let line_num = start + i + 1;
+                format!("{} | {}", line_num, line)
+            })
+            .collect::<Vec<_>>()
+            .join("\n")
+    }
+}
+
+/// Python AST parser
+pub struct PythonParser {
+    parser: tree_sitter::Parser,
+}
+
+impl PythonParser {
+    pub fn new() -> Result<Self> {
+        let mut parser = tree_sitter::Parser::new();
+        parser.set_language(&parsers::python())?;
+        Ok(Self { parser })
+    }
+
+    /// Parse a Python file and find security issues
+    pub fn analyze(&mut self, source: &str, _file_path: &Path) -> Result<Vec<AstFinding>> {
+        let tree = self.parser.parse(source, None)
+            .ok_or_else(|| anyhow::anyhow!("Failed to parse Python file"))?;
+
+        let mut findings = Vec::new();
+        let root_node = tree.root_node();
+
+        // Find exec/eval/compile usage
+        self.find_dangerous_exec(&root_node, source, &mut findings);
+
+        // Find shell=True in subprocess calls
+        self.find_shell_injection(&root_node, source, &mut findings);
+
+        // Find SQL string concatenation
+        self.find_sql_injection(&root_node, source, &mut findings);
+
+        // Find pickle deserialization
+        self.find_pickle_usage(&root_node, source, &mut findings);
+
+        // Find web framework patterns (Django, Flask, FastAPI)
+        self.find_python_web_framework_patterns(&root_node, source, &mut findings);
+
+        Ok(findings)
+    }
+
+    fn find_dangerous_exec(&self, node: &tree_sitter::Node, source: &str, findings: &mut Vec<AstFinding>) {
+        if node.kind() == "call" {
+            let func = node.child_by_field_name("function");
+            if let Some(func_node) = func {
+                let func_text = self.get_node_text(&func_node, source);
+                if func_text == "exec" || func_text == "eval" || func_text == "compile" {
+                    let location = SourceLocation::from_node(node);
+                    let snippet = self.extract_snippet(source, &location);
+
+                    findings.push(AstFinding {
+                        severity: VulnSeverity::High,
+                        title: format!("Use of {}() - Code Injection", func_text),
+                        description: format!("{}() can execute arbitrary code", func_text),
+                        location,
+                        code_snippet: snippet,
+                        recommendation: "Avoid dynamic code execution. Use safer alternatives.".to_string(),
+                        cwe: Some("CWE-94".to_string()),
+                        owasp: Some("A03:2021 - Injection".to_string()),
+                    });
+                }
+            }
+        }
+
+        let mut cursor = node.walk();
+        for child in node.children(&mut cursor) {
+            self.find_dangerous_exec(&child, source, findings);
+        }
+    }
+
+    fn find_shell_injection(&self, node: &tree_sitter::Node, source: &str, findings: &mut Vec<AstFinding>) {
+        if node.kind() == "call" {
+            let func = node.child_by_field_name("function");
+            if let Some(func_node) = func {
+                let func_text = self.get_node_text(&func_node, source);
+                let args_text = self.get_node_text(node, source);
+
+                // Check for subprocess, os.system, os.popen with shell=True or direct string
+                if (func_text.contains("subprocess") || func_text.contains("os.system") || func_text.contains("os.popen"))
+                    && (args_text.contains("shell=True") || func_text.contains("os.system"))
+                {
+                    let location = SourceLocation::from_node(node);
+                    let snippet = self.extract_snippet(source, &location);
+
+                    findings.push(AstFinding {
+                        severity: VulnSeverity::High,
+                        title: "Shell Command Injection Risk".to_string(),
+                        description: "Shell execution with user input can lead to command injection".to_string(),
+                        location,
+                        code_snippet: snippet,
+                        recommendation: "Use argument lists (shell=False) and validate input".to_string(),
+                        cwe: Some("CWE-78".to_string()),
+                        owasp: Some("A03:2021 - Injection".to_string()),
+                    });
+                }
+            }
+        }
+
+        let mut cursor = node.walk();
+        for child in node.children(&mut cursor) {
+            self.find_shell_injection(&child, source, findings);
+        }
+    }
+
+    fn find_sql_injection(&self, node: &tree_sitter::Node, source: &str, findings: &mut Vec<AstFinding>) {
+        if node.kind() == "call" {
+            let func = node.child_by_field_name("function");
+            if let Some(func_node) = func {
+                let func_text = self.get_node_text(&func_node, source);
+                let mut walker = node.walk();
+                let args = node.children(&mut walker);
+                let args_text: String = args
+                    .filter(|n| n.kind() == "argument_list" || n.kind() == "string")
+                    .map(|n| self.get_node_text(&n, source))
+                    .collect::<Vec<_>>()
+                    .join(" ");
+
+                // Check for SQL execute with string concatenation or f-strings
+                if (func_text.contains("execute") || func_text.contains("executemany"))
+                    && (args_text.contains("+") || args_text.contains("%") || args_text.contains(".format(") || args_text.contains("f\"") || args_text.contains("f'"))
+                {
+                    let location = SourceLocation::from_node(node);
+                    let snippet = self.extract_snippet(source, &location);
+
+                    findings.push(AstFinding {
+                        severity: VulnSeverity::High,
+                        title: "SQL Injection via String Formatting".to_string(),
+                        description: "SQL query built with string concatenation/formatting".to_string(),
+                        location,
+                        code_snippet: snippet,
+                        recommendation: "Use parameterized queries or prepared statements".to_string(),
+                        cwe: Some("CWE-89".to_string()),
+                        owasp: Some("A03:2021 - Injection".to_string()),
+                    });
+                }
+            }
+        }
+
+        let mut cursor = node.walk();
+        for child in node.children(&mut cursor) {
+            self.find_sql_injection(&child, source, findings);
+        }
+    }
+
+    fn find_pickle_usage(&self, node: &tree_sitter::Node, source: &str, findings: &mut Vec<AstFinding>) {
+        if node.kind() == "call" {
+            let func = node.child_by_field_name("function");
+            if let Some(func_node) = func {
+                let func_text = self.get_node_text(&func_node, source);
+
+                if func_text.contains("pickle.loads") || func_text.contains("pickle.load") {
+                    let location = SourceLocation::from_node(node);
+                    let snippet = self.extract_snippet(source, &location);
+
+                    findings.push(AstFinding {
+                        severity: VulnSeverity::Critical,
+                        title: "Unsafe Deserialization with pickle".to_string(),
+                        description: "pickle can execute arbitrary code during deserialization".to_string(),
+                        location,
+                        code_snippet: snippet,
+                        recommendation: "Use JSON, YAML, or other safe serialization formats".to_string(),
+                        cwe: Some("CWE-502".to_string()),
+                        owasp: Some("A08:2021 - Software and Data Integrity Failures".to_string()),
+                    });
+                }
+            }
+        }
+
+        let mut cursor = node.walk();
+        for child in node.children(&mut cursor) {
+            self.find_pickle_usage(&child, source, findings);
+        }
+    }
+
+    fn get_node_text(&self, node: &tree_sitter::Node, source: &str) -> String {
+        source[node.byte_range()].to_string()
+    }
+
+    fn extract_snippet(&self, source: &str, location: &SourceLocation) -> String {
+        let lines: Vec<&str> = source.lines().collect();
+        let start = location.line.saturating_sub(1);
+        let end = location.end_line.min(lines.len());
+
+        lines[start..end]
+            .iter()
+            .enumerate()
+            .map(|(i, line)| {
+                let line_num = start + i + 1;
+                format!("{} | {}", line_num, line)
+            })
+            .collect::<Vec<_>>()
+            .join("\n")
+    }
+
+    /// Find Python web framework specific patterns (Django, Flask, FastAPI)
+    fn find_python_web_framework_patterns(&self, node: &tree_sitter::Node, source: &str, findings: &mut Vec<AstFinding>) {
+        let text = self.get_node_text(node, source);
+
+        // Django patterns
+        if text.contains("from django.") || text.contains("import django") {
+            // Check for raw SQL queries
+            if text.contains("raw(") || text.contains(".extra(") {
+                let location = SourceLocation::from_node(node);
+                let snippet = self.extract_snippet(source, &location);
+                findings.push(AstFinding {
+                    severity: VulnSeverity::High,
+                    title: "Django raw SQL query - potential SQL injection".to_string(),
+                    description: "Raw SQL queries can lead to SQL injection if user input is not properly escaped".to_string(),
+                    location,
+                    code_snippet: snippet,
+                    recommendation: "Use Django ORM with parameterized queries instead".to_string(),
+                    cwe: Some("CWE-89".to_string()),
+                    owasp: Some("A03:2021 - Injection".to_string()),
+                });
+            }
+
+            // Check for template rendering with user input
+            if text.contains("render(") || text.contains("TemplateResponse") {
+                if text.contains("context=") && !text.contains("safe") {
+                    let location = SourceLocation::from_node(node);
+                    findings.push(AstFinding {
+                        severity: VulnSeverity::Medium,
+                        title: "Django template rendering - verify XSS protection".to_string(),
+                        description: "Ensure user input is properly escaped in templates".to_string(),
+                        location,
+                        code_snippet: self.extract_snippet(source, &location),
+                        recommendation: "Use Django's auto-escaping and avoid mark_safe on user input".to_string(),
+                        cwe: Some("CWE-79".to_string()),
+                        owasp: Some("A03:2021 - Injection".to_string()),
+                    });
+                }
+            }
+
+            // Check for @login_required missing on views
+            if (text.contains("def view") || text.contains("def api_")) && !text.contains("@login_required") && !text.contains("@permission_required") {
+                let location = SourceLocation::from_node(node);
+                findings.push(AstFinding {
+                    severity: VulnSeverity::Low,
+                    title: "Django view without authentication decorator".to_string(),
+                    description: "View function may be accessible without authentication".to_string(),
+                    location,
+                    code_snippet: self.extract_snippet(source, &location),
+                    recommendation: "Add @login_required or appropriate permission decorators".to_string(),
+                    cwe: Some("CWE-306".to_string()),
+                    owasp: Some("A01:2021 - Broken Access Control".to_string()),
+                });
+            }
+        }
+
+        // Flask patterns
+        if text.contains("from flask ") || text.contains("import flask") || text.contains("Flask(") {
+            // Check for render_template_string with user input
+            if text.contains("render_template_string(") {
+                let location = SourceLocation::from_node(node);
+                findings.push(AstFinding {
+                    severity: VulnSeverity::Critical,
+                    title: "Flask render_template_string - SSTI vulnerability".to_string(),
+                    description: "render_template_string with user input can lead to Server-Side Template Injection".to_string(),
+                    location,
+                    code_snippet: self.extract_snippet(source, &location),
+                    recommendation: "Use render_template with proper template files or sanitize input".to_string(),
+                    cwe: Some("CWE-94".to_string()),
+                    owasp: Some("A03:2021 - Injection".to_string()),
+                });
+            }
+
+            // Check for request.json without validation
+            if text.contains("request.json") || text.contains("request.form") {
+                let location = SourceLocation::from_node(node);
+                findings.push(AstFinding {
+                    severity: VulnSeverity::Info,
+                    title: "Flask request data - ensure validation".to_string(),
+                    description: "Request data should be validated before use".to_string(),
+                    location,
+                    code_snippet: self.extract_snippet(source, &location),
+                    recommendation: "Use marshmallow, pydantic, or webargs for validation".to_string(),
+                    cwe: Some("CWE-20".to_string()),
+                    owasp: None,
+                });
+            }
+
+            // Check for unprotected routes
+            if text.contains("@app.route(") && !text.contains("login_required") {
+                let location = SourceLocation::from_node(node);
+                findings.push(AstFinding {
+                    severity: VulnSeverity::Info,
+                    title: "Flask route without authentication".to_string(),
+                    description: "Route may be accessible without authentication".to_string(),
+                    location,
+                    code_snippet: self.extract_snippet(source, &location),
+                    recommendation: "Add authentication decorators like @login_required".to_string(),
+                    cwe: Some("CWE-306".to_string()),
+                    owasp: Some("A01:2021 - Broken Access Control".to_string()),
+                });
+            }
+        }
+
+        // FastAPI patterns
+        if text.contains("from fastapi ") || text.contains("import fastapi") || text.contains("FastAPI(") {
+            // Check for raw request body without validation
+            if text.contains("Request") && !text.contains("BaseModel") {
+                let location = SourceLocation::from_node(node);
+                findings.push(AstFinding {
+                    severity: VulnSeverity::Medium,
+                    title: "FastAPI raw Request without Pydantic validation".to_string(),
+                    description: "Using raw Request instead of Pydantic models bypasses validation".to_string(),
+                    location,
+                    code_snippet: self.extract_snippet(source, &location),
+                    recommendation: "Use Pydantic BaseModel for request validation".to_string(),
+                    cwe: Some("CWE-20".to_string()),
+                    owasp: None,
+                });
+            }
+
+            // Check for dangerous allow_population_by_field_name
+            if text.contains("allow_population_by_field_name") {
+                let location = SourceLocation::from_node(node);
+                findings.push(AstFinding {
+                    severity: VulnSeverity::Medium,
+                    title: "FastAPI allow_population_by_field_name - potential mass assignment".to_string(),
+                    description: "This setting can lead to mass assignment vulnerabilities".to_string(),
+                    location,
+                    code_snippet: self.extract_snippet(source, &location),
+                    recommendation: "Use explicit field validation or disable this feature".to_string(),
+                    cwe: Some("CWE-915".to_string()),
+                    owasp: Some("A08:2021 - Software and Data Integrity Failures".to_string()),
+                });
+            }
+        }
+
+        // Recursively check children
+        let mut cursor = node.walk();
+        for child in node.children(&mut cursor) {
+            self.find_python_web_framework_patterns(&child, source, findings);
+        }
+    }
+}
+
+impl Default for PythonParser {
+    fn default() -> Self {
+        Self::new().expect("Failed to create Python parser")
+    }
+}
+
+/// File discovery with smart exclusions
+pub struct FileDiscoverer {
+    default_exclusions: Vec<String>,
+}
+
+impl FileDiscoverer {
+    pub fn new() -> Self {
+        Self {
+            default_exclusions: vec![
+                "node_modules".to_string(),
+                "target".to_string(),
+                "dist".to_string(),
+                "build".to_string(),
+                "out".to_string(),
+                ".git".to_string(),
+                "vendor".to_string(),
+                "venv".to_string(),
+                ".venv".to_string(),
+                "__pycache__".to_string(),
+                "site-packages".to_string(),
+                ".next".to_string(),
+                ".nuxt".to_string(),
+                ".cache".to_string(),
+                "coverage".to_string(),
+                ".npm".to_string(),
+                ".yarn".to_string(),
+                ".pnpm".to_string(),
+                "bower_components".to_string(),
+            ],
+        }
+    }
+
+    pub fn find_rust_files(&self, dir: &Path) -> Result<Vec<PathBuf>> {
+        self.find_files(dir, &["rs"])
+    }
+
+    pub fn find_js_ts_files(&self, dir: &Path) -> Result<Vec<PathBuf>> {
+        self.find_files(dir, &["js", "jsx", "ts", "tsx", "mjs", "cjs"])
+    }
+
+    pub fn find_python_files(&self, dir: &Path) -> Result<Vec<PathBuf>> {
+        self.find_files(dir, &["py", "pyi"])
+    }
+
+    fn find_files(&self, dir: &Path, extensions: &[&str]) -> Result<Vec<PathBuf>> {
+
+        let mut files = Vec::new();
+
+        for entry in WalkDir::new(dir)
+            .follow_links(false)
+            .into_iter()
+            .filter_map(|e| e.ok())
+        {
+            let path = entry.path();
+
+            if path.is_file() {
+                if let Some(parent_name) = path.parent().and_then(|p| p.file_name()) {
+                    if self.default_exclusions.contains(&parent_name.to_string_lossy().to_string()) {
+                        continue;
+                    }
+                }
+
+                if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
+                    if extensions.contains(&ext) {
+                        files.push(path.to_path_buf());
+                    }
+                }
+            }
+        }
+
+        Ok(files)
+    }
+
+    pub fn with_exclusions(mut self, exclusions: Vec<String>) -> Self {
+        self.default_exclusions.extend(exclusions);
+        self
+    }
+}
+
+impl Default for FileDiscoverer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_source_location_format() {
+        let loc = SourceLocation {
+            line: 10,
+            column: 5,
+            end_line: 10,
+            end_column: 15,
+        };
+        assert_eq!(loc.format(), "line 10");
+
+        let loc_multi = SourceLocation {
+            line: 10,
+            column: 5,
+            end_line: 15,
+            end_column: 20,
+        };
+        assert_eq!(loc_multi.format(), "lines 10-15");
+    }
+
+    #[test]
+    fn test_rust_parser_unsafe() {
+        let mut parser = RustParser::new().unwrap();
+        let source = r#"
+fn main() {
+    let x = 5;
+    unsafe {
+        println!("Unsafe code");
+    }
+}
+"#;
+        let findings = parser.analyze(source, Path::new("test.rs")).unwrap();
+        assert!(!findings.is_empty());
+        assert!(findings.iter().any(|f| f.title.contains("Unsafe")));
+    }
+
+    #[test]
+    fn test_js_parser_eval() {
+        let mut parser = JsTsParser::javascript().unwrap();
+        let source = r#"
+function process(userInput) {
+    eval(userInput);
+}
+"#;
+        let findings = parser.analyze(source, Path::new("test.js")).unwrap();
+        assert!(!findings.is_empty());
+        assert!(findings.iter().any(|f| f.title.contains("eval")));
+    }
+
+    #[test]
+    fn test_python_parser_shell() {
+        let mut parser = PythonParser::new().unwrap();
+        let source = r#"
+import subprocess
+def run_command(user_input):
+    subprocess.run(user_input, shell=True)
+"#;
+        let findings = parser.analyze(source, Path::new("test.py")).unwrap();
+        assert!(!findings.is_empty());
+    }
+}

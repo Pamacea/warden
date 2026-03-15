@@ -1,7 +1,7 @@
 # Warden
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Crates.io](https://img.shields.io/crates/v/warden)](https://crates.io/crates/warden)
+[![Crates.io](https://img.shields.io/crates/v/warden-sec)](https://crates.io/crates/warden-sec)
 [![Rust](https://img.shields.io/badge/rust-1.85+-orange.svg)](https://www.rust-lang.org/)
 
 
@@ -18,7 +18,7 @@ AI-powered security review CLI tool for web applications. 100% Rust, zero depend
 ### Installation
 
 ```bash
-cargo install warden
+cargo install warden-sec
 ```
 
 ### Usage

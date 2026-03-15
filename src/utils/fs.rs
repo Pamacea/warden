@@ -54,11 +54,91 @@ pub fn get_extension(path: &Path) -> Option<&str> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use tempfile::TempDir;
 
     #[test]
     fn test_get_extension() {
         assert_eq!(get_extension(Path::new("test.rs")), Some("rs"));
         assert_eq!(get_extension(Path::new("test.tar.gz")), Some("gz"));
         assert_eq!(get_extension(Path::new("noext")), None);
+    }
+
+    #[test]
+    fn test_find_files_by_pattern() {
+        let temp_dir = TempDir::new().unwrap();
+
+        // Create test files
+        std::fs::write(temp_dir.path().join("test.rs"), "content").unwrap();
+        std::fs::write(temp_dir.path().join("main.rs"), "content").unwrap();
+        std::fs::write(temp_dir.path().join("test.txt"), "content").unwrap();
+
+        let files = find_files(temp_dir.path(), r"\.rs$").unwrap();
+        assert_eq!(files.len(), 2);
+    }
+
+    #[test]
+    fn test_find_files_recursive() {
+        let temp_dir = TempDir::new().unwrap();
+        let subdir = temp_dir.path().join("src");
+        std::fs::create_dir_all(&subdir).unwrap();
+
+        // Create files in subdirectory
+        std::fs::write(subdir.join("lib.rs"), "content").unwrap();
+
+        let files = find_files(temp_dir.path(), r"\.rs$").unwrap();
+        assert_eq!(files.len(), 1);
+    }
+
+    #[test]
+    fn test_read_file_limited_small_file() {
+        let temp_dir = TempDir::new().unwrap();
+        let file_path = temp_dir.path().join("test.txt");
+        std::fs::write(&file_path, "Hello, World!").unwrap();
+
+        let content = read_file_limited(&file_path, 1024).unwrap();
+        assert_eq!(content, "Hello, World!");
+    }
+
+    #[test]
+    fn test_read_file_limited_large_file() {
+        let temp_dir = TempDir::new().unwrap();
+        let file_path = temp_dir.path().join("test.txt");
+        let large_content = "x".repeat(2000);
+        std::fs::write(&file_path, &large_content).unwrap();
+
+        let result = read_file_limited(&file_path, 1024);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("too large"));
+    }
+
+    #[test]
+    fn test_read_file_limited_exact_size() {
+        let temp_dir = TempDir::new().unwrap();
+        let file_path = temp_dir.path().join("test.txt");
+        let content = "x".repeat(1000);
+        std::fs::write(&file_path, &content).unwrap();
+
+        let read = read_file_limited(&file_path, 1000).unwrap();
+        assert_eq!(read.len(), 1000);
+    }
+
+    #[test]
+    fn test_find_files_no_matches() {
+        let temp_dir = TempDir::new().unwrap();
+        std::fs::write(temp_dir.path().join("test.txt"), "content").unwrap();
+
+        let files = find_files(temp_dir.path(), r"\.rs$").unwrap();
+        assert!(files.is_empty());
+    }
+
+    #[test]
+    fn test_find_files_complex_pattern() {
+        let temp_dir = TempDir::new().unwrap();
+
+        std::fs::write(temp_dir.path().join("test_rs.txt"), "content").unwrap();
+        std::fs::write(temp_dir.path().join("test.rs"), "content").unwrap();
+
+        let files = find_files(temp_dir.path(), r"test\.rs$").unwrap();
+        assert_eq!(files.len(), 1);
     }
 }
