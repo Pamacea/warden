@@ -1,48 +1,24 @@
 # Warden Development Roadmap
 
-## Current Version: v0.4.0 (2025-03-15)
+## Current Version: v0.5.0 (2025-03-15)
 
 ### ✅ Completed
-- Everything from v0.3.0
-- **HTTP Scanner Enhancements**
-  - ✅ JWT token analysis and manipulation (algorithm, expiration, sensitive data)
-  - ✅ OAuth 2.0 flow testing (PKCE, state parameter, implicit grant)
-  - ✅ Session fixation detection
-  - ✅ Session cookie security flags (HttpOnly, Secure, SameSite)
+- Everything from v0.4.0
+- **Reconnaissance Scanner** (New module)
+  - ✅ Passive reconnaissance (backup file detection, config exposure, sensitive files)
+  - ✅ Active reconnaissance (directory fuzzing, endpoint discovery)
+  - ✅ Backup file enumeration (.bak, .old, .orig, ~, .swp)
+  - ✅ Configuration file exposure (.env, config.json, docker-compose.yml)
+  - ✅ Directory listing detection
+  - ✅ Hidden directory and file discovery
+  - ✅ API endpoint enumeration
+  - ✅ HTML/JavaScript comment extraction for sensitive info
 
-- **API Security Scanner** (New module)
-  - ✅ GraphQL introspection and depth limiting detection
-  - ✅ REST API parameter tampering detection
-  - ✅ IDOR (Insecure Direct Object Reference) detection
-  - ✅ Mass assignment vulnerability detection
-  - ✅ API versioning issues detection
-  - ✅ WebSocket security testing (WSS vs WS, origin validation)
-  - ✅ Parameter pollution testing
-
----
-
-## v0.5.0 - Intelligence & Reporting (Target: Q3 2025)
-
-### Passive Reconnaissance
-- [ ] Subdomain enumeration
-- [ ] DNS reconnaissance
-- [ ] Certificate transparency search
-- [ ] Wayback machine scraping
-- [ ] GitHub dorking for secrets
-
-### Active Reconnaissance
-- [ ] Directory fuzzing
-- [ ] Endpoint discovery
-- [ ] JavaScript file analysis
-- [ ] Comment discovery
-- [ ] Backup file discovery
-
-### Reporting
-- [ ] HTML reports with interactive findings
-- [ ] PDF export
-- [ ] SARIF format for GitHub Security
-- [ ] JIRA integration
-- [ ] Slack notification support
+- **Enhanced Report Formats**
+  - ✅ HTML reports with interactive UI, filtering, keyboard shortcuts
+  - ✅ SARIF format for GitHub Security integration
+  - ✅ Enhanced JSON and Markdown reports
+  - ✅ Responsive HTML design with dark theme
 
 ---
 

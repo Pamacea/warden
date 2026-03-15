@@ -6,6 +6,7 @@ use colored::Colorize;
 use std::fs;
 
 pub mod console;
+pub mod formats;
 pub mod json;
 pub mod markdown;
 
@@ -13,12 +14,17 @@ pub use console::ConsoleReporter;
 pub use json::JsonReporter;
 pub use markdown::MarkdownReporter;
 
+// Re-export format generators
+pub use formats::{generate_html_report, generate_json_report, generate_markdown_report, generate_sarif_report, write_report};
+
 /// Report format
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ReportFormat {
     Console,
     Json,
     Markdown,
+    Html,
+    Sarif,
 }
 
 impl std::str::FromStr for ReportFormat {
@@ -29,6 +35,8 @@ impl std::str::FromStr for ReportFormat {
             "console" => Ok(ReportFormat::Console),
             "json" => Ok(ReportFormat::Json),
             "markdown" | "md" => Ok(ReportFormat::Markdown),
+            "html" => Ok(ReportFormat::Html),
+            "sarif" => Ok(ReportFormat::Sarif),
             _ => Err(format!("Unknown format: {}", s)),
         }
     }
@@ -40,6 +48,14 @@ impl ScanReport {
             ReportFormat::Console => ConsoleReporter::print(self),
             ReportFormat::Json => JsonReporter::print(self),
             ReportFormat::Markdown => MarkdownReporter::print(self),
+            ReportFormat::Html => {
+                println!("{}", generate_html_report(self)?);
+                Ok(())
+            }
+            ReportFormat::Sarif => {
+                println!("{}", generate_sarif_report(self)?);
+                Ok(())
+            }
         }
     }
 
@@ -48,6 +64,8 @@ impl ScanReport {
             ReportFormat::Console => ConsoleReporter::format(self)?,
             ReportFormat::Json => JsonReporter::format(self)?,
             ReportFormat::Markdown => MarkdownReporter::format(self)?,
+            ReportFormat::Html => generate_html_report(self)?,
+            ReportFormat::Sarif => generate_sarif_report(self)?,
         };
 
         fs::write(path, content)?;
@@ -91,6 +109,8 @@ mod tests {
         assert_eq!("json".parse::<ReportFormat>().unwrap(), ReportFormat::Json);
         assert_eq!("markdown".parse::<ReportFormat>().unwrap(), ReportFormat::Markdown);
         assert_eq!("md".parse::<ReportFormat>().unwrap(), ReportFormat::Markdown);
+        assert_eq!("html".parse::<ReportFormat>().unwrap(), ReportFormat::Html);
+        assert_eq!("sarif".parse::<ReportFormat>().unwrap(), ReportFormat::Sarif);
     }
 
     #[test]

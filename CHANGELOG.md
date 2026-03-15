@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2025-03-15
+
+### Added
+- **Reconnaissance Scanner** (New module)
+  - Passive reconnaissance (backup file detection, config exposure, sensitive files)
+  - Active reconnaissance (directory fuzzing, endpoint discovery, comment discovery)
+  - Backup file enumeration (.bak, .old, .orig, ~, .swp)
+  - Configuration file exposure (.env, config.json, docker-compose.yml)
+  - Directory listing detection
+  - Hidden directory and file discovery
+  - API endpoint enumeration
+  - HTML/JavaScript comment extraction for sensitive info
+
+- **Enhanced Report Formats**
+  - HTML reports with interactive UI, filtering, and keyboard shortcuts
+  - SARIF format for GitHub Security integration
+  - Enhanced JSON and Markdown reports
+  - Responsive HTML design with dark theme
+
+- **Reporting Enhancements**
+  - Write reports to file in multiple formats
+  - HTML export with severity filtering
+  - SARIF export for CI/CD integration
+  - Improved summary statistics
+
 ## [0.4.0] - 2025-03-15
 
 ### Added

@@ -6,6 +6,7 @@ pub mod api;
 pub mod ddos;
 pub mod http;
 pub mod port;
+pub mod recon;
 pub mod static_analyzer;
 pub mod stress;
 
@@ -15,6 +16,7 @@ pub use api::ApiScanner;
 pub use ddos::DdosScanner;
 pub use http::HttpScanner;
 pub use port::PortScanner;
+pub use recon::ReconScanner;
 pub use static_analyzer::StaticScanner;
 pub use stress::StressScanner;
 
@@ -68,6 +70,12 @@ impl ScannerEngine {
         Ok(api_scanner.scan(url).await?)
     }
 
+    /// Run reconnaissance scanner (passive and active)
+    pub async fn scan_recon(&mut self, url: &str) -> Result<ScanReport> {
+        let recon_scanner = ReconScanner::new(self.config.clone());
+        Ok(recon_scanner.scan(url).await?)
+    }
+
     /// Run all applicable scanners for the target
     pub async fn scan(&mut self, target: &Target) -> Result<ScanReport> {
         let mut report = ScanReport::new(target.clone());
@@ -90,6 +98,12 @@ impl ScannerEngine {
                 if self.config.api {
                     let api_scanner = ApiScanner::new(self.config.clone());
                     report.merge(api_scanner.scan(url).await?);
+                }
+
+                // Reconnaissance scanner
+                if self.config.recon {
+                    let recon_scanner = ReconScanner::new(self.config.clone());
+                    report.merge(recon_scanner.scan(url).await?);
                 }
             }
             Target::Path(path) => {
@@ -127,6 +141,7 @@ pub struct ScannerConfig {
     pub port: bool,
     pub static_analysis: bool,
     pub api: bool,
+    pub recon: bool,
     pub ddos: bool,
     pub stress: bool,
     pub user_agent: String,
@@ -142,6 +157,7 @@ impl ScannerConfig {
             port: true,
             static_analysis: true,
             api: true,
+            recon: true,
             ddos: false,
             stress: false,
             user_agent: format!("Warden/{}", env!("CARGO_PKG_VERSION")),
@@ -165,6 +181,11 @@ impl ScannerConfig {
 
     pub fn with_api(mut self, api: bool) -> Self {
         self.api = api;
+        self
+    }
+
+    pub fn with_recon(mut self, recon: bool) -> Self {
+        self.recon = recon;
         self
     }
 
