@@ -7,6 +7,7 @@ use walkdir::WalkDir;
 use std::fs;
 
 pub struct StaticScanner {
+    #[allow(dead_code)]
     config: ScannerConfig,
 }
 

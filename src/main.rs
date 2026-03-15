@@ -14,7 +14,7 @@ mod utils;
 use anyhow::Result;
 use clap::Parser;
 use colored::Colorize;
-use tracing::{error, info, Level};
+use tracing::Level;
 use tracing_subscriber::FmtSubscriber;
 
 use crate::cli::{Cli, Commands};
@@ -76,7 +76,7 @@ async fn main() -> Result<()> {
         Commands::Scan {
             target,
             aggressive,
-            quick,
+            quick: _,
             include_ddos,
             include_stress,
             format,

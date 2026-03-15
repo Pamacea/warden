@@ -3,9 +3,9 @@
 use std::path::PathBuf;
 use std::time::Duration;
 use tempfile::TempDir;
-use warden::detection::{self, Framework, Language};
-use warden::reporters::{ReportFormat, Reporter};
-use warden::scanners::{ScannerConfig, ScannerEngine, Target, Vuln, VulnSeverity};
+use warden_sec::detection::{self, Framework, Language};
+use warden_sec::reporters::{ReportFormat, Reporter};
+use warden_sec::scanners::{ScannerConfig, ScannerEngine, Target, Vuln, VulnSeverity};
 
 /// Test end-to-end scan workflow with mock HTTP server
 #[tokio::test]
@@ -66,7 +66,7 @@ async fn test_e2e_static_analysis_workflow() {
 /// Test report generation in all formats
 #[test]
 fn test_all_report_formats() {
-    let mut report = warden::scanners::ScanReport::new(Target::Url("http://example.com".to_string()));
+    let mut report = warden_sec::scanners::ScanReport::new(Target::Url("http://example.com".to_string()));
 
     report.add_finding(Vuln {
         severity: VulnSeverity::High,
@@ -79,17 +79,17 @@ fn test_all_report_formats() {
     });
 
     // Test Console format
-    let console_output = warden::reporters::ConsoleReporter::format(&report).unwrap();
+    let console_output = warden_sec::reporters::ConsoleReporter::format(&report).unwrap();
     assert!(console_output.contains("Test Vulnerability"));
     assert!(console_output.contains("HIGH"));
 
     // Test JSON format
-    let json_output = warden::reporters::JsonReporter::format(&report).unwrap();
+    let json_output = warden_sec::reporters::JsonReporter::format(&report).unwrap();
     let json_parsed: serde_json::Value = serde_json::from_str(&json_output).unwrap();
     assert_eq!(json_parsed["findings"].as_array().unwrap().len(), 1);
 
     // Test Markdown format
-    let md_output = warden::reporters::MarkdownReporter::format(&report).unwrap();
+    let md_output = warden_sec::reporters::MarkdownReporter::format(&report).unwrap();
     assert!(md_output.contains("# Security Scan Report"));
     assert!(md_output.contains("Test Vulnerability"));
 }
@@ -98,7 +98,7 @@ fn test_all_report_formats() {
 #[test]
 fn test_save_report_to_file() {
     let temp_dir = TempDir::new().unwrap();
-    let mut report = warden::scanners::ScanReport::new(Target::Url("http://example.com".to_string()));
+    let report = warden_sec::scanners::ScanReport::new(Target::Url("http://example.com".to_string()));
 
     let console_path = temp_dir.path().join("report.txt");
     let json_path = temp_dir.path().join("report.json");
@@ -234,7 +234,7 @@ export async function GET(request: Request) {
     .unwrap();
 
     let config = ScannerConfig::new().with_aggressive(true);
-    let scanner = warden::scanners::StaticScanner::new(config);
+    let scanner = warden_sec::scanners::StaticScanner::new(config);
 
     let report = scanner.scan(temp_dir.path()).await;
 
@@ -242,7 +242,7 @@ export async function GET(request: Request) {
     let report = report.unwrap();
 
     // Should detect at least some issues
-    assert!(report.summary.total >= 0);
+    assert!(!report.findings.is_empty(), "Should detect security issues in dangerous code");
 }
 
 /// Test concurrent scanning
@@ -258,7 +258,7 @@ async fn test_concurrent_scanning() {
     }
 
     let config = ScannerConfig::new().with_concurrency(10);
-    let scanner = warden::scanners::StaticScanner::new(config);
+    let scanner = warden_sec::scanners::StaticScanner::new(config);
 
     let start = std::time::Instant::now();
     let report = scanner.scan(temp_dir.path()).await.unwrap();
@@ -272,7 +272,7 @@ async fn test_concurrent_scanning() {
 /// Test vulnerability severity distribution
 #[test]
 fn test_vulnerability_severity_distribution() {
-    let mut report = warden::scanners::ScanReport::new(Target::Url("http://test.com".to_string()));
+    let mut report = warden_sec::scanners::ScanReport::new(Target::Url("http://test.com".to_string()));
 
     // Add vulnerabilities of each severity
     report.add_finding(Vuln {
@@ -354,7 +354,7 @@ async fn test_large_file_handling() {
     let large_content = "x".repeat(2_000_000);
     std::fs::write(&large_file, large_content).unwrap();
 
-    let scanner = warden::scanners::StaticScanner::new(ScannerConfig::new());
+    let scanner = warden_sec::scanners::StaticScanner::new(ScannerConfig::new());
     let report = scanner.scan(temp_dir.path()).await;
 
     // Should handle large files without crashing
@@ -372,7 +372,7 @@ async fn test_special_characters_in_paths() {
 
     std::fs::write(special_dir.join("test.js"), "eval('test');").unwrap();
 
-    let scanner = warden::scanners::StaticScanner::new(ScannerConfig::new());
+    let scanner = warden_sec::scanners::StaticScanner::new(ScannerConfig::new());
     let report = scanner.scan(temp_dir.path()).await.unwrap();
 
     // Should handle special characters
@@ -383,7 +383,7 @@ async fn test_special_characters_in_paths() {
 #[tokio::test]
 async fn test_minimal_project_scan() {
     let temp_dir = TempDir::new().unwrap();
-    let scanner = warden::scanners::StaticScanner::new(ScannerConfig::new());
+    let scanner = warden_sec::scanners::StaticScanner::new(ScannerConfig::new());
 
     let report = scanner.scan(temp_dir.path()).await.unwrap();
 
@@ -395,11 +395,11 @@ async fn test_minimal_project_scan() {
 #[test]
 fn test_report_exit_codes() {
     // No vulnerabilities
-    let clean_report = warden::scanners::ScanReport::new(Target::Url("http://test.com".to_string()));
+    let clean_report = warden_sec::scanners::ScanReport::new(Target::Url("http://test.com".to_string()));
     assert_eq!(clean_report.exit_code(), 0);
 
     // Only info/low
-    let mut low_report = warden::scanners::ScanReport::new(Target::Url("http://test.com".to_string()));
+    let mut low_report = warden_sec::scanners::ScanReport::new(Target::Url("http://test.com".to_string()));
     low_report.add_finding(Vuln {
         severity: VulnSeverity::Low,
         title: "Low".to_string(),
@@ -412,7 +412,7 @@ fn test_report_exit_codes() {
     assert_eq!(low_report.exit_code(), 0);
 
     // Critical/High should return non-zero
-    let mut crit_report = warden::scanners::ScanReport::new(Target::Url("http://test.com".to_string()));
+    let mut crit_report = warden_sec::scanners::ScanReport::new(Target::Url("http://test.com".to_string()));
     crit_report.add_finding(Vuln {
         severity: VulnSeverity::Critical,
         title: "Critical".to_string(),

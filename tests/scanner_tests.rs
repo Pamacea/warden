@@ -2,7 +2,7 @@
 
 use std::time::Duration;
 use tokio::time::timeout;
-use warden::scanners::{ScanReport, ScannerConfig, Target, Vuln, VulnSeverity};
+use warden_sec::scanners::{ScanReport, ScannerConfig, Target, Vuln, VulnSeverity};
 
 /// Test HTTP scanner with a real mock server
 #[tokio::test]
@@ -18,7 +18,7 @@ async fn test_http_scanner_with_mock_server() {
 
     let url = format!("{}/", server.url());
     let config = ScannerConfig::new().with_timeout(Duration::from_secs(1));
-    let scanner = warden::scanners::HttpScanner::new(config);
+    let scanner = warden_sec::scanners::HttpScanner::new(config);
 
     let result = scanner.scan(&url).await;
 
@@ -41,7 +41,7 @@ async fn test_http_scanner_missing_headers() {
 
     let url = format!("{}/", server.url());
     let config = ScannerConfig::new().with_timeout(Duration::from_secs(1));
-    let scanner = warden::scanners::HttpScanner::new(config);
+    let scanner = warden_sec::scanners::HttpScanner::new(config);
 
     let report = scanner.scan(&url).await.unwrap();
 
@@ -67,7 +67,7 @@ async fn test_http_scanner_with_all_headers() {
 
     let url = format!("{}/", server.url());
     let config = ScannerConfig::new().with_timeout(Duration::from_secs(1));
-    let scanner = warden::scanners::HttpScanner::new(config);
+    let scanner = warden_sec::scanners::HttpScanner::new(config);
 
     let report = scanner.scan(&url).await.unwrap();
 
@@ -97,7 +97,7 @@ async fn test_http_scanner_timeout() {
 
     let url = format!("{}/", server.url());
     let config = ScannerConfig::new().with_timeout(Duration::from_millis(100));
-    let scanner = warden::scanners::HttpScanner::new(config);
+    let scanner = warden_sec::scanners::HttpScanner::new(config);
 
     let result = timeout(Duration::from_secs(1), scanner.scan(&url)).await;
 
@@ -127,7 +127,7 @@ async fn test_http_scanner_aggressive_xss() {
     let config = ScannerConfig::new()
         .with_aggressive(true)
         .with_timeout(Duration::from_secs(1));
-    let scanner = warden::scanners::HttpScanner::new(config);
+    let scanner = warden_sec::scanners::HttpScanner::new(config);
 
     let report = scanner.scan(&url).await.unwrap();
 
@@ -167,7 +167,7 @@ fn main() {
     std::fs::write(src_dir.join("main.rs"), rust_content).unwrap();
 
     let config = ScannerConfig::new();
-    let scanner = warden::scanners::StaticScanner::new(config);
+    let scanner = warden_sec::scanners::StaticScanner::new(config);
 
     let report = scanner.scan(temp_dir.path()).await.unwrap();
 
@@ -198,7 +198,7 @@ function dangerous(input) {
     std::fs::write(src_dir.join("app.js"), js_content).unwrap();
 
     let config = ScannerConfig::new();
-    let scanner = warden::scanners::StaticScanner::new(config);
+    let scanner = warden_sec::scanners::StaticScanner::new(config);
 
     let report = scanner.scan(temp_dir.path()).await.unwrap();
 
@@ -228,7 +228,7 @@ def dangerous(user_input):
     std::fs::write(src_dir.join("app.py"), py_content).unwrap();
 
     let config = ScannerConfig::new();
-    let scanner = warden::scanners::StaticScanner::new(config);
+    let scanner = warden_sec::scanners::StaticScanner::new(config);
 
     let report = scanner.scan(temp_dir.path()).await.unwrap();
 
@@ -246,7 +246,7 @@ async fn test_static_scanner_empty_directory() {
     let temp_dir = tempfile::tempdir().unwrap();
 
     let config = ScannerConfig::new();
-    let scanner = warden::scanners::StaticScanner::new(config);
+    let scanner = warden_sec::scanners::StaticScanner::new(config);
 
     let report = scanner.scan(temp_dir.path()).await.unwrap();
 
@@ -258,7 +258,7 @@ async fn test_static_scanner_empty_directory() {
 async fn test_port_scanner_localhost() {
     // Use a likely closed port for testing
     let config = ScannerConfig::new();
-    let scanner = warden::scanners::PortScanner::new(config);
+    let scanner = warden_sec::scanners::PortScanner::new(config);
 
     let result = scanner.scan("http://localhost:59999").await;
 
@@ -361,7 +361,7 @@ fn test_vuln_serialization() {
 /// Test report format parsing
 #[test]
 fn test_report_format_parsing() {
-    use warden::reporters::ReportFormat;
+    use warden_sec::reporters::ReportFormat;
 
     assert_eq!(
         "console".parse::<ReportFormat>().unwrap(),
@@ -395,8 +395,8 @@ fn test_language_detection() {
     )
     .unwrap();
 
-    let languages = warden::detection::language::detect(temp_dir.path()).unwrap();
-    assert!(languages.contains(&warden::detection::Language::Rust));
+    let languages = warden_sec::detection::language::detect(temp_dir.path()).unwrap();
+    assert!(languages.contains(&warden_sec::detection::Language::Rust));
 }
 
 /// Test framework detection
@@ -412,15 +412,15 @@ fn test_framework_detection() {
     .unwrap();
 
     let frameworks =
-        warden::detection::framework::detect(temp_dir.path(), &[warden::detection::Language::JavaScript])
+        warden_sec::detection::framework::detect(temp_dir.path(), &[warden_sec::detection::Language::JavaScript])
             .unwrap();
-    assert!(frameworks.contains(&warden::detection::Framework::NextJS));
+    assert!(frameworks.contains(&warden_sec::detection::Framework::NextJS));
 }
 
 /// Test network URL validation
 #[test]
 fn test_url_validation() {
-    use warden::utils::validate_url;
+    use warden_sec::utils::validate_url;
 
     assert!(validate_url("https://example.com").is_ok());
     assert!(validate_url("http://localhost:8080").is_ok());
@@ -431,7 +431,7 @@ fn test_url_validation() {
 /// Test file extension utility
 #[test]
 fn test_get_extension() {
-    use warden::utils::get_extension;
+    use warden_sec::utils::get_extension;
     use std::path::Path;
 
     assert_eq!(get_extension(Path::new("test.rs")), Some("rs"));
@@ -447,7 +447,7 @@ fn test_find_files() {
     std::fs::write(temp_dir.path().join("test.rs"), "content").unwrap();
     std::fs::write(temp_dir.path().join("test.txt"), "content").unwrap();
 
-    let files = warden::utils::find_files(temp_dir.path(), r"\.rs$").unwrap();
+    let files = warden_sec::utils::find_files(temp_dir.path(), r"\.rs$").unwrap();
     assert_eq!(files.len(), 1);
 }
 
@@ -459,7 +459,7 @@ fn test_read_file_limited() {
 
     std::fs::write(&file_path, "small content").unwrap();
 
-    let content = warden::utils::read_file_limited(&file_path, 100).unwrap();
+    let content = warden_sec::utils::read_file_limited(&file_path, 100).unwrap();
     assert_eq!(content, "small content");
 }
 
@@ -471,6 +471,6 @@ fn test_read_file_too_large() {
 
     std::fs::write(&file_path, "x".repeat(1000)).unwrap();
 
-    let result = warden::utils::read_file_limited(&file_path, 100);
+    let result = warden_sec::utils::read_file_limited(&file_path, 100);
     assert!(result.is_err());
 }

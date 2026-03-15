@@ -1,7 +1,7 @@
 //! Benchmark tests
 
 use criterion::{black_box, criterion_group, criterion_main, Criterion, BenchmarkId};
-use warden::scanners::{HttpScanner, PortScanner, ScannerConfig};
+use warden_sec::scanners::{HttpScanner, PortScanner, ScannerConfig};
 
 fn bench_http_scan(c: &mut Criterion) {
     let config = ScannerConfig::new();

@@ -1,5 +1,7 @@
 //! Template utilities
 
+#![allow(dead_code)] // Reserved for v0.6.0 features
+
 use anyhow::Result;
 
 /// Generate a review prompt for AI consumption

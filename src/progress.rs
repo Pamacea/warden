@@ -9,7 +9,6 @@
 use anyhow::Result;
 use colored::Colorize;
 use indicatif::{ProgressBar, ProgressStyle};
-use std::time::Duration;
 
 /// Scanner types for progress reporting
 #[derive(Debug, Clone, Copy)]
@@ -47,7 +46,6 @@ impl ScannerType {
 pub struct ScanProgress {
     overall_progress: ProgressBar,
     current_scanner: Option<(ScannerType, ProgressBar)>,
-    total_scanners: usize,
     completed_scanners: usize,
 }
 
@@ -66,7 +64,6 @@ impl ScanProgress {
         Self {
             overall_progress,
             current_scanner: None,
-            total_scanners,
             completed_scanners: 0,
         }
     }
@@ -100,6 +97,7 @@ impl ScanProgress {
     }
 
     /// Increment current scanner progress
+    #[allow(dead_code)]
     pub fn inc_scanner(&mut self, delta: u64) {
         if let Some((_, pb)) = &mut self.current_scanner {
             pb.inc(delta);
@@ -116,6 +114,7 @@ impl ScanProgress {
     }
 
     /// Update overall progress message
+    #[allow(dead_code)]
     pub fn set_message(&mut self, msg: &str) {
         self.overall_progress.set_message(msg);
     }
@@ -189,6 +188,7 @@ impl ErrorReporter {
     }
 
     /// Print a warning message
+    #[allow(dead_code)]
     pub fn print_warning(message: &str) {
         eprintln!("{} {}\n", "⚠".yellow().bold(), message.yellow());
     }
@@ -199,6 +199,7 @@ impl ErrorReporter {
     }
 
     /// Print an info message
+    #[allow(dead_code)]
     pub fn print_info(message: &str) {
         println!("{} {}", "ℹ".blue().bold(), message);
     }
@@ -236,6 +237,7 @@ impl Prompt {
     }
 
     /// Confirm file overwrite
+    #[allow(dead_code)]
     pub fn confirm_overwrite(path: &str) -> Result<bool> {
         use inquire::Confirm;
 
@@ -245,6 +247,7 @@ impl Prompt {
     }
 
     /// Select from options
+    #[allow(dead_code)]
     pub fn select_option(message: &str, options: &[&str]) -> Result<String> {
         use inquire::Select;
 
@@ -272,10 +275,12 @@ impl StatusPrinter {
         }
     }
 
+    #[allow(dead_code)]
     pub fn print_step(&self, step: usize, total: usize, message: &str) {
         println!("{} [{}/{}] {}", "→".cyan(), step, total, message);
     }
 
+    #[allow(dead_code)]
     pub fn print_scanner_start(&self, scanner: ScannerType) {
         println!("\n{} {} {}", scanner.icon(), "Starting".cyan(), scanner.name().cyan());
     }

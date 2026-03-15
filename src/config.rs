@@ -182,6 +182,7 @@ impl Config {
     /// 4. Environment variables
     ///
     /// Optionally applies a specific profile if specified.
+    #[allow(dead_code)] // Reserved for config file loading feature
     pub fn load() -> Result<Self> {
         Self::load_with_profile(None)
     }
@@ -387,6 +388,7 @@ impl Config {
 
 /// Configuration errors
 #[derive(Debug)]
+#[allow(dead_code)] // Some variants kept for future use
 pub enum ConfigError {
     ProfileNotFound(String),
     NoHomeDirectory,
@@ -433,7 +435,7 @@ pub fn print_config_errors(errors: &[ConfigError]) {
 
         // Add helpful suggestions
         match error {
-            ConfigError::InvalidValue(key, _) => {
+            ConfigError::InvalidValue(_key, _) => {
                 eprintln!("     {}", format!("Hint: Check 'warden config show' or edit ~/.warden/config.toml")
                     .dimmed());
             }
@@ -448,6 +450,163 @@ pub fn print_config_errors(errors: &[ConfigError]) {
             _ => {}
         }
         eprintln!();
+    }
+}
+
+/// Predefined scanning profiles
+///
+/// These profiles provide quick configuration for common scanning scenarios.
+/// Each profile has specific timeout, concurrency, and aggressiveness settings.
+impl Config {
+    /// Get the built-in profile definitions
+    #[allow(dead_code)]
+    pub fn builtin_profiles() -> &'static [&'static str] {
+        &["quick", "standard", "thorough", "stealth", "aggressive"]
+    }
+
+    /// Apply a built-in profile by name
+    #[allow(dead_code)]
+    pub fn with_builtin_profile(mut self, profile: &str) -> Result<Self> {
+        let (timeout, concurrency, aggressive, max_file_size) = match profile {
+            "quick" => (
+                2,      // Fast timeout
+                25,     // Lower concurrency
+                false,  // Not aggressive
+                5 * 1024 * 1024, // 5 MB max file
+            ),
+            "standard" => (
+                5,      // Standard timeout
+                50,     // Normal concurrency
+                false,  // Not aggressive
+                10 * 1024 * 1024, // 10 MB max file
+            ),
+            "thorough" => (
+                15,     // Longer timeout
+                100,    // High concurrency
+                true,   // Aggressive
+                50 * 1024 * 1024, // 50 MB max file
+            ),
+            "stealth" => (
+                30,     // Very long timeout
+                5,      // Very low concurrency
+                false,  // Not aggressive
+                10 * 1024 * 1024, // 10 MB max file
+            ),
+            "aggressive" => (
+                10,     // Long timeout
+                200,    // Very high concurrency
+                true,   // Aggressive
+                100 * 1024 * 1024, // 100 MB max file
+            ),
+            _ => return Err(ConfigError::ProfileNotFound(profile.to_string()).into()),
+        };
+
+        self.timeout = timeout;
+        self.concurrency = concurrency;
+        self.aggressive = aggressive;
+        self.max_file_size = max_file_size;
+
+        Ok(self)
+    }
+
+    /// Get profile description
+    #[allow(dead_code)]
+    pub fn profile_description(profile: &str) -> &'static str {
+        match profile {
+            "quick" => "Fast scanning for quick security checks (2s timeout, 25 concurrent)",
+            "standard" => "Standard scanning with balanced settings (5s timeout, 50 concurrent)",
+            "thorough" => "Deep scanning with extended checks (15s timeout, 100 concurrent, aggressive)",
+            "stealth" => "Low-and-slow scanning to avoid detection (30s timeout, 5 concurrent)",
+            "aggressive" => "Maximum coverage scanning (10s timeout, 200 concurrent, aggressive)",
+            _ => "Unknown profile",
+        }
+    }
+}
+
+/// Scanner chain configuration
+///
+/// Allows defining custom sequences of scanners for specific scenarios.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[allow(dead_code)] // Reserved for v0.6.0 custom scanner chains
+pub struct ScannerChain {
+    /// Chain name
+    pub name: String,
+
+    /// Description of what this chain tests
+    pub description: String,
+
+    /// Ordered list of scanners to run
+    pub scanners: Vec<String>,
+
+    /// Whether to stop on first finding
+    pub stop_on_first: bool,
+
+    /// Maximum number of findings before stopping
+    pub max_findings: Option<usize>,
+}
+
+impl ScannerChain {
+    /// Create a new scanner chain
+    #[allow(dead_code)]
+    pub fn new(name: String, description: String) -> Self {
+        Self {
+            name,
+            description,
+            scanners: Vec::new(),
+            stop_on_first: false,
+            max_findings: None,
+        }
+    }
+
+    /// Add a scanner to the chain
+    #[allow(dead_code)]
+    pub fn add_scanner(mut self, scanner: &str) -> Self {
+        self.scanners.push(scanner.to_string());
+        self
+    }
+
+    /// Set stop on first finding
+    #[allow(dead_code)]
+    pub fn with_stop_on_first(mut self, stop: bool) -> Self {
+        self.stop_on_first = stop;
+        self
+    }
+
+    /// Set max findings before stopping
+    #[allow(dead_code)]
+    pub fn with_max_findings(mut self, max: usize) -> Self {
+        self.max_findings = Some(max);
+        self
+    }
+
+    /// Get built-in scanner chains
+    #[allow(dead_code)]
+    pub fn builtin_chains() -> Vec<ScannerChain> {
+        vec![
+            ScannerChain::new(
+                "owasp".to_string(),
+                "OWASP Top 10 2021 security checks".to_string(),
+            )
+            .add_scanner("http")
+            .add_scanner("api")
+            .add_scanner("static"),
+
+            ScannerChain::new(
+                "api-focus".to_string(),
+                "API and authentication security testing".to_string(),
+            )
+            .add_scanner("api")
+            .add_scanner("recon"),
+
+            ScannerChain::new(
+                "quick-audit".to_string(),
+                "Fast security audit for CI/CD".to_string(),
+            )
+            .add_scanner("static")
+            .add_scanner("http")
+            .with_stop_on_first(true)
+            .with_max_findings(10),
+        ]
     }
 }
 
@@ -491,7 +650,7 @@ mod tests {
 
     #[test]
     fn test_apply_env_vars() {
-        let config = Config::default()
+        let _config = Config::default()
             .apply_env_vars();
 
         // Test with environment variable set

@@ -20,7 +20,7 @@ pub async fn run_scan(
     output: Option<String>,
     timeout: u64,
     concurrency: usize,
-    config: Config,
+    _config: Config,
     verbose: bool,
 ) -> Result<()> {
     let status = StatusPrinter::new(verbose);
@@ -235,7 +235,7 @@ fn run_detection(target: &Target, status: &StatusPrinter) -> Result<DetectInfo> 
 }
 
 fn print_scan_summary(report: &ScanReport) {
-    use crate::reporters::severity_color;
+    
 
     println!();
     println!("{}", "┌─ Scan Summary ──────────────────────────────────".cyan().bold());

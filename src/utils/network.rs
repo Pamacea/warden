@@ -1,5 +1,7 @@
 //! Network utilities
 
+#![allow(dead_code)] // Reserved for v0.6.0 features
+
 use anyhow::{Context, Result};
 use std::time::Duration;
 

@@ -42,15 +42,18 @@ impl DetectInfo {
         }
     }
 
+    #[allow(dead_code)]
     pub fn has_framework(&self, framework: Framework) -> bool {
         self.frameworks.contains(&framework)
     }
 
+    #[allow(dead_code)]
     pub fn has_language(&self, language: Language) -> bool {
         self.languages.contains(&language)
     }
 
     /// Format detection info for display
+    #[allow(dead_code)]
     pub fn display(&self) -> String {
         let mut output = vec![];
 

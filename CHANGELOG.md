@@ -7,6 +7,62 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2025-03-15
+
+### Added
+- **Massive Framework Detection** - 50+ frameworks and libraries detected
+  - Frontend: React, Angular, Vue.js, SvelteKit, Remix, Vite
+  - Backend: NestJS, Express, Fastify, Hono, Koa
+  - ORM: Prisma, Mongoose, Drizzle, Sequelize, TypeORM, MikroORM, Knex
+  - Database: PostgreSQL, MongoDB, MariaDB, Redis, SQLite
+  - Auth: NextAuth, Better Auth, Clerk, Supabase Auth
+  - State: Zustand, Redux, TanStack Query
+  - Testing: Jest, Vitest, Playwright, Cypress
+  - GraphQL: GraphQL, Altair, GraphQL Yoga
+  - Styling: Tailwind, shadcn/ui, Chakra UI, Mantine
+  - Infrastructure: Docker, Kubernetes, Vercel, Cloudflare Workers
+
+- **Advanced Detection Capabilities**
+  - Scan `.env` files for database connection strings
+  - Detect Docker configuration (Dockerfile, docker-compose.yml)
+  - Detect Kubernetes manifests
+  - Detect Vercel deployments (vercel.json)
+  - Detect Cloudflare Workers (wrangler.toml)
+  - Multi-language package scanning (package.json, Cargo.toml, go.mod, requirements.txt)
+
+- **Scanning Modes** - New mode-based scanning system
+  - Passive mode - no active requests, only static analysis
+  - Active mode - full testing with standard checks
+  - Stealth mode - low and slow, minimizes detection
+  - Aggressive mode - thorough testing with all checks
+  - Each mode has configurable timeout, concurrency, and behavior
+
+- **Profile-based Configuration** - Quick configuration profiles
+  - `quick` - Fast scanning (2s timeout, 25 concurrent)
+  - `standard` - Balanced scanning (5s timeout, 50 concurrent)
+  - `thorough` - Deep scanning (15s timeout, 100 concurrent, aggressive)
+  - `stealth` - Low-and-slow (30s timeout, 5 concurrent)
+  - `aggressive` - Maximum coverage (10s timeout, 200 concurrent)
+
+- **Scanner Chains** - Custom scanner sequences
+  - Predefined chains: OWASP, API-focus, Quick Audit
+  - Custom chains with ordered scanner lists
+  - Stop-on-first finding option
+  - Max findings threshold
+
+### Improved
+- **Zero Warning Compilation** - All code now compiles with 0 warnings
+- Better separation between scanning modes and configuration
+- Enhanced profile system for flexible scanning
+- 308 passing tests with comprehensive coverage
+
+### Technical
+- Added `ScanMode` enum with mode-specific behaviors
+- Added `ScannerChain` for custom scanner sequences
+- Extended `Config` with profile support
+- Better documentation and code organization
+- Security-oriented framework detection (each framework enables specific vulnerability checks)
+
 ## [0.5.0] - 2025-03-15
 
 ### Added
@@ -76,8 +132,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Java support (Statement SQLi, Runtime.exec, unsafe deserialization)
   - PHP support (eval, exec, SQLi, unserialize, file inclusion, weak hashing)
 
-[Unreleased]: https://github.com/Pamacea/warden/compare/v0.2.0...HEAD
-[0.2.0]: https://github.com/Pamacea/warden/releases/tag/v0.2.0
+## [0.2.0] - 2025-03-15
 
 ### Added
 - Initial release of Warden
@@ -91,5 +146,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CLI with colored output
 - Multi-platform support (Windows, macOS, Linux)
 
-[Unreleased]: https://github.com/Pamacea/warden/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/Pamacea/warden/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/Pamacea/warden/compare/v0.5.0...v0.6.0
+[0.5.0]: https://github.com/Pamacea/warden/compare/v0.4.0...v0.5.0
+[0.4.0]: https://github.com/Pamacea/warden/compare/v0.3.0...v0.4.0
+[0.3.0]: https://github.com/Pamacea/warden/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/Pamacea/warden/releases/tag/v0.2.0

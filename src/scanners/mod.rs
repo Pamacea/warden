@@ -2,11 +2,16 @@
 
 // AST parsers - temporarily disabled
 // pub mod ast_parsers;
+
+// Future API, Recon scanners - reserved for v0.6.0+
+#[allow(dead_code)]
 pub mod api;
+#[allow(dead_code)]
+pub mod recon;
+
 pub mod ddos;
 pub mod http;
 pub mod port;
-pub mod recon;
 pub mod static_analyzer;
 pub mod stress;
 
@@ -65,18 +70,21 @@ impl ScannerEngine {
     }
 
     /// Run API security scanner (REST, GraphQL, WebSocket)
+    #[allow(dead_code)]
     pub async fn scan_api(&mut self, url: &str) -> Result<ScanReport> {
         let api_scanner = ApiScanner::new(self.config.clone());
         Ok(api_scanner.scan(url).await?)
     }
 
     /// Run reconnaissance scanner (passive and active)
+    #[allow(dead_code)]
     pub async fn scan_recon(&mut self, url: &str) -> Result<ScanReport> {
         let recon_scanner = ReconScanner::new(self.config.clone());
         Ok(recon_scanner.scan(url).await?)
     }
 
     /// Run all applicable scanners for the target
+    #[allow(dead_code)]
     pub async fn scan(&mut self, target: &Target) -> Result<ScanReport> {
         let mut report = ScanReport::new(target.clone());
 
@@ -133,26 +141,39 @@ impl ScannerEngine {
 
 /// Scanner configuration
 #[derive(Clone, Debug)]
+#[allow(dead_code)] // Some fields reserved for v0.6.0 scanning modes
 pub struct ScannerConfig {
+    /// Scanning mode (determines aggressiveness)
+    pub scan_mode: ScanMode,
+    /// Legacy aggressive flag (use scan_mode instead)
     pub aggressive: bool,
     pub timeout: Duration,
     pub concurrency: usize,
+    #[allow(dead_code)]
     pub http: bool,
+    #[allow(dead_code)]
     pub port: bool,
+    #[allow(dead_code)]
     pub static_analysis: bool,
+    #[allow(dead_code)]
     pub api: bool,
+    #[allow(dead_code)]
     pub recon: bool,
+    #[allow(dead_code)]
     pub ddos: bool,
+    #[allow(dead_code)]
     pub stress: bool,
     pub user_agent: String,
 }
 
 impl ScannerConfig {
     pub fn new() -> Self {
+        let mode = ScanMode::Active;
         Self {
+            scan_mode: mode,
             aggressive: false,
             timeout: Duration::from_secs(5),
-            concurrency: 50,
+            concurrency: mode.concurrency_level(),
             http: true,
             port: true,
             static_analysis: true,
@@ -164,8 +185,23 @@ impl ScannerConfig {
         }
     }
 
+    /// Create config with a specific scan mode
+    #[allow(dead_code)]
+    pub fn with_mode(mut self, mode: ScanMode) -> Self {
+        self.scan_mode = mode;
+        self.timeout = Duration::from_secs((5.0 * mode.timeout_multiplier()) as u64);
+        self.concurrency = mode.concurrency_level();
+        self.aggressive = matches!(mode, ScanMode::Aggressive);
+        self
+    }
+
     pub fn with_aggressive(mut self, aggressive: bool) -> Self {
         self.aggressive = aggressive;
+        if aggressive {
+            self.scan_mode = ScanMode::Aggressive;
+            self.timeout = Duration::from_secs(10);
+            self.concurrency = 100;
+        }
         self
     }
 
@@ -179,11 +215,13 @@ impl ScannerConfig {
         self
     }
 
+    #[allow(dead_code)]
     pub fn with_api(mut self, api: bool) -> Self {
         self.api = api;
         self
     }
 
+    #[allow(dead_code)]
     pub fn with_recon(mut self, recon: bool) -> Self {
         self.recon = recon;
         self
@@ -203,6 +241,101 @@ impl ScannerConfig {
 impl Default for ScannerConfig {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+/// Scanning mode - determines how aggressive the scan should be
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub enum ScanMode {
+    /// Passive mode - no active requests, only static analysis
+    Passive,
+    /// Active mode - full testing with standard checks
+    Active,
+    /// Stealth mode - low and slow, minimizes detection
+    Stealth,
+    /// Aggressive mode - thorough testing with all checks
+    Aggressive,
+}
+
+impl ScanMode {
+    /// Get the display name for this mode
+    pub fn name(&self) -> &str {
+        match self {
+            ScanMode::Passive => "Passive",
+            ScanMode::Active => "Active",
+            ScanMode::Stealth => "Stealth",
+            ScanMode::Aggressive => "Aggressive",
+        }
+    }
+
+    /// Get the icon for this mode
+    #[allow(dead_code)]
+    pub fn icon(&self) -> &str {
+        match self {
+            ScanMode::Passive => "👁️",
+            ScanMode::Active => "🔍",
+            ScanMode::Stealth => "🕵️",
+            ScanMode::Aggressive => "⚔️",
+        }
+    }
+
+    /// Check if this mode allows active requests
+    #[allow(dead_code)]
+    pub fn allows_active_requests(&self) -> bool {
+        !matches!(self, ScanMode::Passive)
+    }
+
+    /// Get the timeout multiplier for this mode
+    #[allow(dead_code)]
+    pub fn timeout_multiplier(&self) -> f64 {
+        match self {
+            ScanMode::Passive => 0.5,   // Faster - no active requests
+            ScanMode::Active => 1.0,    // Normal
+            ScanMode::Stealth => 3.0,   // Slower - avoid detection
+            ScanMode::Aggressive => 2.0, // Longer for thorough testing
+        }
+    }
+
+    /// Get the concurrency level for this mode
+    pub fn concurrency_level(&self) -> usize {
+        match self {
+            ScanMode::Passive => 10,    // Low - mostly sequential
+            ScanMode::Active => 50,     // Normal
+            ScanMode::Stealth => 5,     // Very low - avoid detection
+            ScanMode::Aggressive => 100, // High - fast scanning
+        }
+    }
+
+    /// Check if DDoS testing is allowed in this mode
+    #[allow(dead_code)]
+    pub fn allows_ddos(&self) -> bool {
+        matches!(self, ScanMode::Aggressive)
+    }
+
+    /// Check if stress testing is allowed in this mode
+    #[allow(dead_code)]
+    pub fn allows_stress(&self) -> bool {
+        matches!(self, ScanMode::Aggressive)
+    }
+}
+
+impl std::fmt::Display for ScanMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name())
+    }
+}
+
+impl std::str::FromStr for ScanMode {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "passive" => Ok(ScanMode::Passive),
+            "active" => Ok(ScanMode::Active),
+            "stealth" => Ok(ScanMode::Stealth),
+            "aggressive" | "agg" => Ok(ScanMode::Aggressive),
+            _ => Err(format!("Unknown scan mode: {}. Valid options: passive, active, stealth, aggressive", s)),
+        }
     }
 }
 
@@ -245,6 +378,7 @@ pub enum VulnSeverity {
 }
 
 impl VulnSeverity {
+    #[allow(dead_code)]
     pub fn color(&self) -> colored::Color {
         match self {
             VulnSeverity::Critical => colored::Color::Red,

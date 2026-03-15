@@ -1,7 +1,9 @@
 //! Platform detection
+//!
+//! This module provides platform detection for Docker networking scenarios.
+//! Functions are kept for future Docker integration features.
 
-use std::path::Path;
-
+#[allow(dead_code)] // Reserved for Docker integration features
 /// Detect the platform/OS of the system
 pub fn detect_platform() -> Platform {
     #[cfg(target_os = "windows")]
@@ -25,6 +27,7 @@ pub fn detect_platform() -> Platform {
     }
 }
 
+#[allow(dead_code)] // Reserved for Docker integration features
 /// Get the default localhost URL for Docker networking
 pub fn localhost_url(port: u16) -> String {
     match detect_platform() {
@@ -36,6 +39,7 @@ pub fn localhost_url(port: u16) -> String {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[allow(dead_code)] // Reserved for Docker integration features
 pub enum Platform {
     Windows,
     MacOS,

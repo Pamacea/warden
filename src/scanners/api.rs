@@ -2,9 +2,8 @@
 
 use crate::scanners::{ScanReport, ScannerConfig, Target, Vuln, VulnSeverity};
 use anyhow::Result;
-use regex::Regex;
 use reqwest::Client;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 pub struct ApiScanner {
     client: Client,
@@ -82,7 +81,7 @@ impl ApiScanner {
                 .await
             {
                 Ok(response) => {
-                    let status = response.status();
+                    let _status = response.status();
                     let text = response.text().await.unwrap_or_default();
 
                     // Check for GraphQL response patterns
@@ -160,9 +159,7 @@ impl ApiScanner {
             ("/v2/users/1", "v2 user"),
         ];
 
-        for (endpoint, desc) in test_endpoints {
-            let test_url = format!("{}{}", base_url.to_string().trim_end_matches('/'), endpoint);
-
+        for (_endpoint, _desc) in test_endpoints {
             // Try IDOR-like manipulations
             let idor_variations = vec![
                 format!("{}{}", base_url.to_string().trim_end_matches('/'), "/api/users/2"),

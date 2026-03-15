@@ -2,7 +2,6 @@
 
 use crate::scanners::{ScanReport, VulnSeverity};
 use anyhow::Result;
-use chrono::Utc;
 use serde_json::json;
 use std::fs::File;
 use std::io::Write;
@@ -322,11 +321,13 @@ pub fn generate_sarif_report(report: &ScanReport) -> Result<String> {
 }
 
 /// Generate JSON report
+#[allow(dead_code)]
 pub fn generate_json_report(report: &ScanReport) -> Result<String> {
     Ok(serde_json::to_string_pretty(report)?)
 }
 
 /// Generate Markdown report
+#[allow(dead_code)]
 pub fn generate_markdown_report(report: &ScanReport) -> Result<String> {
     let mut md = format!("# 🛡️ Warden Security Report\n\n");
     md.push_str(&format!("**Generated:** {}\n", report.timestamp));
@@ -383,6 +384,7 @@ pub fn generate_markdown_report(report: &ScanReport) -> Result<String> {
 }
 
 /// Write report to file
+#[allow(dead_code)]
 pub fn write_report(content: &str, output_path: &str) -> Result<()> {
     let mut file = File::create(output_path)?;
     file.write_all(content.as_bytes())?;

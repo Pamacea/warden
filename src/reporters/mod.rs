@@ -1,6 +1,6 @@
 //! Report generation and output
 
-use crate::scanners::{ScanReport, Target, VulnSeverity};
+use crate::scanners::{ScanReport, VulnSeverity};
 use anyhow::Result;
 use colored::Colorize;
 use std::fs;
@@ -15,7 +15,10 @@ pub use json::JsonReporter;
 pub use markdown::MarkdownReporter;
 
 // Re-export format generators
-pub use formats::{generate_html_report, generate_json_report, generate_markdown_report, generate_sarif_report, write_report};
+pub use formats::{generate_html_report, generate_sarif_report};
+
+#[allow(unused_imports)]
+use formats::{generate_json_report, generate_markdown_report}; // Kept for potential future use
 
 /// Report format
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -72,6 +75,7 @@ impl ScanReport {
         Ok(())
     }
 
+    #[allow(dead_code)]
     pub fn exit_code(&self) -> i32 {
         if self.summary.critical > 0 || self.summary.high > 0 {
             1

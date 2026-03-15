@@ -1,5 +1,7 @@
 //! Enhanced port scanner with service detection and advanced scanning
 
+#![allow(dead_code)] // Reserved for v0.6.0 advanced port scanning features
+
 use crate::scanners::{ScanReport, ScannerConfig, Target, Vuln, VulnSeverity};
 use anyhow::{Context, Result};
 use std::collections::HashMap;
@@ -330,6 +332,7 @@ pub struct PortScanResult {
 }
 
 pub struct PortScanner {
+    #[allow(dead_code)]
     config: ScannerConfig,
     options: PortScanOptions,
 }
@@ -716,6 +719,7 @@ impl PortScanner {
 
 /// UDP scanner for common UDP services
 pub struct UdpScanner {
+    #[allow(dead_code)]
     config: ScannerConfig,
     options: PortScanOptions,
 }

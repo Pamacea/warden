@@ -3,7 +3,6 @@
 use crate::scanners::{ScanReport, ScannerConfig, Target, Vuln, VulnSeverity};
 use anyhow::Result;
 use regex::Regex;
-use std::collections::HashSet;
 use std::time::Duration;
 
 pub struct ReconScanner {
@@ -508,7 +507,7 @@ impl ReconScanner {
             Ok(response) => {
                 if let Ok(text) = response.text().await {
                     // Regex patterns for HTML/JS comments
-                    let comment_patterns = vec![
+                    let _comment_patterns = vec![
                         (r#"<!--[\s\S]*?-->"#, "HTML comment"),
                         (r#"//.*"#, "Single-line JS comment"),
                         (r#"/\*[\s\S]*?\*/"#, "Multi-line JS comment"),
@@ -517,7 +516,7 @@ impl ReconScanner {
 
                     let re_html = Regex::new(r#"<!--[\s\S]*?-->"#).unwrap();
                     let re_js_single = Regex::new(r#"//.*"#).unwrap();
-                    let re_js_multi = Regex::new(r#"/\*[\s\S]*?\*/"#).unwrap();
+                    let _re_js_multi = Regex::new(r#"/\*[\s\S]*?\*/"#).unwrap();
 
                     // Sensitive keywords in comments
                     let sensitive_keywords = vec![

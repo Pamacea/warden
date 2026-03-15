@@ -9,6 +9,8 @@
 //! # Safety
 //! All tests have built-in limits to prevent actual damage to targets during normal scans.
 
+#![allow(dead_code)] // Reserved for v0.6.0 advanced reporting features
+
 use crate::scanners::{ScanReport, ScannerConfig, Target, Vuln, VulnSeverity};
 use anyhow::Result;
 use reqwest::{Client, Method};
@@ -92,6 +94,7 @@ pub enum HttpMethod {
 }
 
 impl HttpMethod {
+    #[allow(dead_code)]
     fn as_reqwest(&self) -> Method {
         match self {
             HttpMethod::Get => Method::GET,
@@ -174,6 +177,7 @@ impl From<&ScannerConfig> for DdosTestConfig {
 /// Main DDoS scanner
 pub struct DdosScanner {
     client: Client,
+    #[allow(dead_code)]
     config: ScannerConfig,
     test_config: DdosTestConfig,
 }
@@ -222,34 +226,34 @@ impl DdosScanner {
         match target {
             Target::Url(url) => {
                 // Validate URL first
-                if let Err(e) = url::Url::parse(url) {
+                if let Err(_e) = url::Url::parse(url) {
                     return Ok(report);
                 }
 
                 // HTTP Flood Testing
-                if let Ok(mut flood_report) = self.test_http_flood(url).await {
+                if let Ok(flood_report) = self.test_http_flood(url).await {
                     report.merge(flood_report);
                 }
 
                 // Slowloris Testing
-                if let Ok(mut slowloris_report) = self.test_slowloris(url).await {
+                if let Ok(slowloris_report) = self.test_slowloris(url).await {
                     report.merge(slowloris_report);
                 }
 
                 // Rate Limit Detection
-                if let Ok(mut rate_limit_report) = self.test_rate_limit_detection(url).await {
+                if let Ok(rate_limit_report) = self.test_rate_limit_detection(url).await {
                     report.merge(rate_limit_report);
                 }
 
                 // Connection Exhaustion (only in aggressive mode)
                 if self.test_config.aggressive {
-                    if let Ok(mut conn_report) = self.test_connection_exhaustion(url).await {
+                    if let Ok(conn_report) = self.test_connection_exhaustion(url).await {
                         report.merge(conn_report);
                     }
                 }
 
                 // Bypass Techniques
-                if let Ok(mut bypass_report) = self.test_rate_limit_bypass(url).await {
+                if let Ok(bypass_report) = self.test_rate_limit_bypass(url).await {
                     report.merge(bypass_report);
                 }
             }
@@ -273,7 +277,7 @@ impl DdosScanner {
 
         info!("Starting HTTP flood test: {} RPS for {}s", max_rps, self.test_config.test_duration_secs);
 
-        let metrics = Arc::new(DdosMetrics::default());
+        let _metrics = Arc::new(DdosMetrics::default());
         let success_count = Arc::new(AtomicUsize::new(0));
         let error_count = Arc::new(AtomicUsize::new(0));
         let response_times = Arc::new(std::sync::Mutex::new(Vec::new()));
@@ -334,7 +338,7 @@ impl DdosScanner {
         let failed = error_count.load(Ordering::Relaxed);
         let times = response_times.lock().unwrap_or_else(|e| e.into_inner()).clone();
 
-        let elapsed_secs = start_time.elapsed().as_secs_f64();
+        let _elapsed_secs = start_time.elapsed().as_secs_f64();
 
         let error_rate = if total_requests > 0 {
             failed as f64 / total_requests as f64
@@ -431,7 +435,7 @@ impl DdosScanner {
         let mut report = ScanReport::new(Target::Url(url.to_string()));
 
         let test_count = if self.test_config.aggressive { 20 } else { 10 };
-        let mut success = 0;
+        let _success = 0;
         let mut failed = 0;
 
         for _ in 0..test_count {
@@ -447,7 +451,7 @@ impl DdosScanner {
 
             match result {
                 Ok(resp) if resp.status().is_success() || resp.status().is_redirection() => {
-                    success += 1;
+                    // // // // // // success += 1;
                 }
                 _ => failed += 1,
             }
@@ -866,7 +870,7 @@ impl DdosScanner {
             let client = self.client.clone();
             let url = url.to_string();
             let success = success_count.clone();
-            let timeouts = timeout_count.clone();
+            let timeout_count = timeout_count.clone();
 
             tasks.spawn(async move {
                 let result = client
@@ -877,7 +881,7 @@ impl DdosScanner {
 
                 match result {
                     Ok(_) => success.fetch_add(1, Ordering::Relaxed),
-                    Err(_) => timeouts.fetch_add(1, Ordering::Relaxed),
+                    Err(_) => timeout_count.fetch_add(1, Ordering::Relaxed),
                 }
             });
         }
@@ -885,7 +889,7 @@ impl DdosScanner {
         while let Some(_) = tasks.join_next().await {}
 
         let successful = success_count.load(Ordering::Relaxed);
-        let timeouts = timeout_count.load(Ordering::Relaxed);
+        let _timeouts = timeout_count.load(Ordering::Relaxed);
 
         let success_rate = successful as f64 / max_concurrent as f64;
 
@@ -993,10 +997,5 @@ mod tests {
     }
 }
 
-fn info(msg: &str) {
-    #[cfg(feature = "logging")]
-    tracing::info!("{}", msg);
+// Note: info function removed - use tracing::info instead
 
-    #[cfg(not(feature = "logging"))]
-    let _ = msg;
-}

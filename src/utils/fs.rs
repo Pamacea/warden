@@ -1,5 +1,7 @@
 //! File system utilities
 
+#![allow(dead_code)] // Reserved for v0.6.0 features
+
 use anyhow::Result;
 use std::path::{Path, PathBuf};
 

@@ -1553,7 +1553,7 @@ impl HttpScanner {
                 match self.client.get(test_url.as_str()).send().await {
                     Ok(response) => {
                         // Check if we got a redirect
-                        if let Some(final_url) = response.url().clone().into_string().split('?').next() {
+                        if let Some(final_url) = response.url().as_str().split('?').next() {
                             // Check if redirected to external domain
                             if final_url.contains("evil.com") || final_url.contains("credential.thehost.com") {
                                 report.add_finding(Vuln {
@@ -2019,7 +2019,7 @@ impl HttpScanner {
         // Check for token leakage in URL
         match self.client.get(url).send().await {
             Ok(response) => {
-                if let Some(final_url) = response.url().clone().into_string().split('?').next() {
+                if let Some(final_url) = response.url().as_str().split('?').next() {
                     if final_url.contains("access_token=")
                         || final_url.contains("bearer_token=")
                         || final_url.contains("token=")
