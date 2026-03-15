@@ -1,6 +1,6 @@
 [package]
 name = "warden-sec"
-version = "0.3.0"
+version = "0.4.0"
 edition = "2021"
 authors = ["Yanis"]
 license = "MIT"
@@ -71,6 +71,10 @@ urlencoding = "2.1"
 
 # TOML parsing
 toml = "0.8"
+
+# JWT and encoding
+base64 = "0.22"
+jsonwebtoken = "9.3"
 
 [dev-dependencies]
 criterion = "0.5"

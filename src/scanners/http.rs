@@ -38,6 +38,9 @@ impl HttpScanner {
         // CSRF token analysis (always performed)
         report.merge(self.check_csrf_protection(url).await?);
 
+        // Session fixation check (always performed)
+        report.merge(self.check_session_fixation(url).await?);
+
         // Aggressive mode: full vulnerability scan
         if self.config.aggressive {
             // XSS detection
@@ -64,6 +67,10 @@ impl HttpScanner {
 
             // Open redirect detection
             report.merge(self.check_open_redirect(url).await?);
+
+            // Authentication & Authorization checks
+            report.merge(self.check_jwt_security(url).await?);
+            report.merge(self.check_oauth_security(url).await?);
         }
 
         Ok(report)
@@ -1648,6 +1655,416 @@ impl HttpScanner {
         }
 
         Ok(report)
+    }
+
+    /// JWT Token analysis and manipulation detection
+    async fn check_jwt_security(&self, url: &str) -> Result<ScanReport> {
+        let mut report = ScanReport::new(Target::Url(url.to_string()));
+
+        // Try to find JWT tokens in response
+        match self.client.get(url).send().await {
+            Ok(response) => {
+                let text = response.text().await.unwrap_or_default();
+
+                // JWT regex pattern (header.payload.signature)
+                let jwt_re = Regex::new(r"eyJ[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+").unwrap();
+
+                if let Some(jwt_token) = jwt_re.find(&text) {
+                    let token = jwt_token.as_str();
+
+                    // Analyze JWT structure
+                    let parts: Vec<&str> = token.split('.').collect();
+
+                    if parts.len() == 3 {
+                        let header = parts[0];
+                        let payload = parts[1];
+
+                        // Decode header (base64url)
+                        if let Ok(header_decoded) = Self::base64url_decode(header) {
+                            if let Ok(header_json) = serde_json::from_str::<serde_json::Value>(&header_decoded) {
+                                // Check for weak algorithms
+                                if let Some(alg) = header_json.get("alg") {
+                                    let alg_str = alg.as_str().unwrap_or("");
+
+                                    match alg_str {
+                                        "none" => {
+                                            report.add_finding(Vuln {
+                                                severity: VulnSeverity::Critical,
+                                                title: "JWT with 'none' Algorithm Detected".to_string(),
+                                                description: "JWT token uses 'none' algorithm, allowing signature bypass.".to_string(),
+                                                location: Some(url.to_string()),
+                                                recommendation: Some("Disable 'none' algorithm. Use strong algorithms like RS256 or ES256.".to_string()),
+                                                cwe: Some("CWE-347".to_string()),
+                                                owasp: Some("A02:2021 - Cryptographic Failures".to_string()),
+                                            });
+                                        }
+                                        "HS256" | "HS384" | "HS512" => {
+                                            report.add_finding(Vuln {
+                                                severity: VulnSeverity::Medium,
+                                                title: format!("JWT with HMAC Algorithm ({})", alg_str),
+                                                description: format!("JWT uses HMAC algorithm ({}). Ensure secret key is sufficiently strong (256+ bits).", alg_str),
+                                                location: Some(url.to_string()),
+                                                recommendation: Some("Consider using asymmetric algorithms (RS256, ES256) for better security.".to_string()),
+                                                cwe: Some("CWE-327".to_string()),
+                                                owasp: Some("A02:2021 - Cryptographic Failures".to_string()),
+                                            });
+                                        }
+                                        _ => {}
+                                    }
+                                }
+                            }
+                        }
+
+                        // Decode payload
+                        if let Ok(payload_decoded) = Self::base64url_decode(payload) {
+                            if let Ok(payload_json) = serde_json::from_str::<serde_json::Value>(&payload_decoded) {
+                                // Check for sensitive data in JWT
+                                let sensitive_fields = vec![
+                                    "password", "secret", "api_key", "token", "credit_card",
+                                    "ssn", "social_security", "pin", "private_key",
+                                ];
+
+                                for field in &sensitive_fields {
+                                    if payload_json.as_object().map_or(false, |obj| {
+                                        obj.keys().any(|k| k.to_lowercase().contains(field))
+                                    }) {
+                                        report.add_finding(Vuln {
+                                            severity: VulnSeverity::High,
+                                            title: format!("Sensitive Data in JWT Payload ({})", field),
+                                            description: format!("JWT token contains potentially sensitive field: {}", field),
+                                            location: Some(url.to_string()),
+                                            recommendation: Some("Avoid storing sensitive data in JWT tokens. Use references/IDs instead.".to_string()),
+                                            cwe: Some("CWE-312".to_string()),
+                                            owasp: Some("A02:2021 - Cryptographic Failures".to_string()),
+                                        });
+                                    }
+                                }
+
+                                // Check token expiration
+                                if let Some(exp) = payload_json.get("exp") {
+                                    if let Some(exp_num) = exp.as_i64() {
+                                        let current_time = std::time::SystemTime::now()
+                                            .duration_since(std::time::UNIX_EPOCH)
+                                            .unwrap_or_default()
+                                            .as_secs() as i64;
+
+                                        // Check if token expires far in the future (> 24 hours)
+                                        if exp_num - current_time > 86400 {
+                                            report.add_finding(Vuln {
+                                                severity: VulnSeverity::Medium,
+                                                title: "Long-Lived JWT Token Detected".to_string(),
+                                                description: format!("JWT token has expiration more than 24 hours in the future (exp: {})", exp_num),
+                                                location: Some(url.to_string()),
+                                                recommendation: Some("Use shorter-lived tokens (15-30 minutes). Implement refresh token mechanism.".to_string()),
+                                                cwe: Some("CWE-613".to_string()),
+                                                owasp: Some("A07:2021 - Identification and Authentication Failures".to_string()),
+                                            });
+                                        }
+                                    }
+                                } else {
+                                    report.add_finding(Vuln {
+                                        severity: VulnSeverity::Medium,
+                                        title: "JWT Token Without Expiration".to_string(),
+                                        description: "JWT token lacks 'exp' claim, meaning it never expires.".to_string(),
+                                        location: Some(url.to_string()),
+                                        recommendation: Some("Always include 'exp' (expiration) claim in JWT tokens.".to_string()),
+                                        cwe: Some("CWE-613".to_string()),
+                                        owasp: Some("A07:2021 - Identification and Authentication Failures".to_string()),
+                                    });
+                                }
+                            }
+                        }
+
+                        report.add_finding(Vuln {
+                            severity: VulnSeverity::Info,
+                            title: "JWT Token Detected".to_string(),
+                            description: "JWT token found in response. Review algorithm, expiration, and payload content.".to_string(),
+                            location: Some(url.to_string()),
+                            recommendation: Some("Ensure JWT uses strong algorithms, has expiration, and contains minimal data.".to_string()),
+                            cwe: Some("CWE-347".to_string()),
+                            owasp: Some("A07:2021 - Identification and Authentication Failures".to_string()),
+                        });
+                    }
+                }
+            }
+            Err(_) => {}
+        }
+
+        Ok(report)
+    }
+
+    /// Session fixation detection
+    async fn check_session_fixation(&self, url: &str) -> Result<ScanReport> {
+        let mut report = ScanReport::new(Target::Url(url.to_string()));
+
+        // First request - check if session cookie is set
+        let response1 = self.client.get(url).send().await;
+        let cookies1: Vec<String> = match response1 {
+            Ok(resp) => {
+                resp.headers()
+                    .get_all("set-cookie")
+                    .iter()
+                    .filter_map(|c| c.to_str().ok())
+                    .map(|c| c.to_string())
+                    .collect()
+            }
+            Err(_) => return Ok(report),
+        };
+
+        // Extract session cookie names
+        let session_cookies: Vec<String> = cookies1
+            .iter()
+            .filter(|c| {
+                c.to_lowercase().contains("session")
+                    || c.to_lowercase().contains("jsessionid")
+                    || c.to_lowercase().contains("phpsessid")
+                    || c.to_lowercase().contains("aspsessionid")
+                    || c.to_lowercase().contains("sid")
+            })
+            .map(|c| {
+                c.split('=')
+                    .next()
+                    .unwrap_or("")
+                    .trim()
+                    .to_string()
+            })
+            .collect();
+
+        // Second request - check if same session cookie is reused
+        let response2 = self.client.get(url).send().await;
+        let cookies2: Vec<String> = match response2 {
+            Ok(resp) => {
+                resp.headers()
+                    .get_all("set-cookie")
+                    .iter()
+                    .filter_map(|c| c.to_str().ok())
+                    .map(|c| c.to_string())
+                    .collect()
+            }
+            Err(_) => return Ok(report),
+        };
+
+        // Check if session cookies are being reissued
+        for session_cookie in &session_cookies {
+            let cookie1_value = cookies1
+                .iter()
+                .find(|c| c.starts_with(&format!("{}=", session_cookie)))
+                .and_then(|c| c.split('=').nth(1))
+                .map(|v| v.split(';').next().unwrap_or(v).to_string());
+
+            let cookie2_value = cookies2
+                .iter()
+                .find(|c| c.starts_with(&format!("{}=", session_cookie)))
+                .and_then(|c| c.split('=').nth(1))
+                .map(|v| v.split(';').next().unwrap_or(v).to_string());
+
+            // If session cookie exists and doesn't change, potential session fixation
+            if let (Some(v1), Some(v2)) = (cookie1_value, cookie2_value) {
+                if v1 == v2 && !v1.is_empty() {
+                    report.add_finding(Vuln {
+                        severity: VulnSeverity::Medium,
+                        title: "Potential Session Fixation".to_string(),
+                        description: format!(
+                            "Session cookie '{}' is not being regenerated after requests. The same value persists: {}",
+                            session_cookie, v1
+                        ),
+                        location: Some(url.to_string()),
+                        recommendation: Some("Regenerate session ID after authentication. Use session_regenerate_id() or equivalent.".to_string()),
+                        cwe: Some("CWE-384".to_string()),
+                        owasp: Some("A07:2021 - Identification and Authentication Failures".to_string()),
+                    });
+                }
+            }
+        }
+
+        // Check for secure cookie attributes
+        for cookie in &cookies1 {
+            let cookie_lower = cookie.to_lowercase();
+
+            // Check for HttpOnly
+            if cookie_lower.contains("session") && !cookie_lower.contains("httponly") {
+                report.add_finding(Vuln {
+                    severity: VulnSeverity::Low,
+                    title: "Session Cookie Missing HttpOnly Flag".to_string(),
+                    description: "Session cookie lacks HttpOnly attribute, making it accessible to JavaScript.".to_string(),
+                    location: Some(url.to_string()),
+                    recommendation: Some("Set HttpOnly flag on session cookies to prevent XSS access.".to_string()),
+                    cwe: Some("CWE-1004".to_string()),
+                    owasp: Some("A05:2021 - Security Misconfiguration".to_string()),
+                });
+            }
+
+            // Check for Secure flag
+            if cookie_lower.contains("session") && !cookie_lower.contains("secure") {
+                report.add_finding(Vuln {
+                    severity: VulnSeverity::Medium,
+                    title: "Session Cookie Missing Secure Flag".to_string(),
+                    description: "Session cookie lacks Secure attribute, allowing transmission over HTTP.".to_string(),
+                    location: Some(url.to_string()),
+                    recommendation: Some("Set Secure flag on session cookies to ensure HTTPS-only transmission.".to_string()),
+                    cwe: Some("CWE-614".to_string()),
+                    owasp: Some("A02:2021 - Cryptographic Failures".to_string()),
+                });
+            }
+
+            // Check for SameSite
+            if cookie_lower.contains("session") && !cookie_lower.contains("samesite") {
+                report.add_finding(Vuln {
+                    severity: VulnSeverity::Low,
+                    title: "Session Cookie Missing SameSite Attribute".to_string(),
+                    description: "Session cookie lacks SameSite attribute, increasing CSRF risk.".to_string(),
+                    location: Some(url.to_string()),
+                    recommendation: Some("Set SameSite=Strict or SameSite=Lax on session cookies.".to_string()),
+                    cwe: Some("CWE-352".to_string()),
+                    owasp: Some("A01:2021 - Broken Access Control".to_string()),
+                });
+            }
+        }
+
+        Ok(report)
+    }
+
+    /// OAuth 2.0 security testing
+    async fn check_oauth_security(&self, url: &str) -> Result<ScanReport> {
+        let mut report = ScanReport::new(Target::Url(url.to_string()));
+
+        // Common OAuth endpoints
+        let oauth_paths = vec![
+            "/oauth/authorize",
+            "/oauth/token",
+            "/oauth",
+            "/authorize",
+            "/token",
+            "/api/oauth/authorize",
+            "/api/oauth/token",
+            "/auth",
+            "/authentication",
+        ];
+
+        let base_url = match url.parse::<url::Url>() {
+            Ok(u) => u,
+            Err(_) => return Ok(report),
+        };
+
+        for path in oauth_paths {
+            let oauth_url = format!("{}{}", base_url.to_string().trim_end_matches('/'), path);
+
+            match self.client.get(&oauth_url).send().await {
+                Ok(response) => {
+                    let status = response.status();
+                    let text = response.text().await.unwrap_or_default();
+
+                    // Check for OAuth-related content
+                    let oauth_indicators = vec![
+                        "access_token",
+                        "authorization_code",
+                        "oauth",
+                        "client_id",
+                        "redirect_uri",
+                        "response_type",
+                        "scope",
+                    ];
+
+                    let has_oauth = oauth_indicators
+                        .iter()
+                        .any(|indicator| text.to_lowercase().contains(indicator));
+
+                    if has_oauth || !status.is_server_error() {
+                        // Check for PKCE (Proof Key for Code Exchange)
+                        if !text.to_lowercase().contains("code_challenge")
+                            && !text.to_lowercase().contains("pkce")
+                        {
+                            report.add_finding(Vuln {
+                                severity: VulnSeverity::Medium,
+                                title: "OAuth Flow May Lack PKCE".to_string(),
+                                description: "OAuth authorization endpoint may not require PKCE, vulnerable to authorization code interception.".to_string(),
+                                location: Some(oauth_url.clone()),
+                                recommendation: Some("Implement PKCE (RFC 7636) for all public clients and mobile apps.".to_string()),
+                                cwe: Some("CWE-927".to_string()),
+                                owasp: Some("A01:2021 - Broken Access Control".to_string()),
+                            });
+                        }
+
+                        // Check for state parameter (CSRF protection)
+                        if !text.to_lowercase().contains("state") {
+                            report.add_finding(Vuln {
+                                severity: VulnSeverity::High,
+                                title: "OAuth Flow Missing State Parameter".to_string(),
+                                description: "OAuth authorization flow may not use state parameter, vulnerable to CSRF.".to_string(),
+                                location: Some(oauth_url.clone()),
+                                recommendation: Some("Always include and validate 'state' parameter in OAuth flows.".to_string()),
+                                cwe: Some("CWE-352".to_string()),
+                                owasp: Some("A01:2021 - Broken Access Control".to_string()),
+                            });
+                        }
+
+                        // Check for implicit grant (deprecated)
+                        if text.contains("response_type=token") || text.contains("implicit") {
+                            report.add_finding(Vuln {
+                                severity: VulnSeverity::Medium,
+                                title: "OAuth Implicit Grant Detected".to_string(),
+                                description: "Implicit grant flow is deprecated and insecure. Access token is exposed in URL fragment.".to_string(),
+                                location: Some(oauth_url.clone()),
+                                recommendation: Some("Use Authorization Code flow with PKCE instead of Implicit grant.".to_string()),
+                                cwe: Some("CWE-927".to_string()),
+                                owasp: Some("A02:2021 - Cryptographic Failures".to_string()),
+                            });
+                        }
+                    }
+                }
+                Err(_) => continue,
+            }
+        }
+
+        // Check for token leakage in URL
+        match self.client.get(url).send().await {
+            Ok(response) => {
+                if let Some(final_url) = response.url().clone().into_string().split('?').next() {
+                    if final_url.contains("access_token=")
+                        || final_url.contains("bearer_token=")
+                        || final_url.contains("token=")
+                    {
+                        report.add_finding(Vuln {
+                            severity: VulnSeverity::High,
+                            title: "OAuth Token in URL Fragment".to_string(),
+                            description: "OAuth access token appears in URL, which may be logged or cached.".to_string(),
+                            location: Some(final_url.to_string()),
+                            recommendation: Some("Use Authorization Code flow with tokens in POST body, not URL.".to_string()),
+                            cwe: Some("CWE-598".to_string()),
+                            owasp: Some("A02:2021 - Cryptographic Failures".to_string()),
+                        });
+                    }
+                }
+            }
+            Err(_) => {}
+        }
+
+        Ok(report)
+    }
+
+    /// Helper function for base64url decode
+    fn base64url_decode(input: &str) -> Result<String> {
+        use base64::engine::general_purpose;
+        use base64::Engine as _;
+
+        // Add padding if needed for base64url
+        let padded = match input.len() % 4 {
+            0 => input.to_string(),
+            2 => format!("{}==", input),
+            3 => format!("{}=", input),
+            _ => input.to_string(),
+        };
+
+        match general_purpose::URL_SAFE_NO_PAD.decode(&padded) {
+            Ok(bytes) => Ok(String::from_utf8_lossy(&bytes).to_string()),
+            Err(_) => {
+                // Try with standard base64
+                match general_purpose::STANDARD.decode(&padded) {
+                    Ok(bytes) => Ok(String::from_utf8_lossy(&bytes).to_string()),
+                    Err(_) => Ok("".to_string()),
+                }
+            }
+        }
     }
 }
 

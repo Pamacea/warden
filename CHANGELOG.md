@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2025-03-15
+
+### Added
+- **API Security Scanner** (New module)
+  - GraphQL introspection and depth limiting detection
+  - REST API parameter tampering detection
+  - Mass assignment vulnerability detection
+  - API versioning issues detection
+  - WebSocket security testing (WSS vs WS, origin validation)
+
+- **Authentication Testing**
+  - JWT token analysis (algorithm detection, expiration, sensitive data)
+  - OAuth 2.0 flow testing (PKCE, state parameter, implicit grant)
+  - Session fixation detection
+  - Session cookie security flags (HttpOnly, Secure, SameSite)
+
+- **API Vulnerabilities**
+  - IDOR (Insecure Direct Object Reference) detection
+  - Parameter pollution testing
+  - Open redirect via API parameters
+
 ## [0.3.0] - 2025-03-15
 
 ### Added

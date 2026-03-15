@@ -1,51 +1,23 @@
 # Warden Development Roadmap
 
-## Current Version: v0.3.0 (2025-03-15)
+## Current Version: v0.4.0 (2025-03-15)
 
 ### ✅ Completed
-- Everything from v0.2.0
+- Everything from v0.3.0
 - **HTTP Scanner Enhancements**
-  - ✅ Advanced XSS payloads (DOM-based, blind XSS)
-  - ✅ SQL injection detection (error-based, blind, time-based)
-  - ✅ NoSQL injection detection (MongoDB, Redis, CouchDB, JSON)
-  - ✅ CSRF token analysis
-  - ✅ Clickjacking detection (X-Frame-Options bypass detection)
-  - ✅ Open redirect detection
-- **Port Scanner Enhancements**
-  - ✅ Enhanced version detection (50+ patterns)
-  - ✅ Banner grabbing for all common services
-  - ✅ UDP port scanning support
-  - ✅ Custom port ranges support
-- **Static Analysis Enhancements**
-  - ✅ TypeScript support (any types, ts-ignore, non-null assertions)
-  - ✅ Go support (command injection, SQLi, ReadAll DoS, crypto)
-  - ✅ Java support (Statement SQLi, Runtime.exec, unsafe deserialization)
-  - ✅ PHP support (eval, exec, SQLi, unserialize, file inclusion, weak hashing)
+  - ✅ JWT token analysis and manipulation (algorithm, expiration, sensitive data)
+  - ✅ OAuth 2.0 flow testing (PKCE, state parameter, implicit grant)
+  - ✅ Session fixation detection
+  - ✅ Session cookie security flags (HttpOnly, Secure, SameSite)
 
----
-
-## v0.4.0 - Authentication & API Testing (Target: Q2 2025)
-
-## v0.4.0 - Authentication & API Testing (Target: Q3 2025)
-
-### Authentication Testing
-- [ ] JWT token analysis and manipulation
-- [ ] OAuth 2.0 flow testing
-- [ ] Session fixation detection
-- [ ] Privilege escalation detection
-- [ ] IDOR (Insecure Direct Object Reference) detection
-
-### API Testing
-- [ ] GraphQL introspection and depth limiting
-- [ ] REST API parameter tampering
-- [ ] API versioning issues
-- [ ] Rate limiting detection
-- [ ] Mass assignment detection
-
-### WebSocket Testing
-- [ ] WebSocket connection security
-- [ ] Message injection
-- [ ] DoS via rapid messages
+- **API Security Scanner** (New module)
+  - ✅ GraphQL introspection and depth limiting detection
+  - ✅ REST API parameter tampering detection
+  - ✅ IDOR (Insecure Direct Object Reference) detection
+  - ✅ Mass assignment vulnerability detection
+  - ✅ API versioning issues detection
+  - ✅ WebSocket security testing (WSS vs WS, origin validation)
+  - ✅ Parameter pollution testing
 
 ---
 

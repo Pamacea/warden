@@ -2,6 +2,7 @@
 
 // AST parsers - temporarily disabled
 // pub mod ast_parsers;
+pub mod api;
 pub mod ddos;
 pub mod http;
 pub mod port;
@@ -10,6 +11,7 @@ pub mod stress;
 
 // AST parsers exports - temporarily disabled
 // pub use ast_parsers::{FileDiscoverer, JsTsParser, PythonParser, RustParser, SourceLocation};
+pub use api::ApiScanner;
 pub use ddos::DdosScanner;
 pub use http::HttpScanner;
 pub use port::PortScanner;
@@ -60,6 +62,12 @@ impl ScannerEngine {
         Ok(stress_scanner.scan(target).await?)
     }
 
+    /// Run API security scanner (REST, GraphQL, WebSocket)
+    pub async fn scan_api(&mut self, url: &str) -> Result<ScanReport> {
+        let api_scanner = ApiScanner::new(self.config.clone());
+        Ok(api_scanner.scan(url).await?)
+    }
+
     /// Run all applicable scanners for the target
     pub async fn scan(&mut self, target: &Target) -> Result<ScanReport> {
         let mut report = ScanReport::new(target.clone());
@@ -76,6 +84,12 @@ impl ScannerEngine {
                 if self.config.port {
                     let port_scanner = PortScanner::new(self.config.clone());
                     report.merge(port_scanner.scan(url).await?);
+                }
+
+                // API scanner
+                if self.config.api {
+                    let api_scanner = ApiScanner::new(self.config.clone());
+                    report.merge(api_scanner.scan(url).await?);
                 }
             }
             Target::Path(path) => {
@@ -112,6 +126,7 @@ pub struct ScannerConfig {
     pub http: bool,
     pub port: bool,
     pub static_analysis: bool,
+    pub api: bool,
     pub ddos: bool,
     pub stress: bool,
     pub user_agent: String,
@@ -126,6 +141,7 @@ impl ScannerConfig {
             http: true,
             port: true,
             static_analysis: true,
+            api: true,
             ddos: false,
             stress: false,
             user_agent: format!("Warden/{}", env!("CARGO_PKG_VERSION")),
@@ -144,6 +160,11 @@ impl ScannerConfig {
 
     pub fn with_concurrency(mut self, concurrency: usize) -> Self {
         self.concurrency = concurrency;
+        self
+    }
+
+    pub fn with_api(mut self, api: bool) -> Self {
+        self.api = api;
         self
     }
 
