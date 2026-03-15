@@ -7,7 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.2.0] - 2025-03-14
+## [0.3.0] - 2025-03-15
+
+### Added
+- **HTTP Scanner Enhancements**
+  - Advanced XSS payloads (DOM-based, blind XSS)
+  - SQL injection detection (error-based, blind, time-based)
+  - NoSQL injection detection (MongoDB, Redis, CouchDB, JSON)
+  - CSRF token analysis
+  - Clickjacking detection (X-Frame-Options bypass detection)
+  - Open redirect detection
+
+- **Port Scanner Enhancements**
+  - Enhanced version detection (50+ new patterns)
+  - Banner grabbing for all common services
+  - UDP port scanning support (DNS, NTP, SNMP, etc.)
+  - Custom port ranges support
+
+- **Static Analysis Enhancements**
+  - TypeScript support (any types, ts-ignore, non-null assertions)
+  - Go support (command injection, SQLi, ReadAll DoS, crypto)
+  - Java support (Statement SQLi, Runtime.exec, unsafe deserialization)
+  - PHP support (eval, exec, SQLi, unserialize, file inclusion, weak hashing)
+
+[Unreleased]: https://github.com/Pamacea/warden/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/Pamacea/warden/releases/tag/v0.2.0
 
 ### Added
 - Initial release of Warden

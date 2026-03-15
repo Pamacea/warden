@@ -538,23 +538,79 @@ impl PortScanner {
         }
     }
 
-    /// Extract version information from banner
+    /// Extract version information from banner - enhanced for v0.3.0
     fn extract_version(banner: &str) -> Option<String> {
-        // Common version patterns
+        // Enhanced version patterns for common services
         let patterns = [
-            r"Server:\s*([^\r\n]+)",
-            r"SSH[-_]([\d.]+)",
+            // Web servers
+            r"Server:\s*nginx[/\s]([\d.]+)",
+            r"Server:\s*Apache[/\s]([\d.]+)",
+            r"Server:\s*([\d.]+)\s+nginx",
+            r"Server:\s*([\d.]+)\s+Apache",
+            r"Server:\s*IIS[/\s]([\d.]+)",
+            r"Server:\s*cloudflare[/\s]?([\d.]+)?",
+            r"Server:\s*Caddy[/\s]([\d.]+)",
+            r"Server:\s*lighttpd[/\s]([\d.]+)",
+            r"Server:\s*openresty[/\s]([\d.]+)",
+            // SSH
+            r"SSH[-_]([\d.]+)[:-]",
+            r"OpenSSH[_\-]([\d.]+p?\d*)",
+            r"Dropbear[-_]SSH[-_]([\d.]+)",
+            r"libssh[-_]([\d.]+)",
+            // FTP
             r"vsftpd\s+([\d.]+)",
-            r"OpenSSH[_\-]([\d.]+p\d+)",
-            r"nginx[/\s]([\d.]+)",
-            r"Apache[/\s]([\d.]+)",
-            r"MySQL[-\s]([\d.]+)",
+            r"ProFTPD\s+([\d.]+)",
+            r"Pure-FTPd\s+([\d.]+)",
+            r"FileZilla Server version ([\d.]+)",
+            r"220.*FTP.*\(Version ([\d.]+)\)",
+            // Databases
+            r"MySQL[-\s]([\d.]+[-_]?)",
+            r"MariaDB[-\s]([\d.]+[-_]?)",
             r"PostgreSQL\s+([\d.]+)",
+            r"PostgreSQL ([\d.]+)\s*server",
             r"Redis\s+([\d.]+)",
-            r"MongoDB\s+([\d.]+)",
             r"Elasticsearch/([\d.]+)",
-            r"FTP server \(Version ([\d.]+)\)",
-            r"220.*Version ([\d.]+)",
+            r"MongoDB\s+([\d.]+)",
+            r"RethinkDB\s+([\d.]+)",
+            r"Cassandra\s+([\d.]+)",
+            r"CouchDB[/\s]([\d.]+)",
+            // Mail servers
+            r"Postfix ([\d.]+)",
+            r"Sendmail\s+([\d.]+)",
+            r"Exim\s+([\d.]+)",
+            r"Dovecot\s+([\d.]+)",
+            r"Courier-IMAP\s+([\d.]+)",
+            // DNS
+            r"BIND\s+([\d.]+)",
+            r"PowerDNS[-/]([\d.]+)",
+            r"Unbound\s+([\d.]+)",
+            r"dnsmasq[-/]([\d.]+)",
+            // VPN
+            r"OpenVPN\s+([\d.]+)",
+            r"WireGuard\s+([\d.]+)",
+            // Message queues
+            r"RabbitMQ[-/]([\d.]+)",
+            r"Kafka\s+([\d.]+)",
+            r"ActiveMQ\s+([\d.]+)",
+            r"NATS\s+([\d.]+)",
+            // Caching
+            r"Memcached\s+([\d.]+)",
+            r"Varnish\s+([\d.]+)",
+            r"Squid[-/]([\d.]+)",
+            // Monitoring
+            r"Prometheus[-/]([\d.]+)",
+            r"Grafana[-/]([\d.]+)",
+            r"InfluxDB[-/]([\d.]+)",
+            // Containers
+            r"Docker[-/]([\d.]+)",
+            r"containerd[/\s]([\d.]+)",
+            r"Kubernetes[-/]([\d.]+)",
+            r"Podman\s+([\d.]+)",
+            // Generic patterns
+            r"Version ([\d.]+(?:[-_.]?[\d.]+)*)",
+            r"v([\d.]+(?:[-_.]?[\d.]+)*)\s",
+            r"/([\d.]+)\s",
+            r"release ([\d.]+(?:[-_.]?[\d.]+)*)",
         ];
 
         for pattern in &patterns {

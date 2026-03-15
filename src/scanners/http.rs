@@ -32,6 +32,12 @@ impl HttpScanner {
         // Security headers check (always performed)
         report.merge(self.check_security_headers(url).await?);
 
+        // Clickjacking check (always performed)
+        report.merge(self.check_clickjacking(url).await?);
+
+        // CSRF token analysis (always performed)
+        report.merge(self.check_csrf_protection(url).await?);
+
         // Aggressive mode: full vulnerability scan
         if self.config.aggressive {
             // XSS detection
@@ -39,6 +45,10 @@ impl HttpScanner {
 
             // SQL Injection detection
             report.merge(self.check_sqli(url).await?);
+            report.merge(self.check_sqli_time_based(url).await?);
+
+            // NoSQL Injection detection
+            report.merge(self.check_nosql_injection(url).await?);
 
             // SSRF detection
             report.merge(self.check_ssrf(url).await?);
@@ -51,6 +61,9 @@ impl HttpScanner {
 
             // Rate limit detection
             report.merge(self.check_rate_limit(url).await?);
+
+            // Open redirect detection
+            report.merge(self.check_open_redirect(url).await?);
         }
 
         Ok(report)
@@ -1257,6 +1270,380 @@ impl HttpScanner {
                     owasp: Some("A04:2021 - Insecure Design".to_string()),
                 });
                 break;
+            }
+        }
+
+        Ok(report)
+    }
+
+    /// NoSQL Injection detection (MongoDB, CouchDB, Redis, etc.)
+    async fn check_nosql_injection(&self, url: &str) -> Result<ScanReport> {
+        let mut report = ScanReport::new(Target::Url(url.to_string()));
+
+        // NoSQL injection payloads for different databases
+        let nosql_payloads = vec![
+            // MongoDB
+            ("' || '1'=='1", "MongoDB (OR operator)"),
+            ("'[$ne]=1", "MongoDB (not equal)"),
+            ("', $or: [ {a:1}, {a:2} ], '", "MongoDB (operator injection)"),
+            ("{$where: 'this.a == this.b'}", "MongoDB ($where)"),
+            // Redis
+            ("\\r\\nSET test 1", "Redis (CRLF injection)"),
+            ("*1\r\n$4\r\nINFO\r\n$8\r\nflushall\r\n$0\r\n", "Redis (RESP protocol)"),
+            // CouchDB
+            ("', '_id: { $gt: null }, '", "CouchDB"),
+            // General JSON injection
+            (r#"{"user": {"$ne": null}}"#, "JSON NoSQL"),
+            (r#"{"$regex": ".*"}"#, "NoSQL regex injection"),
+        ];
+
+        let test_params = vec!["id", "user", "username", "search", "filter", "query", "data"];
+
+        // Try to inject into query parameters
+        let base_url = url.parse::<url::Url>();
+        let base_url = match base_url {
+            Ok(u) => u,
+            Err(_) => return Ok(report),
+        };
+
+        for param in test_params {
+            for (payload, db_type) in &nosql_payloads {
+                let mut test_url = base_url.clone();
+                test_url.query_pairs_mut().append_pair(param, payload);
+
+                match self.client.get(test_url.as_str()).send().await {
+                    Ok(response) => {
+                        let status = response.status();
+                        let text = response.text().await.unwrap_or_default();
+
+                        // Check for NoSQL error messages
+                        let error_patterns = vec![
+                            "MongoError",
+                            "MongoServerError",
+                            "couchdb",
+                            "redis",
+                            "E11000",
+                            "Cast to ObjectId failed",
+                            "SyntaxError",
+                            "malformed",
+                            "unexpected token",
+                        ];
+
+                        for pattern in &error_patterns {
+                            if text.to_lowercase().contains(&pattern.to_lowercase()) {
+                                report.add_finding(Vuln {
+                                    severity: VulnSeverity::High,
+                                    title: format!("NoSQL Injection detected ({})", db_type),
+                                    description: format!("NoSQL injection vulnerability in parameter '{}'. Database error message revealed: {}", param, pattern),
+                                    location: Some(test_url.to_string()),
+                                    recommendation: Some("Use input validation and proper query builders. Avoid direct user input in database queries.".to_string()),
+                                    cwe: Some("CWE-943".to_string()),
+                                    owasp: Some("A03:2021 - Injection".to_string()),
+                                });
+                                break;
+                            }
+                        }
+
+                        // Also check for successful injections (different response sizes)
+                        if status.is_success() && text.len() > 100 {
+                            // Compare with normal request
+                            let mut normal_url = base_url.clone();
+                            normal_url.query_pairs_mut().append_pair(param, "test");
+
+                            if let Ok(normal_resp) = self.client.get(normal_url.as_str()).send().await {
+                                let normal_text = normal_resp.text().await.unwrap_or_default();
+                                // Significant difference in response might indicate injection
+                                let size_diff = (text.len() as i64 - normal_text.len() as i64).abs();
+                                if size_diff > 200 {
+                                    report.add_finding(Vuln {
+                                        severity: VulnSeverity::Medium,
+                                        title: format!("Potential NoSQL Injection ({})", db_type),
+                                        description: format!("Response size difference ({} bytes) suggests possible injection in parameter '{}'", size_diff, param),
+                                        location: Some(test_url.to_string()),
+                                        recommendation: Some("Verify if the payload affects query logic. Use parameterized queries.".to_string()),
+                                        cwe: Some("CWE-943".to_string()),
+                                        owasp: Some("A03:2021 - Injection".to_string()),
+                                    });
+                                }
+                            }
+                        }
+                    }
+                    Err(_) => continue,
+                }
+            }
+        }
+
+        Ok(report)
+    }
+
+    /// CSRF Token analysis
+    async fn check_csrf_protection(&self, url: &str) -> Result<ScanReport> {
+        let mut report = ScanReport::new(Target::Url(url.to_string()));
+
+        // First, fetch the page to look for forms
+        match self.client.get(url).send().await {
+            Ok(response) => {
+                // Clone headers before consuming response body
+                let headers = response.headers().clone();
+                let text = response.text().await.unwrap_or_default();
+
+                // Check for CSRF tokens in forms
+                let has_csrf_token = text.contains("csrf_token")
+                    || text.contains("csrfmiddlewaretoken")
+                    || text.contains("_token")
+                    || text.contains("authenticity_token")
+                    || text.contains("__RequestVerificationToken");
+
+                let has_form = text.contains("<form")
+                    || text.contains("action=")
+                    || text.contains("method=\"post\"");
+
+                // Check for SameSite cookie attribute
+                let has_samesite = headers
+                    .get_all("set-cookie")
+                    .iter()
+                    .any(|c| c.to_str().unwrap_or("").to_lowercase().contains("samesite="));
+
+                // Check if form submission requires token
+                if has_form && !has_csrf_token {
+                    report.add_finding(Vuln {
+                        severity: VulnSeverity::Medium,
+                        title: "Missing CSRF Token in Form".to_string(),
+                        description: "Form detected but no CSRF token found. This could allow Cross-Site Request Forgery attacks.".to_string(),
+                        location: Some(url.to_string()),
+                        recommendation: Some("Add CSRF tokens to all forms that perform state-changing operations. Use framework-provided CSRF protection.".to_string()),
+                        cwe: Some("CWE-352".to_string()),
+                        owasp: Some("A01:2021 - Broken Access Control".to_string()),
+                    });
+                }
+
+                // Check SameSite cookie attribute
+                if has_form && !has_samesite {
+                    report.add_finding(Vuln {
+                        severity: VulnSeverity::Low,
+                        title: "Cookies Missing SameSite Attribute".to_string(),
+                        description: "Session cookies lack SameSite attribute, increasing CSRF risk.".to_string(),
+                        location: Some(url.to_string()),
+                        recommendation: Some("Set SameSite=Strict or SameSite=Lax on session cookies.".to_string()),
+                        cwe: Some("CWE-352".to_string()),
+                        owasp: Some("A01:2021 - Broken Access Control".to_string()),
+                    });
+                }
+            }
+            Err(_) => {}
+        }
+
+        Ok(report)
+    }
+
+    /// Clickjacking detection (X-Frame-Options bypass)
+    async fn check_clickjacking(&self, url: &str) -> Result<ScanReport> {
+        let mut report = ScanReport::new(Target::Url(url.to_string()));
+
+        // Check for X-Frame-Options header
+        let x_frame_header = self
+            .client
+            .get(url)
+            .send()
+            .await
+            .ok();
+
+        if let Some(response) = x_frame_header {
+            if let Some(header) = response.headers().get("x-frame-options") {
+                if let Ok(header_str) = header.to_str() {
+                    let header_lower = header_str.to_lowercase();
+
+                    // Check for weak configurations
+                    if header_lower.contains("allow-from") {
+                        report.add_finding(Vuln {
+                            severity: VulnSeverity::Low,
+                            title: "X-Frame-Options Uses Allow-From".to_string(),
+                            description: "The 'allow-from' directive is deprecated and not supported in modern browsers.".to_string(),
+                            location: Some(url.to_string()),
+                            recommendation: Some("Use Content-Security-Policy with 'frame-ancestors' directive instead.".to_string()),
+                            cwe: Some("CWE-1021".to_string()),
+                            owasp: Some("A05:2021 - Security Misconfiguration".to_string()),
+                        });
+                    }
+
+                    // Check for SAMEORIGIN which is good
+                    if !header_lower.contains("deny") && !header_lower.contains("sameorigin") {
+                        report.add_finding(Vuln {
+                            severity: VulnSeverity::Medium,
+                            title: "Weak X-Frame-Options Configuration".to_string(),
+                            description: format!("X-Frame-Options set to '{}', which may allow clickjacking.", header_str),
+                            location: Some(url.to_string()),
+                            recommendation: Some("Set X-Frame-Options to 'DENY' or 'SAMEORIGIN'.".to_string()),
+                            cwe: Some("CWE-1021".to_string()),
+                            owasp: Some("A05:2021 - Security Misconfiguration".to_string()),
+                        });
+                    }
+                }
+            } else {
+                // No X-Frame-Options header found
+                report.add_finding(Vuln {
+                    severity: VulnSeverity::Medium,
+                    title: "Missing X-Frame-Options Header".to_string(),
+                    description: "Application may be vulnerable to clickjacking attacks via frame embedding.".to_string(),
+                    location: Some(url.to_string()),
+                    recommendation: Some("Add 'X-Frame-Options: DENY' or 'SAMEORIGIN' header.".to_string()),
+                    cwe: Some("CWE-1021".to_string()),
+                    owasp: Some("A05:2021 - Security Misconfiguration".to_string()),
+                });
+            }
+        }
+
+        Ok(report)
+    }
+
+    /// Open redirect detection
+    async fn check_open_redirect(&self, url: &str) -> Result<ScanReport> {
+        let mut report = ScanReport::new(Target::Url(url.to_string()));
+
+        // Open redirect payloads
+        let redirect_payloads = vec![
+            ("//evil.com", "Protocol-relative URL"),
+            ("/\\/evil.com", "Encoded protocol-relative"),
+            ("https://evil.com", "Absolute external URL"),
+            ("\\evil.com", "Backslash bypass"),
+            ("http://credential.thehost.com:80/", "Credential harvesting"),
+            ("//credential.thehost.com:80/", "Credential harvesting (protocol-relative)"),
+            ("/%2F%2Fevil.com", "URL encoded slash"),
+            ("/%5C%5Cevil.com", "URL encoded backslash"),
+        ];
+
+        // Common redirect parameters
+        let redirect_params = vec![
+            "redirect",
+            "url",
+            "return",
+            "returnTo",
+            "return_url",
+            "redirect_url",
+            "link",
+            "goto",
+            "next",
+            "target",
+            "dest",
+            "destination",
+            "file",
+            "path",
+            "continue",
+            "callback",
+            "redir",
+        ];
+
+        let base_url = match url.parse::<url::Url>() {
+            Ok(u) => u,
+            Err(_) => return Ok(report),
+        };
+
+        for param in &redirect_params {
+            for (payload, bypass_type) in &redirect_payloads {
+                let mut test_url = base_url.clone();
+                test_url.query_pairs_mut().append_pair(param, payload);
+
+                match self.client.get(test_url.as_str()).send().await {
+                    Ok(response) => {
+                        // Check if we got a redirect
+                        if let Some(final_url) = response.url().clone().into_string().split('?').next() {
+                            // Check if redirected to external domain
+                            if final_url.contains("evil.com") || final_url.contains("credential.thehost.com") {
+                                report.add_finding(Vuln {
+                                    severity: VulnSeverity::Medium,
+                                    title: format!("Open Redirect Vulnerability ({})", bypass_type),
+                                    description: format!("Parameter '{}' accepts external URLs, allowing open redirect attacks.", param),
+                                    location: Some(format!("{}?{}={}", url, param, payload)),
+                                    recommendation: Some("Use a whitelist of allowed redirect URLs. Implement relative URL validation.".to_string()),
+                                    cwe: Some("CWE-601".to_string()),
+                                    owasp: Some("A01:2021 - Broken Access Control".to_string()),
+                                });
+                                break;
+                            }
+                        }
+
+                        // Also check via Location header
+                        if let Some(location) = response.headers().get("location") {
+                            if let Ok(loc_str) = location.to_str() {
+                                if loc_str.contains("evil.com") || loc_str.contains("credential") {
+                                    report.add_finding(Vuln {
+                                        severity: VulnSeverity::High,
+                                        title: format!("Open Redirect via Location Header ({})", bypass_type),
+                                        description: format!("Parameter '{}' triggers redirect to external URL.", param),
+                                        location: Some(format!("{}?{}={}", url, param, payload)),
+                                        recommendation: Some("Validate redirect URLs against a whitelist. Use URL encoding properly.".to_string()),
+                                        cwe: Some("CWE-601".to_string()),
+                                        owasp: Some("A01:2021 - Broken Access Control".to_string()),
+                                    });
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    Err(_) => continue,
+                }
+            }
+        }
+
+        Ok(report)
+    }
+
+    /// Time-based SQL Injection detection
+    async fn check_sqli_time_based(&self, url: &str) -> Result<ScanReport> {
+        let mut report = ScanReport::new(Target::Url(url.to_string()));
+
+        // Time-based payloads
+        let time_payloads = vec![
+            ("' AND SLEEP(5)--", "MySQL SLEEP"),
+            ("' WAITFOR DELAY '00:00:05'--", "SQL Server WAITFOR"),
+            ("' OR 1=1; DBMS_LOCK.SLEEP(5)--", "Oracle SLEEP"),
+            ("' OR 1=1; SELECT PG_SLEEP(5)--", "PostgreSQL PG_SLEEP"),
+            ("' OR 1=1; SELECT COUNT(*) FROM GENERATE_SERIES(1,3000000)--", "PostgreSQL enumeration"),
+            ("'; SELECT SLEEP(5)--", "Generic SLEEP"),
+            ("' AND BENCHMARK(50000000,MD5(1))--", "MySQL BENCHMARK"),
+        ];
+
+        let base_url = match url.parse::<url::Url>() {
+            Ok(u) => u,
+            Err(_) => return Ok(report),
+        };
+
+        // First, get baseline response time
+        let baseline_start = Instant::now();
+        let _ = self.client.get(base_url.clone()).send().await;
+        let baseline_time = baseline_start.elapsed().as_millis();
+
+        let test_params = vec!["id", "user", "search", "category"];
+
+        for param in test_params {
+            for (payload, db_type) in &time_payloads {
+                let mut test_url = base_url.clone();
+                test_url.query_pairs_mut().append_pair(param, payload);
+
+                let test_start = Instant::now();
+                match self.client.get(test_url.as_str()).send().await {
+                    Ok(_) => {
+                        let test_time = test_start.elapsed().as_millis();
+
+                        // If response took significantly longer than baseline
+                        if test_time > baseline_time + 3000 {
+                            report.add_finding(Vuln {
+                                severity: VulnSeverity::High,
+                                title: format!("Time-Based SQL Injection ({})", db_type),
+                                description: format!(
+                                    "Parameter '{}' vulnerable to time-based SQL injection. Response took {}ms vs {}ms baseline ({}ms delay).",
+                                    param, test_time, baseline_time, test_time - baseline_time
+                                ),
+                                location: Some(format!("{}?{}=[injected]", url, param)),
+                                recommendation: Some("Use parameterized queries. Disable error messages in production.".to_string()),
+                                cwe: Some("CWE-89".to_string()),
+                                owasp: Some("A03:2021 - Injection".to_string()),
+                            });
+                            break;
+                        }
+                    }
+                    Err(_) => continue,
+                }
             }
         }
 
