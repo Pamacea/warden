@@ -5,11 +5,13 @@ use anyhow::Result;
 use colored::Colorize;
 use std::fs;
 
+pub mod ai;
 pub mod console;
 pub mod formats;
 pub mod json;
 pub mod markdown;
 
+pub use ai::{AiReadableReporter, generate_ai_json};
 pub use console::ConsoleReporter;
 pub use json::JsonReporter;
 pub use markdown::MarkdownReporter;
@@ -26,6 +28,7 @@ pub enum ReportFormat {
     Console,
     Json,
     Markdown,
+    Ai,        // AI-optimized format for Claude Code and other AI agents
     Html,
     Sarif,
 }
@@ -38,6 +41,7 @@ impl std::str::FromStr for ReportFormat {
             "console" => Ok(ReportFormat::Console),
             "json" => Ok(ReportFormat::Json),
             "markdown" | "md" => Ok(ReportFormat::Markdown),
+            "ai" => Ok(ReportFormat::Ai),
             "html" => Ok(ReportFormat::Html),
             "sarif" => Ok(ReportFormat::Sarif),
             _ => Err(format!("Unknown format: {}", s)),
@@ -51,6 +55,7 @@ impl ScanReport {
             ReportFormat::Console => ConsoleReporter::print(self),
             ReportFormat::Json => JsonReporter::print(self),
             ReportFormat::Markdown => MarkdownReporter::print(self),
+            ReportFormat::Ai => AiReadableReporter::print(self),
             ReportFormat::Html => {
                 println!("{}", generate_html_report(self)?);
                 Ok(())
@@ -67,6 +72,7 @@ impl ScanReport {
             ReportFormat::Console => ConsoleReporter::format(self)?,
             ReportFormat::Json => JsonReporter::format(self)?,
             ReportFormat::Markdown => MarkdownReporter::format(self)?,
+            ReportFormat::Ai => AiReadableReporter::format(self)?,
             ReportFormat::Html => generate_html_report(self)?,
             ReportFormat::Sarif => generate_sarif_report(self)?,
         };
@@ -113,6 +119,7 @@ mod tests {
         assert_eq!("json".parse::<ReportFormat>().unwrap(), ReportFormat::Json);
         assert_eq!("markdown".parse::<ReportFormat>().unwrap(), ReportFormat::Markdown);
         assert_eq!("md".parse::<ReportFormat>().unwrap(), ReportFormat::Markdown);
+        assert_eq!("ai".parse::<ReportFormat>().unwrap(), ReportFormat::Ai);
         assert_eq!("html".parse::<ReportFormat>().unwrap(), ReportFormat::Html);
         assert_eq!("sarif".parse::<ReportFormat>().unwrap(), ReportFormat::Sarif);
     }

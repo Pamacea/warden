@@ -12,8 +12,9 @@
 - **5 Scanning Modes** - Passive, Active, Stealth, Aggressive, Custom profiles
 - **Native Scanners** - HTTP, Port, Static Analysis, DDoS resistance, Stress testing
 - **OWASP Top 10 2021** - 100% coverage
+- **AI Agent Integration** - Auto-saves `WARDEN_SECURITY_REPORT.md` for Claude Code and other AI agents
 - **Zero Dependencies** - Single binary, no runtime dependencies
-- **308 Tests** - Comprehensive test coverage
+- **314 Tests** - Comprehensive test coverage
 
 ## Supported Technologies
 
@@ -73,6 +74,42 @@ warden scan --profile thorough
 
 # Passive mode (no active requests)
 warden scan --mode passive
+
+# AI-optimized format (for Claude Code and other AI agents)
+warden scan --format ai
+
+# Generate JSON fix data for automated processing
+warden scan --format ai --generate-fixes
+```
+
+## AI Agent Integration
+
+Warden automatically saves `WARDEN_SECURITY_REPORT.md` in the scanned directory, optimized for AI agents like Claude Code:
+
+```bash
+# Just run a scan - report is auto-saved
+warden scan
+
+# Claude Code can now:
+# 1. Read WARDEN_SECURITY_REPORT.md
+# 2. Navigate to files using provided paths and line numbers
+# 3. Fix vulnerabilities
+# 4. Re-run scan to verify
+```
+
+**Report Features for AI Agents:**
+- 📁 **Files to Fix** - Grouped by file with issue counts
+- 🔍 **Detailed Findings** - With clickable `file:line` paths
+- 🤖 **Suggested Fix Order** - Priority-based phases
+- 📊 **Structured JSON** - With `--generate-fixes` for programmatic processing
+
+**Example AI Workflow:**
+```markdown
+1. warden scan --format ai
+2. # AI reads WARDEN_SECURITY_REPORT.md
+3. # AI fixes src/main.rs:42 (SQL Injection)
+4. # AI fixes src/auth.rs:15 (Missing auth)
+5. warden scan --format ai  # Verify fixes
 ```
 
 ## Scanning Modes

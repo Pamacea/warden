@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.1] - 2025-03-15
+
+### Added
+- **AI-Readable Report Format** - New `ai` format optimized for Claude Code and AI agents
+  - Structured markdown with clickable file paths and line numbers
+  - "Files to Fix" section grouped by file for systematic fixing
+  - "Suggested Fix Order" with priority-based phases
+  - AI Agent Instructions section for clear context
+
+- **Auto-Save by Default** - Reports automatically saved to project directory
+  - Creates `WARDEN_SECURITY_REPORT.md` in scanned directory
+  - Perfect for AI agents to read and act upon findings
+  - `--no-auto-save` flag to disable if needed
+
+- **JSON Fix Data Export** - Optional structured JSON for programmatic processing
+  - `--generate-fixes` flag creates `WARDEN_SECURITY_REPORT_fixes.json`
+  - Contains: file, line, severity, title, description, recommendation, CWE
+  - Easy to parse for automated fix generation
+
+### Improved
+- Better file path handling with absolute paths in AI reports
+- Line number extraction from location strings (e.g., `src/main.rs:42`)
+- Test coverage increased to 314 tests
+
+### Technical
+- New `reporters::ai` module for AI-optimized reporting
+- Enhanced `ScanReport` with AI format support
+- New `get_auto_save_path()` function for smart path resolution
+
 ## [0.6.0] - 2025-03-15
 
 ### Added
@@ -146,7 +175,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CLI with colored output
 - Multi-platform support (Windows, macOS, Linux)
 
-[Unreleased]: https://github.com/Pamacea/warden/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/Pamacea/warden/compare/v0.6.1...HEAD
+[0.6.1]: https://github.com/Pamacea/warden/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/Pamacea/warden/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/Pamacea/warden/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/Pamacea/warden/compare/v0.3.0...v0.4.0

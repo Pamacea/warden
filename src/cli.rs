@@ -113,6 +113,7 @@ pub enum Commands {
         ///   - console  (default): Human-readable terminal output
         ///   - json              : Machine-readable JSON format
         ///   - markdown          : Report in Markdown format
+        ///   - ai                : AI-optimized format with actionable fixes
         #[arg(long, default_value = "console", value_parser = validate_format)]
         format: String,
 
@@ -124,6 +125,27 @@ pub enum Commands {
         /// Example: --output report.json
         #[arg(short, long, value_name = "FILE")]
         output: Option<String>,
+
+        /// Auto-save report to project directory
+        ///
+        /// Automatically saves WARDEN_SECURITY_REPORT.md in the scanned directory.
+        /// This file can be read by AI agents to understand and fix security issues.
+        /// Enabled by default.
+        #[arg(long, default_value = "true")]
+        auto_save: bool,
+
+        /// Disable auto-save
+        ///
+        /// Disables automatic report saving to the project directory.
+        #[arg(long, conflicts_with = "auto_save")]
+        no_auto_save: bool,
+
+        /// Generate AI-fixable report
+        ///
+        /// Creates an additional WARDEN_FIXES.md file with ready-to-apply code fixes.
+        /// AI agents can use this to automatically patch vulnerabilities.
+        #[arg(long)]
+        generate_fixes: bool,
 
         /// Request timeout in seconds
         ///
@@ -243,9 +265,9 @@ pub enum Shell {
 
 fn validate_format(s: &str) -> Result<String, String> {
     match s.to_lowercase().as_str() {
-        "console" | "json" | "markdown" | "md" => Ok(s.to_lowercase()),
+        "console" | "json" | "markdown" | "md" | "ai" => Ok(s.to_lowercase()),
         _ => Err(format!(
-            "Invalid format '{}'. Valid options: console, json, markdown (md)",
+            "Invalid format '{}'. Valid options: console, json, markdown (md), ai",
             s
         )),
     }

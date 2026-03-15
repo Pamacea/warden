@@ -22,6 +22,8 @@ pub async fn run_scan(
     concurrency: usize,
     _config: Config,
     verbose: bool,
+    auto_save: bool,
+    generate_fixes: bool,
 ) -> Result<()> {
     let status = StatusPrinter::new(verbose);
 
@@ -211,7 +213,51 @@ pub async fn run_scan(
         crate::progress::ErrorReporter::print_success(&format!("Report saved to {}", output_path));
     }
 
+    // Auto-save report to project directory (for AI agents)
+    if auto_save {
+        if let Ok(auto_save_path) = get_auto_save_path(&scan_target) {
+            // Use AI-optimized format for auto-saved reports
+            let ai_format = ReportFormat::Ai;
+            report.save(&auto_save_path, &ai_format)?;
+            println!();
+            crate::progress::ErrorReporter::print_success(&format!("AI report saved to {}", auto_save_path));
+
+            // Also generate JSON fixes if requested
+            if generate_fixes {
+                let json_path = auto_save_path.replace(".md", "_fixes.json");
+                use crate::reporters::generate_ai_json;
+                let json_content = generate_ai_json(&report)?;
+                std::fs::write(&json_path, json_content)?;
+                crate::progress::ErrorReporter::print_success(&format!("Fix data saved to {}", json_path));
+            }
+        }
+    }
+
     Ok(())
+}
+
+/// Get the auto-save path for a scan target
+/// Returns WARDEN_SECURITY_REPORT.md in the scanned directory
+fn get_auto_save_path(target: &Target) -> Result<String> {
+    let base_dir = match target {
+        Target::Url(_) => {
+            // For URLs, save in current directory
+            std::env::current_dir()?
+        }
+        Target::Path(path) => {
+            // For paths, save in that directory
+            if path.is_absolute() {
+                path.clone()
+            } else {
+                let current_dir = std::env::current_dir()?;
+                current_dir.join(path)
+            }
+        }
+    };
+
+    Ok(base_dir.join("WARDEN_SECURITY_REPORT.md")
+        .to_string_lossy()
+        .to_string())
 }
 
 fn run_detection(target: &Target, status: &StatusPrinter) -> Result<DetectInfo> {

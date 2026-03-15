@@ -81,6 +81,9 @@ async fn main() -> Result<()> {
             include_stress,
             format,
             output,
+            auto_save,
+            generate_fixes,
+            no_auto_save: _,
             timeout,
             concurrency,
             max_file_size: _,
@@ -104,6 +107,8 @@ async fn main() -> Result<()> {
                 concurrency,
                 config,
                 cli.verbose,
+                auto_save,
+                generate_fixes,
             )
             .await
         }
