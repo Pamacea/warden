@@ -112,6 +112,12 @@ warden scan
 5. warden scan --format ai  # Verify fixes
 ```
 
+📖 **[Full Tutorial → docs/TUTORIAL.md](docs/TUTORIAL.md)** - Complete guide for Warden + Claude Code integration
+3. # AI fixes src/main.rs:42 (SQL Injection)
+4. # AI fixes src/auth.rs:15 (Missing auth)
+5. warden scan --format ai  # Verify fixes
+```
+
 ## Scanning Modes
 
 | Mode | Description | Speed | Detection Risk |
