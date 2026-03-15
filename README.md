@@ -80,6 +80,15 @@ warden scan --format ai
 
 # Generate JSON fix data for automated processing
 warden scan --format ai --generate-fixes
+
+# Update Warden to the latest version
+warden update
+
+# Force reinstall even if up-to-date
+warden update --force
+
+# Install from GitHub (development version)
+warden update --git
 ```
 
 ## AI Agent Integration

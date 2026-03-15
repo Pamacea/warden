@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.3] - 2025-03-15
+
+### Added
+- **Self-Update Command** - New `warden update` command for automatic updates
+  - Checks crates.io for newer versions
+  - Installs latest version via `cargo install warden-sec --force`
+  - `--force` flag to reinstall even if already up-to-date
+  - `--git` flag to install from GitHub repository
+
 ## [0.6.2] - 2025-03-15
 
 ### Fixed

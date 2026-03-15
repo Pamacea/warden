@@ -7,12 +7,13 @@
 ## 📋 Table des matières
 
 1. [Installation](#1-installation)
-2. [Premier scan](#2-premier-scan)
-3. [Lecture du rapport par Claude Code](#3-lecture-du-rapport-par-claude-code)
-4. [Correction des vulnérabilités](#4-correction-des-vulnérabilités)
-5. [Vérification des corrections](#5-vérification-des-corrections)
-6. [Workflow complet automatisé](#6-workflow-complet-automatisé)
-7. [Bonnes pratiques](#7-bonnes-pratiques)
+2. [Mise à jour](#2-mise-à-jour)
+3. [Premier scan](#3-premier-scan)
+4. [Lecture du rapport par Claude Code](#4-lecture-du-rapport-par-claude-code)
+5. [Correction des vulnérabilités](#5-correction-des-vulnérabilités)
+6. [Vérification des corrections](#6-vérification-des-corrections)
+7. [Workflow complet automatisé](#7-workflow-complet-automatisé)
+8. [Bonnes pratiques](#8-bonnes-pratiques)
 
 ---
 
@@ -33,14 +34,49 @@ cargo install --path .
 
 ```bash
 warden --version
-# Output: Warden v0.6.1
+# Output: Warden v0.6.3
 ```
 
 ---
 
-## 2. Premier Scan
+## 2. Mise à jour
 
-### 2.1 Scanner un projet
+### 2.1 Mettre à jour Warden
+
+```bash
+# Vérifier et installer la dernière version
+warden update
+
+# Forcer la réinstallation
+warden update --force
+
+# Installer depuis GitHub (version de dev)
+warden update --git
+```
+
+**Sortie si déjà à jour :**
+```
+🔄 Checking for updates...
+✓ Already up to date (v0.6.3)
+```
+
+**Sortie si mise à jour disponible :**
+```
+🔄 Checking for updates...
+Update available: 0.6.2 → 0.6.3
+
+Installing latest version...
+Installing from crates.io...
+✓ Warden updated successfully!
+
+Run 'warden --version' to verify
+```
+
+---
+
+## 3. Premier Scan
+
+### 3.1 Scanner un projet
 
 ```bash
 # Se placer dans le projet
@@ -79,7 +115,7 @@ Starting Scan
 
 ---
 
-## 3. Lecture du rapport par Claude Code
+## 4. Lecture du rapport par Claude Code
 
 ### 3.1 Structure du rapport généré
 
@@ -151,7 +187,7 @@ Claude Code peut lire automatiquement les fichiers markdown dans le projet.
 
 ---
 
-## 4. Correction des vulnérabilités
+## 5. Correction des vulnérabilités
 
 ### 4.1 Claude Code lit les fichiers concernés
 
@@ -188,7 +224,7 @@ fn get_user(id: &str) -> Result<User, Error> {
 
 ---
 
-## 5. Vérification des corrections
+## 6. Vérification des corrections
 
 ### 5.1 Re-scanner après corrections
 
@@ -206,7 +242,7 @@ Le rapport est mis à jour avec les nouvelles trouvailles (ou confirme que tout 
 
 ---
 
-## 6. Workflow complet automatisé
+## 7. Workflow complet automatisé
 
 ### 6.1 Script bash pour le workflow complet
 
@@ -249,7 +285,7 @@ chmod +x warden-workflow.sh
 
 ---
 
-## 7. Bonnes pratiques
+## 8. Bonnes pratiques
 
 ### 7.1 Avant chaque commit
 
@@ -301,7 +337,7 @@ warden scan --format ai --generate-fixes
 
 ---
 
-## 8. Exemple complet
+## 9. Exemple complet
 
 ### 8.1 Projet Rust vulnérable
 
@@ -339,7 +375,7 @@ $ warden scan
 
 ---
 
-## 9. Démarrage rapide
+## 10. Démarrage rapide
 
 ### 9.1 Commandes essentielles
 
@@ -368,7 +404,7 @@ your-project/
 
 ---
 
-## 10. Prochaines étapes
+## 11. Prochaines étapes
 
 1. **Installer Warden** : `cargo install warden-sec`
 2. **Scanner votre projet** : `warden scan`

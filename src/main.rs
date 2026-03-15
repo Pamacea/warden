@@ -123,6 +123,10 @@ async fn main() -> Result<()> {
             cli::print_completions(shell)?;
             Ok(())
         }
+        Commands::Update { force, git } => {
+            utils::update_warden(force, git)?;
+            Ok(())
+        }
     };
 
     // Handle errors

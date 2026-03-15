@@ -225,6 +225,26 @@ pub enum Commands {
         #[arg(value_enum)]
         shell: Shell,
     },
+
+    /// Update Warden to the latest version
+    ///
+    /// Updates Warden by reinstalling from crates.io.
+    /// This uses cargo to fetch and install the latest published version.
+    ///
+    /// Skips update if already running the latest version (unless --force is used).
+    Update {
+        /// Force update even if already at latest version
+        ///
+        /// Reinstalls Warden regardless of current version.
+        #[arg(long)]
+        force: bool,
+
+        /// Use cargo install with --git for development version
+        ///
+        /// Installs from the main GitHub repository instead of crates.io.
+        #[arg(long)]
+        git: bool,
+    },
 }
 
 #[derive(Subcommand)]
