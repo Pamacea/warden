@@ -8,7 +8,7 @@
 
 use crate::scanners::{ScanReport, ScannerConfig, Target, Vuln, VulnSeverity};
 use anyhow::Result;
-use reqwest::header::{HeaderMap, HeaderValue, ORIGIN};
+use reqwest::header::{HeaderMap, ORIGIN};
 use reqwest::Client;
 use std::time::Duration;
 

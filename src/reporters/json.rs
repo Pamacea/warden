@@ -2,7 +2,7 @@
 
 use super::Reporter;
 use crate::scanners::ScanReport;
-use crate::scoring::{self, SecurityScore};
+use crate::scoring::SecurityScore;
 use anyhow::Result;
 use serde_json::json;
 

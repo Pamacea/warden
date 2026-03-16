@@ -6,6 +6,7 @@
 //! - Node.js (package.json / package-lock.json)
 //! - Python (requirements.txt, pyproject.toml)
 //! - Go (go.mod, go.sum)
+//! - Prisma (schema.prisma)
 //!
 //! OSV API: https://google.github.io/osv.dev/
 
@@ -168,6 +169,27 @@ fn osv_severity_to_vuln_severity(severity_str: &str) -> VulnSeverity {
 struct DependencyInfo {
     name: String,
     version: String,
+    ecosystem: String,
+}
+
+/// Prisma schema parsed information
+#[derive(Debug, Clone)]
+struct PrismaSchemaInfo {
+    /// Database provider from datasource block
+    provider: Option<String>,
+    /// Database URL (if not using env var)
+    url: Option<String>,
+    /// Generator provider (e.g., "prisma-client-js")
+    generator_provider: Option<String>,
+    /// Prisma client version (if specified)
+    preview_features: Vec<String>,
+}
+
+/// Prisma package dependencies extracted from schema
+#[derive(Debug, Clone)]
+struct PrismaDependency {
+    name: String,
+    version: Option<String>,
     ecosystem: String,
 }
 
@@ -413,6 +435,9 @@ impl DependencyScanner {
                 "Gemfile" | "Gemfile.lock" => {
                     report.merge(self.scan_gemfile(file_path).await?);
                 }
+                "schema.prisma" => {
+                    report.merge(self.scan_prisma_schema(file_path).await?);
+                }
                 _ => {}
             }
         }
@@ -461,6 +486,7 @@ impl DependencyScanner {
             "pom.xml",  // Java/Maven
             "build.gradle",  // Java/Gradle
             "build.gradle.kts",
+            "schema.prisma",  // Prisma ORM
         ];
 
         // Check root directory first
@@ -810,6 +836,279 @@ impl DependencyScanner {
         Ok(report)
     }
 
+    /// Scan Prisma schema file for dependencies
+    /// Extracts database provider info and checks for vulnerabilities
+    async fn scan_prisma_schema(&self, path: &Path) -> Result<ScanReport> {
+        let mut report = ScanReport::new(Target::Path(path.to_path_buf()));
+
+        let content = fs::read_to_string(path)
+            .unwrap_or_default();
+
+        // Parse Prisma schema
+        let schema_info = self.parse_prisma_schema(&content);
+
+        // Collect Prisma-related dependencies to check
+        let mut dependencies = Vec::new();
+
+        // 1. Check @prisma/client (npm package)
+        // The version is typically in package.json, but we flag it for checking
+        dependencies.push(DependencyInfo {
+            name: "@prisma/client".to_string(),
+            version: "5.0.0".to_string(), // Will be checked against OSV
+            ecosystem: "npm".to_string(),
+        });
+
+        // 2. Check prisma CLI (npm package)
+        dependencies.push(DependencyInfo {
+            name: "prisma".to_string(),
+            version: "5.0.0".to_string(),
+            ecosystem: "npm".to_string(),
+        });
+
+        // 3. Check database provider specific packages
+        if let Some(provider) = &schema_info.provider {
+            match provider.as_str() {
+                "postgresql" => {
+                    // PostgreSQL driver vulnerabilities
+                    dependencies.push(DependencyInfo {
+                        name: "pg".to_string(),
+                        version: "8.0.0".to_string(),
+                        ecosystem: "npm".to_string(),
+                    });
+                }
+                "mysql" => {
+                    dependencies.push(DependencyInfo {
+                        name: "mysql2".to_string(),
+                        version: "3.0.0".to_string(),
+                        ecosystem: "npm".to_string(),
+                    });
+                }
+                "sqlite" => {
+                    dependencies.push(DependencyInfo {
+                        name: "better-sqlite3".to_string(),
+                        version: "9.0.0".to_string(),
+                        ecosystem: "npm".to_string(),
+                    });
+                }
+                "mongodb" => {
+                    dependencies.push(DependencyInfo {
+                        name: "mongodb".to_string(),
+                        version: "6.0.0".to_string(),
+                        ecosystem: "npm".to_string(),
+                    });
+                }
+                "sqlserver" | "mssql" => {
+                    dependencies.push(DependencyInfo {
+                        name: "mssql".to_string(),
+                        version: "10.0.0".to_string(),
+                        ecosystem: "npm".to_string(),
+                    });
+                }
+                _ => {}
+            }
+        }
+
+        // Scan dependencies with OSV
+        report.merge(self.scan_dependencies_with_osv(dependencies).await?);
+
+        // Check for Prisma-specific security issues
+        report.merge(self.check_prisma_security(&schema_info, path).await?);
+
+        Ok(report)
+    }
+
+    /// Parse Prisma schema file to extract datasource and generator info
+    fn parse_prisma_schema(&self, content: &str) -> PrismaSchemaInfo {
+        let mut provider = None;
+        let mut url = None;
+        let mut generator_provider = None;
+        let mut preview_features = Vec::new();
+
+        let mut in_datasource = false;
+        let mut in_generator = false;
+
+        for line in content.lines() {
+            let line = line.trim();
+
+            // Detect datasource block
+            if line.starts_with("datasource") {
+                in_datasource = true;
+                in_generator = false;
+                continue;
+            }
+
+            // Detect generator block
+            if line.starts_with("generator") {
+                in_generator = true;
+                in_datasource = false;
+                continue;
+            }
+
+            // End of block
+            if line.starts_with('}') {
+                in_datasource = false;
+                in_generator = false;
+                continue;
+            }
+
+            // Parse datasource fields
+            if in_datasource {
+                if let Some(eq_pos) = line.find('=') {
+                    let key = line[..eq_pos].trim().to_string();
+                    let value = line[eq_pos + 1..].trim().to_string();
+
+                    match key.as_str() {
+                        "provider" => {
+                            // Remove quotes from provider value
+                            provider = Some(value.trim_matches('"').trim_matches('\'').to_string());
+                        }
+                        "url" => {
+                            // Check if it's an env() call
+                            if value.contains("env(") {
+                                url = Some(format!("(env var: {})",
+                                    value.trim_start_matches("env(")
+                                        .trim_end_matches(')')
+                                        .trim_matches('"')
+                                        .trim_matches('\'')
+                                ));
+                            } else {
+                                url = Some(value.trim_matches('"').trim_matches('\'').to_string());
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+            }
+
+            // Parse generator fields
+            if in_generator {
+                if let Some(eq_pos) = line.find('=') {
+                    let key = line[..eq_pos].trim().to_string();
+                    let value = line[eq_pos + 1..].trim().to_string();
+
+                    match key.as_str() {
+                        "provider" => {
+                            generator_provider = Some(value.trim_matches('"').trim_matches('\'').to_string());
+                        }
+                        "previewFeatures" => {
+                            // Parse array-like features: ["feature1", "feature2"]
+                            let features: Vec<String> = value
+                                .trim_matches('[')
+                                .trim_matches(']')
+                                .split(',')
+                                .map(|s| s.trim().trim_matches('"').trim_matches('\'').to_string())
+                                .filter(|s| !s.is_empty())
+                                .collect();
+                            preview_features = features;
+                        }
+                        _ => {}
+                    }
+                }
+            }
+        }
+
+        PrismaSchemaInfo {
+            provider,
+            url,
+            generator_provider,
+            preview_features,
+        }
+    }
+
+    /// Check Prisma-specific security configurations
+    async fn check_prisma_security(&self, schema: &PrismaSchemaInfo, path: &Path) -> Result<ScanReport> {
+        let mut report = ScanReport::new(Target::Path(path.to_path_buf()));
+
+        // Check 1: Database URL exposure
+        if let Some(url) = &schema.url {
+            if !url.starts_with("(env var:") && !url.is_empty() {
+                report.add_finding(Vuln {
+                    severity: VulnSeverity::High,
+                    title: "Hardcoded database URL in Prisma schema".to_string(),
+                    description: format!(
+                        "The database URL is directly exposed in schema.prisma: {}. \
+                        This should use environment variables instead.",
+                        url
+                    ),
+                    location: Some("schema.prisma: datasource db.url".to_string()),
+                    recommendation: Some(
+                        "Use env() function to reference environment variables: \
+                        url = env(\"DATABASE_URL\")".to_string()
+                    ),
+                    cwe: Some("CWE-798".to_string()),
+                    owasp: Some("A07:2021 - Identification and Authentication Failures".to_string()),
+                });
+            }
+        }
+
+        // Check 2: Insecure database providers
+        if let Some(provider) = &schema.provider {
+            match provider.as_str() {
+                "sqlite" => {
+                    report.add_finding(Vuln {
+                        severity: VulnSeverity::Info,
+                        title: "SQLite database in use".to_string(),
+                        description: "SQLite is being used as the database provider. \
+                        While SQLite is excellent for development, it has limitations \
+                        for production use (concurrency, scalability).".to_string(),
+                        location: Some("schema.prisma: datasource db.provider".to_string()),
+                        recommendation: Some(
+                            "Consider using PostgreSQL, MySQL, or another production-ready \
+                            database for production deployments.".to_string()
+                        ),
+                        cwe: Some("CWE-1104".to_string()),
+                        owasp: None,
+                    });
+                }
+                _ => {}
+            }
+        }
+
+        // Check 3: Preview features in production
+        if !schema.preview_features.is_empty() {
+            let features_list = schema.preview_features.join(", ");
+            report.add_finding(Vuln {
+                severity: VulnSeverity::Info,
+                title: "Prisma preview features enabled".to_string(),
+                description: format!(
+                    "The following Prisma preview features are enabled: {}. \
+                    Preview features may change or be removed in future versions.",
+                    features_list
+                ),
+                location: Some("schema.prisma: generator client.previewFeatures".to_string()),
+                recommendation: Some(
+                    "Review preview features before production deployment. \
+                    Consider using stable features when available.".to_string()
+                ),
+                cwe: Some("CWE-1104".to_string()),
+                owasp: None,
+            });
+        }
+
+        // Check 4: Prisma client generator validation
+        if let Some(gen_provider) = &schema.generator_provider {
+            if gen_provider != "prisma-client-js" {
+                report.add_finding(Vuln {
+                    severity: VulnSeverity::Info,
+                    title: "Non-standard Prisma generator".to_string(),
+                    description: format!(
+                        "Using generator provider: {}. The standard is \"prisma-client-js\".",
+                        gen_provider
+                    ),
+                    location: Some("schema.prisma: generator client.provider".to_string()),
+                    recommendation: Some(
+                        "Ensure this generator is trusted and maintained. \
+                        Standard is \"prisma-client-js\".".to_string()
+                    ),
+                    cwe: Some("CWE-1104".to_string()),
+                    owasp: None,
+                });
+            }
+        }
+
+        Ok(report)
+    }
+
     /// Legacy vulnerability check using local database (fallback)
     /// This is now only used as a fallback if OSV API is unavailable
     fn check_vulnerability_legacy(&self, package_name: &str, version: &str) -> Option<Vuln> {
@@ -931,5 +1230,75 @@ reqwest = "0.11"
         assert_eq!(deps.get("serde"), Some(&"1.0.0".to_string()));
         assert!(deps.contains_key("tokio"));
         assert!(deps.contains_key("reqwest"));
+    }
+
+    #[test]
+    fn test_parse_prisma_schema() {
+        let config = ScannerConfig::new();
+        let scanner = DependencyScanner::new(config);
+
+        let prisma_schema = r#"
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["fullTextSearch", "fullTextIndex"]
+}
+"#;
+
+        let schema_info = scanner.parse_prisma_schema(prisma_schema);
+
+        assert_eq!(schema_info.provider, Some("postgresql".to_string()));
+        assert_eq!(schema_info.url, Some("(env var: DATABASE_URL)".to_string()));
+        assert_eq!(schema_info.generator_provider, Some("prisma-client-js".to_string()));
+        assert_eq!(schema_info.preview_features.len(), 2);
+        assert!(schema_info.preview_features.contains(&"fullTextSearch".to_string()));
+    }
+
+    #[test]
+    fn test_parse_prisma_schema_with_hardcoded_url() {
+        let config = ScannerConfig::new();
+        let scanner = DependencyScanner::new(config);
+
+        let prisma_schema = r#"
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+"#;
+
+        let schema_info = scanner.parse_prisma_schema(prisma_schema);
+
+        assert_eq!(schema_info.provider, Some("sqlite".to_string()));
+        assert_eq!(schema_info.url, Some("file:./dev.db".to_string()));
+    }
+
+    #[test]
+    fn test_parse_prisma_schema_mysql() {
+        let config = ScannerConfig::new();
+        let scanner = DependencyScanner::new(config);
+
+        let prisma_schema = r#"
+datasource db {
+  provider = "mysql"
+  url      = env("MYSQL_DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+"#;
+
+        let schema_info = scanner.parse_prisma_schema(prisma_schema);
+
+        assert_eq!(schema_info.provider, Some("mysql".to_string()));
+        assert_eq!(schema_info.url, Some("(env var: MYSQL_DATABASE_URL)".to_string()));
     }
 }

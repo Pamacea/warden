@@ -15,13 +15,18 @@ pub mod dependencies;
 pub mod disclosure;
 pub mod ddos;
 pub mod enumeration;
+pub mod graphql;
 pub mod http;
 pub mod open_redirect;
 pub mod path_traversal;
 pub mod port;
 pub mod secrets;
+pub mod ssrf;
+pub mod ssti;
 pub mod static_analyzer;
 pub mod stress;
+pub mod waf;
+pub mod xxe;
 
 // AST parsers exports - temporarily disabled
 // pub use ast_parsers::{FileDiscoverer, JsTsParser, PythonParser, RustParser, SourceLocation};
@@ -31,14 +36,19 @@ pub use dependencies::DependencyScanner;
 pub use disclosure::DisclosureScanner;
 pub use ddos::DdosScanner;
 pub use enumeration::EnumerationScanner;
+pub use graphql::GraphQLScanner;
 pub use http::HttpScanner;
 pub use open_redirect::OpenRedirectScanner;
 pub use path_traversal::PathTraversalScanner;
 pub use port::PortScanner;
 pub use recon::ReconScanner;
 pub use secrets::SecretsScanner;
+pub use ssrf::SsrfScanner;
+pub use ssti::SstiScanner;
 pub use static_analyzer::StaticScanner;
 pub use stress::StressScanner;
+pub use waf::WafScanner;
+pub use xxe::XxeScanner;
 
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
@@ -119,6 +129,13 @@ impl ScannerEngine {
         Ok(scanner.scan(url).await?)
     }
 
+    /// Run SSRF scanner
+    #[allow(dead_code)]
+    pub async fn scan_ssrf(&mut self, url: &str) -> Result<ScanReport> {
+        let scanner = SsrfScanner::new(self.config.clone());
+        Ok(scanner.scan(url).await?)
+    }
+
     /// Run User Enumeration scanner
     #[allow(dead_code)]
     pub async fn scan_enumeration(&mut self, url: &str) -> Result<ScanReport> {
@@ -145,6 +162,13 @@ impl ScannerEngine {
     pub async fn scan_dependencies(&mut self, project_path: &PathBuf) -> Result<ScanReport> {
         let scanner = DependencyScanner::new(self.config.clone());
         Ok(scanner.scan(project_path.to_str().unwrap_or(".")).await?)
+    }
+
+    /// Run XXE Injection scanner
+    #[allow(dead_code)]
+    pub async fn scan_xxe(&mut self, url: &str) -> Result<ScanReport> {
+        let scanner = XxeScanner::new(self.config.clone());
+        Ok(scanner.scan(url).await?)
     }
 
     /// Run all applicable scanners for the target

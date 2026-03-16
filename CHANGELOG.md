@@ -7,6 +7,156 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.5] - 2026-03-15
+
+### Added
+- **WAF Detection & Bypass Scanner** - Comprehensive WAF/CDN fingerprinting
+  - 20+ solutions detected: Cloudflare, AWS WAF, Akamai, ModSecurity, F5 BIG-IP, Imperva, Fortinet, Barracuda, Sucuri, Fastly, Azure Front Door, Google Cloud Armor, Wordfence, etc.
+  - Passive fingerprinting via response headers and error pages
+  - 18 bypass techniques documented (SQLi, XSS, Path Traversal, Headers)
+  - Wordlist: `wordlists/waf_bypass.txt` (~200 payloads)
+
+- **GraphQL Security Scanner** - Advanced GraphQL testing
+  - Endpoint detection (/graphql, /graphiql, /playground, etc.)
+  - Introspection testing (schema discovery vulnerability)
+  - Injection testing (query injection, alias abuse)
+  - DoS testing (nested queries, batch queries, field duplication)
+  - GET-based CSRF vulnerability detection
+  - Query complexity/size limit testing
+  - Wordlist: `wordlists/graphql.txt` (~100 payloads)
+
+- **SSRF Scanner** - Server-Side Request Forgery detection
+  - Internal network scanning (localhost, 127.0.0.1, private ranges)
+  - Cloud metadata endpoints (AWS, GCP, Azure)
+  - Protocol bypass testing (file://, dict://, gopher://)
+  - Encoding bypasses (octal, hex, decimal, IPv6)
+  - DNS rebinding techniques
+  - Header-based SSRF (X-Forwarded-For, Host, etc.)
+  - Wordlist: `wordlists/ssrf.txt` (~150 payloads)
+
+- **XXE Scanner** - XML External Entity injection
+  - File read payloads (/etc/passwd, /winnt/repair/sam)
+  - SSRF via XXE (internal network access)
+  - Blind XXE with out-of-band detection
+  - Multiple XML parser support (libxml2, Java SAX, .NET XmlDocument)
+  - Parameter entity XXE
+  - DoS via XML bombs (billion laughs attack)
+  - Wordlist: `wordlists/xxe.txt` (~80 payloads)
+
+- **SSTI Scanner** - Server-Side Template Injection
+  - 8 template engines detected: Jinja2, Twig, ERB, FreeMarker, Velocity, Smarty, Mako, Pug, EJS
+  - Polyglot detection payloads ({{7*7}}, ${7*7}, <%= 7*7 %>)
+  - RCE payloads for each engine
+  - Template engine fingerprinting
+  - Blind SSTI detection via time-based
+  - Wordlist: `wordlists/ssti.txt` (~120 payloads)
+
+- **Prisma Support** - Enhanced dependency scanning
+  - schema.prisma file parsing
+  - Prisma registry integration (prismaisma.org)
+  - CVE detection for Prisma providers
+
+### Technical
+- 5 new scanner modules (~2500 LOC)
+- 5 new wordlists (~650 total payloads)
+- Dependency scanner extended with Prisma ecosystem
+- Binary size: 5.8 MB (optimized)
+
+## [0.7.1] - 2026-03-15
+
+### Fixed
+- **Windows Self-Update** - Fixed "Access denied (os error 5)" error
+  - Downloads new version to temporary directory
+  - Creates detached batch script to replace binary after warden exits
+  - Eliminates file lock issue on Windows PowerShell
+
+### Added
+- Documentation for v0.7.5 roadmap with advanced scanner plans
+
+## [0.7.0] - 2026-03-15
+
+### Added
+- **Secrets Leak Scanner** - Hardcoded secrets detection
+  - API keys: AWS, GitHub, GitLab, Bitbucket, Stripe, PayPal, Slack
+  - Tokens: OAuth, JWT, Bearer tokens, API tokens
+  - Passwords and credentials in code
+  - Cryptographic keys and certificates
+  - Database connection strings
+  - Wordlist: `wordlists/secrets.txt`
+
+- **Dependency Vulnerability Scanner** - CVE detection via OSV API
+  - Rust (crates.io), Node.js (npm), Python (PyPI)
+  - Go (modules), PHP (Packagist), Ruby (RubyGems)
+  - Real-time CVE queries to OSV API
+  - Severity mapping (CVSS score → VulnSeverity)
+  - Automated update recommendations
+
+- **Security Scoring System** - Hardcore grading (A+ to F)
+  - 10 categories: Input Validation, Authentication, Cryptography, Headers, Session Management, Access Control, Data Protection, Error Handling, Communications, Code Quality
+  - OWASP ASVS-inspired scoring
+  - Grade calculation: A+ (95-100), A (90-94), B (80-89), C (70-79), D (60-69), E (50-59), F (0-49)
+  - Penalties and bonuses system
+  - Prioritized recommendations
+
+- **HTML Reporter** - Interactive security reports
+  - SVG charts: donut chart for score, radar chart for categories
+  - Category breakdown with progress bars
+  - Penalty and bonus details
+  - Priority recommendations with impact
+  - Responsive design with dark theme
+
+### Added
+- **New CLI Flags**
+  - `--check-secrets` - Enable secrets scanning
+  - `--check-deps` - Enable dependency vulnerability scanning
+  - `--score` - Display security score
+  - `--report-format html` - Generate HTML report
+
+### Technical
+- New `scoring` module with 10 sub-modules (~8200 LOC)
+- Refactored scoring from single file to categories structure
+- Binary size: 5.8 MB (optimized)
+
+## [0.6.4] - 2026-03-15
+
+### Added
+- **Path Traversal Scanner** - Directory traversal detection
+  - 200+ payloads for Linux and Windows
+  - Various encodings (URL encoding, double encoding, Unicode)
+  - Null byte injection
+  - Wordlist: `wordlists/path_traversal.txt`
+
+- **CORS Scanner** - CORS misconfiguration detection
+  - Origin reflection testing
+  - Null origin testing
+  - Subdomain bypass testing
+  - ACACO (Access-Control-Allow-Credentials) checks
+  - Wordlist: `wordlists/cors_origins.txt`
+
+- **Open Redirect Scanner** - URL redirection vulnerabilities
+  - 85 payloads for redirect parameter testing
+  - Parameter pollution
+  - Subdomain bypass
+  - JavaScript URI bypass
+  - Wordlist: `wordlists/redirects.txt`
+
+- **User Enumeration Scanner** - Timing and response analysis
+  - Login timing analysis
+  - Response diffing
+  - Username variations
+  - Wordlist: `wordlists/enumeration.txt`
+
+- **Information Disclosure Scanner** - Sensitive info detection
+  - Stack traces exposure
+  - Debug information
+  - Sensitive file exposure
+  - Wordlist: `wordlists/sensitive_paths.txt`
+
+### Technical
+- Scoring system infrastructure (10 categories)
+- 7 wordlists with 1190+ payloads
+- OWASP coverage improved: ~70% → ~85%
+
 ## [0.6.3] - 2025-03-15
 
 ### Added
@@ -201,7 +351,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CLI with colored output
 - Multi-platform support (Windows, macOS, Linux)
 
-[Unreleased]: https://github.com/Pamacea/warden/compare/v0.6.1...HEAD
+[Unreleased]: https://github.com/Pamacea/warden/compare/v0.7.5...HEAD
+[0.7.5]: https://github.com/Pamacea/warden/compare/v0.7.1...v0.7.5
+[0.7.1]: https://github.com/Pamacea/warden/compare/v0.7.0...v0.7.1
+[0.7.0]: https://github.com/Pamacea/warden/compare/v0.6.4...v0.7.0
+[0.6.4]: https://github.com/Pamacea/warden/compare/v0.6.3...v0.6.4
+[0.6.3]: https://github.com/Pamacea/warden/compare/v0.6.2...v0.6.3
+[0.6.2]: https://github.com/Pamacea/warden/compare/v0.6.1...v0.6.2
 [0.6.1]: https://github.com/Pamacea/warden/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/Pamacea/warden/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/Pamacea/warden/compare/v0.4.0...v0.5.0

