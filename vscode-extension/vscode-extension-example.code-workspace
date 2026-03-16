@@ -1,0 +1,66 @@
+{
+  "folders": [
+    {
+      "path": ".."
+    }
+  ],
+  "settings": {
+    // Enable Warden
+    "warden.enabled": true,
+
+    // Warden executable path (auto-detected or specify full path)
+    "warden.executablePath": "warden",
+
+    // Scan on save
+    "warden.scanOnSave": true,
+
+    // Minimum severity to report
+    "warden.severityLevel": "Low",
+
+    // Scan mode
+    "warden.scanMode": "Active",
+
+    // Enable secrets detection
+    "warden.enableSecretsDetection": true,
+
+    // Enable dependency checking
+    "warden.enableDependencyCheck": true,
+
+    // Ignore patterns
+    "warden.ignorePatterns": [
+      "node_modules/**",
+      "target/**",
+      "dist/**",
+      "build/**",
+      ".git/**",
+      "*.min.js",
+      "*.min.css",
+      "vendor/**",
+      "coverage/**"
+    ],
+
+    // Notification settings
+    "warden.notifications": {
+      "onCritical": true,
+      "onHigh": true,
+      "onMedium": false,
+      "onLow": false,
+      "onInfo": false
+    },
+
+    // Panel position
+    "warden.panel.position": "right",
+
+    // Auto refresh findings
+    "warden.autoRefresh": true,
+
+    // Show inline warnings
+    "warden.showInlineWarnings": true,
+
+    // Maximum concurrent scans
+    "warden.maxConcurrentScans": 3,
+
+    // Scan timeout (ms)
+    "warden.timeout": 30000
+  }
+}

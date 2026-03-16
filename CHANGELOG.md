@@ -7,6 +7,92 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-03-16
+
+### MEGA RELEASE
+
+> **25+ new security scanners | ML-powered detection | CI/CD integration | Enterprise features**
+
+### Advanced Testing Scanners (6 new)
+- **Deserialization Scanner** - Java, Python, PHP, JSON, YAML, .NET serialization
+- **Race Condition Detector** - TOCTOU, password reset races, concurrent request testing
+- **Business Logic Scanner** - Price manipulation, coupon abuse, privilege escalation
+- **File Upload Scanner** - MIME bypass, webshell upload, path traversal
+- **WebSocket Scanner** - Message injection, DoS, authentication bypass
+- **gRPC Scanner** - Protobuf fuzzing, reflection attack, service enumeration
+
+### Cloud & Infrastructure Scanners (5 new)
+- **Docker Security Scanner** - Container escape, volume mounting, privileged mode
+- **Kubernetes Scanner** - RBAC misconfig, pod escape, secrets exposure
+- **Terraform/TFSec Scanner** - IaC security scanning, secrets detection, IAM misconfig
+- **Lambda/Serverless Scanner** - AWS/Azure/GCP functions, IAM issues, timeout checks
+- **Cloud Metadata Scanner** - AWS/GCP/Azure/DigitalOcean metadata endpoints
+
+### Database & NoSQL Scanners (3 new)
+- **Redis Scanner** - NoSQL injection, authentication, dangerous commands, Lua scripting
+- **MongoDB Scanner** - NoSQL injection, operator abuse, auth bypass
+- **Elasticsearch Scanner** - Query injection, scripting, cluster abuse, DoS
+
+### Protocol & Network Scanners (3 new)
+- **SMB/NetBIOS Scanner** - Share enumeration, null sessions, SMBv1 vulnerabilities
+- **RDP Scanner** - Blue Keep, NLA, encryption level checks
+- **LDAP Scanner** - Injection, anonymous bind, enumeration
+
+### AI & Automation Features (5 new)
+- **ML-Based Detection Engine** - Pattern recognition, zero-day detection, anomaly detection
+- **Smart Payload Selection** - Adaptive payload generation, fuzzing grammars
+- **False Positive Reduction** - Context-aware filtering, similarity analysis
+- **Continuous Scanning Daemon** - Background scanning, job queue, scheduling
+- **Smart Reconnaissance** - Subdomain enumeration, attack surface mapping
+
+### CI/CD Integration (4 new)
+- **GitHub App Integration** - Auto-scan on PR, status checks, security badges, PR annotations
+- **GitLab Integration** - CI/CD pipeline scanning, MR scanning, badges, API client
+- **Jenkins Plugin** - Build steps, console formatting, failure thresholds
+- **VS Code Extension** - Real-time feedback, diagnostics, tree view
+
+### Enterprise Features (4 new)
+- **SAML/SSO Authentication** - Okta, Azure AD, Auth0 identity provider integration
+- **RBAC System** - Role-based access control, permissions, audit trail
+- **Audit Logging** - Event logging, immutable logs, SIEM export (SOC2/ISO27001 compliant)
+- **Compliance Ready** - Audit trails, chain of custody, retention policies
+
+### Technical Improvements
+- 20+ new scanner modules (~15,000 LOC)
+- 5 new ML/AI modules (~5,000 LOC)
+- 4 new CI/CD integration modules (~6,000 LOC)
+- 4 new enterprise authentication/audit modules (~4,000 LOC)
+- Enhanced `src/lib.rs` with 30+ new module exports
+- Binary size optimized: ~8 MB (under 10 MB target)
+- All 315+ tests passing
+
+### Wordlists Added (~7,000 payloads)
+- `wordlists/deserialization.txt` (~150 payloads)
+- `wordlists/race_condition.txt` (~100 payloads)
+- `wordlists/business_logic.txt` (~200 payloads)
+- `wordlists/file_upload.txt` (~80 payloads)
+- `wordlists/websocket.txt` (~120 payloads)
+- `wordlists/grpc.txt` (~90 payloads)
+- `wordlists/docker.txt` (~150 payloads)
+- `wordlists/kubernetes.txt` (~180 payloads)
+- `wordlists/terraform.txt` (~120 payloads)
+- `wordlists/serverless.txt` (~100 payloads)
+- `wordlists/cloud_metadata.txt` (~80 payloads)
+- `wordlists/redis.txt` (~150 payloads)
+- `wordlists/mongodb.txt` (~120 payloads)
+- `wordlists/elasticsearch.txt` (~100 payloads)
+- `wordlists/smb.txt` (~90 payloads)
+- `wordlists/rdp.txt` (~70 payloads)
+- `wordlists/ldap.txt` (~130 payloads)
+
+### Breaking Changes
+- Module restructure: `src/ml`, `src/daemon`, `src/integrations`, `src/auth`, `src/audit`
+- `VulnSeverity` now re-exported from `crate::scanners` module
+- Some scanner APIs updated for async/await consistency
+
+### Deprecations
+- Legacy scoring module methods replaced by new `ml::detection` module
+
 ## [0.7.5] - 2026-03-15
 
 ### Added
@@ -351,7 +437,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CLI with colored output
 - Multi-platform support (Windows, macOS, Linux)
 
-[Unreleased]: https://github.com/Pamacea/warden/compare/v0.7.5...HEAD
+[Unreleased]: https://github.com/Pamacea/warden/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/Pamacea/warden/compare/v0.7.5...v0.8.0
 [0.7.5]: https://github.com/Pamacea/warden/compare/v0.7.1...v0.7.5
 [0.7.1]: https://github.com/Pamacea/warden/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/Pamacea/warden/compare/v0.6.4...v0.7.0

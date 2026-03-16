@@ -1,0 +1,265 @@
+# RDP (Remote Desktop Protocol) Security Testing Payloads
+# For Warden v0.8.0 Enterprise Edition
+# Use only on systems you have permission to test
+
+# ============================================================================
+# AUTHENTICATION PAYLOADS
+# ============================================================================
+
+# Default usernames
+administrator
+admin
+root
+guest
+user
+test
+demo
+service
+svc
+deploy
+ops
+dev
+staging
+production
+prod
+server
+desktop
+user1
+user2
+admin1
+admin2
+superuser
+supervisor
+manager
+operator
+
+# Weak password patterns
+Password123
+Admin123
+Welcome123
+P@ssw0rd
+Letmein123
+Temp123
+Test123
+Changeme
+Password1
+Admin123!
+Qwerty123
+Fall2024
+Summer2024
+Winter2024
+Spring2024
+Company123
+Office365
+Desktop1
+Server1
+Admin2024
+Password!
+P@ssword1
+Welcome1
+
+# ============================================================================
+# BLUE KEEP TEST PACKETS (CVE-2019-1181, CVE-2019-1182)
+# ============================================================================
+
+# RDP connection handshake for vulnerability detection
+030000130ee00000000000010008d000300000003000000
+
+# Channel allocation request
+0300001b02f0807f6582012402010000010000000000000000
+
+# BlueKeep exploit detection marker
+rdp_sec_check_bluekeep_v1
+rdp_sec_check_cve_2019_1181
+rdp_sec_check_cve_2019_1182
+
+# ============================================================================
+# ENCRYPTION LEVEL TESTS
+# ============================================================================
+
+# RDP Security Layer Negotiation
+rdp_security_none
+rdp_security_standard
+rdp_security_ssl
+rdp_security_hybrid
+
+# Encryption level probes
+rdp_encrypt_none
+rdp_encrypt_low
+rdp_encrypt_medium
+rdp_encrypt_high
+rdp_encrypt_fips
+
+# Weak cipher detection (RC4, 3DES)
+rdp_cipher_rc4
+rdp_cipher_3des
+rdp_cipher_des
+rdp_cipher_weak
+
+# ============================================================================
+# CREDENTIAL GUARD & MITIGATION TESTS
+# ============================================================================
+
+# Credential Guard detection
+rdp_credential_guard_check
+rdp_remote_credential_guard
+rdp_windows_defender_credential_guard
+
+# Restricted Admin mode detection
+rdp_restricted_admin_mode
+rdp_remote_credential_guard_enabled
+
+# ============================================================================
+# NLA (Network Level Authentication) TESTS
+# ============================================================================
+
+# NLA detection
+rdp_nla_enabled
+rdp_nla_disabled
+rdp_nla_not_required
+
+# Authentication before connection
+rdp_auth_required
+rdp_auth_optional
+rdp_auth_none
+
+# ============================================================================
+# CERTIFICATE VALIDATION TESTS
+# ============================================================================
+
+# Self-signed certificate detection
+rdp_cert_self_signed
+rdp_cert_unknown_issuer
+rdp_cert_invalid
+
+# Certificate expiry checks
+rdp_cert_expired
+rdp_cert_expiring_soon
+rdp_cert_valid
+
+# MITM detection markers
+rdp_mitm_possible
+rdp_tls_version_check
+rdp_ssl_check
+
+# ============================================================================
+# BRUTE FORCE & ACCOUNT LOCKOUT TESTS
+# ============================================================================
+
+# Account lockout testing
+rdp_lockout_test_1
+rdp_lockout_test_2
+rdp_lockout_test_3
+rdp_lockout_test_4
+rdp_lockout_test_5
+
+# Username enumeration
+rdp_user_exists
+rdp_user_invalid
+rdp_user_disabled
+
+# ============================================================================
+# RDP GATEWAY SPECIFIC TESTS
+# ============================================================================
+
+# Gateway authentication
+rdp_gateway_auth
+rdp_gateway_basic
+rdp_gateway_ntlm
+rdp_gateway_forms
+
+# Gateway CVE-2020-0609 / CVE-2020-0610
+rdp_gateway_cve_2020_0609
+rdp_gateway_use_after_free
+rdp_gateway_rce_check
+
+# ============================================================================
+# VERSION DETECTION
+# ============================================================================
+
+# Windows version detection
+rdp_windows_7
+rdp_windows_8
+rdp_windows_10
+rdp_windows_11
+rdp_server_2008
+rdp_server_2012
+rdp_server_2016
+rdp_server_2019
+rdp_server_2022
+
+# RDP protocol version
+rdp_version_10
+rdp_version_9
+rdp_version_8
+rdp_version_7
+rdp_version_6
+
+# ============================================================================
+# SESSION & DENIAL OF SERVICE TESTS
+# ============================================================================
+
+# Session exhaustion
+rdp_session_max
+rdp_connection_limit
+rdp_session_exhaustion
+
+# DoS detection
+rdp_dos_flood
+rdp_dos_max_connections
+
+# ============================================================================
+# MISC SECURITY TESTS
+# ============================================================================
+
+# Clipboard redirection
+rdp_clipboard_enabled
+rdp_clipboard_disabled
+
+# Drive redirection
+rdp_drive_redirect
+rdp_disk_mount
+
+# Printer redirection
+rdp_printer_redirect
+
+# Port redirection
+rdp_port_redirect
+
+# Timezone redirection
+rdp_timezone_redirect
+
+# ============================================================================
+# FINGERPRINTING
+# ============================================================================
+
+# RDP service banner grab
+rdp_banner_grab
+rdp_service_detect
+rdp_version_detect
+
+# Host-based detection
+rdp_host_check
+rdp_port_3389_open
+rdp_port_3389_closed
+
+# ============================================================================
+# REMEDIATION VERIFICATION
+# ============================================================================
+
+# Post-patch verification
+rdp_bluekeep_patched
+rdp_cve_2020_0609_patched
+rdp_nla_verified
+rdp_encryption_verified
+rdp_cert_verified
+
+# Configuration verification
+rdp_account_lockout_enabled
+rdp_complex_password_enabled
+rdp_logging_enabled
+rdp_auditing_enabled
+
+# ============================================================================
+# END OF WORDLIST
+# ============================================================================

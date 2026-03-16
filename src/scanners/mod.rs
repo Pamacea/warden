@@ -10,43 +10,73 @@ pub mod api;
 pub mod recon;
 
 // Core security scanners
+pub mod business_logic;
+pub mod cloud_metadata;
 pub mod cors;
 pub mod dependencies;
+pub mod deserialization;
 pub mod disclosure;
+pub mod docker;
 pub mod ddos;
+pub mod elasticsearch;
 pub mod enumeration;
+pub mod file_upload;
 pub mod graphql;
+pub mod grpc;
 pub mod http;
+pub mod kubernetes;
+pub mod ldap;
+pub mod mongodb;
 pub mod open_redirect;
 pub mod path_traversal;
 pub mod port;
+pub mod race_condition;
+pub mod rdp;
+pub mod redis;
 pub mod secrets;
+pub mod serverless;
 pub mod ssrf;
 pub mod ssti;
 pub mod static_analyzer;
 pub mod stress;
+pub mod terraform;
 pub mod waf;
 pub mod xxe;
 
 // AST parsers exports - temporarily disabled
 // pub use ast_parsers::{FileDiscoverer, JsTsParser, PythonParser, RustParser, SourceLocation};
 pub use api::ApiScanner;
+pub use business_logic::BusinessLogicScanner;
+pub use cloud_metadata::{CloudMetadataScanner, CloudProvider};
 pub use cors::CorsScanner;
 pub use dependencies::DependencyScanner;
+pub use deserialization::DeserializationScanner;
 pub use disclosure::DisclosureScanner;
+pub use docker::DockerScanner;
 pub use ddos::DdosScanner;
+pub use elasticsearch::ElasticsearchScanner;
 pub use enumeration::EnumerationScanner;
+pub use file_upload::FileUploadScanner;
 pub use graphql::GraphQLScanner;
+pub use grpc::GrpcScanner;
 pub use http::HttpScanner;
+pub use kubernetes::KubernetesScanner;
+pub use ldap::LdapScanner;
+pub use mongodb::MongoScanner;
 pub use open_redirect::OpenRedirectScanner;
 pub use path_traversal::PathTraversalScanner;
 pub use port::PortScanner;
+pub use race_condition::RaceConditionScanner;
+pub use rdp::RdpScanner;
+pub use redis::RedisScanner;
 pub use recon::ReconScanner;
 pub use secrets::SecretsScanner;
+pub use serverless::ServerlessScanner;
 pub use ssrf::SsrfScanner;
 pub use ssti::SstiScanner;
 pub use static_analyzer::StaticScanner;
 pub use stress::StressScanner;
+pub use terraform::TerraformScanner;
 pub use waf::WafScanner;
 pub use xxe::XxeScanner;
 
@@ -136,6 +166,13 @@ impl ScannerEngine {
         Ok(scanner.scan(url).await?)
     }
 
+    /// Run gRPC scanner
+    #[allow(dead_code)]
+    pub async fn scan_grpc(&mut self, url: &str) -> Result<ScanReport> {
+        let scanner = GrpcScanner::new(self.config.clone());
+        Ok(scanner.scan(url).await?)
+    }
+
     /// Run User Enumeration scanner
     #[allow(dead_code)]
     pub async fn scan_enumeration(&mut self, url: &str) -> Result<ScanReport> {
@@ -168,6 +205,41 @@ impl ScannerEngine {
     #[allow(dead_code)]
     pub async fn scan_xxe(&mut self, url: &str) -> Result<ScanReport> {
         let scanner = XxeScanner::new(self.config.clone());
+        Ok(scanner.scan(url).await?)
+    }
+
+    /// Run Business Logic Vulnerability scanner
+    #[allow(dead_code)]
+    pub async fn scan_business_logic(&mut self, url: &str) -> Result<ScanReport> {
+        let scanner = BusinessLogicScanner::new(self.config.clone());
+        Ok(scanner.scan(url).await?)
+    }
+
+    /// Run Cloud Metadata Service scanner
+    #[allow(dead_code)]
+    pub async fn scan_cloud_metadata(&mut self, url: &str) -> Result<ScanReport> {
+        let scanner = CloudMetadataScanner::new(self.config.clone());
+        Ok(scanner.scan(url).await?)
+    }
+
+    /// Run Terraform/TFSec scanner
+    #[allow(dead_code)]
+    pub async fn scan_terraform(&mut self, path: &PathBuf) -> Result<ScanReport> {
+        let scanner = TerraformScanner::new(self.config.clone());
+        Ok(scanner.scan(path).await?)
+    }
+
+    /// Run Docker Security scanner
+    #[allow(dead_code)]
+    pub async fn scan_docker(&mut self, path: &PathBuf) -> Result<ScanReport> {
+        let scanner = DockerScanner::new(self.config.clone());
+        Ok(scanner.scan(path).await?)
+    }
+
+    /// Run RDP Security scanner
+    #[allow(dead_code)]
+    pub async fn scan_rdp(&mut self, url: &str) -> Result<ScanReport> {
+        let scanner = RdpScanner::new(self.config.clone());
         Ok(scanner.scan(url).await?)
     }
 

@@ -1,0 +1,724 @@
+# Docker Security Payloads
+# Embedded in Warden v0.8.0 Enterprise Edition
+
+# ============================================
+# CONTAINER BREAKOUT / ESCAPE PAYLOADS
+# ============================================
+
+# Cgroup release_agent escape
+d=/tmp/cgrp
+mount -t cgroup -o memory cgroup $d
+mkdir $d/x
+echo 1 >$d/x/notify_on_release
+echo "sleep 100" > /cmd
+sh -c "echo \$\$ > $d/release_agent"
+sh -c "echo \$\$ > $d/x/cgroup.procs"
+
+# Device mounting for escape
+/dev/sda1
+/dev/vda1
+/dev/xvda1
+/dev/nvme0n1
+/dev/sda
+/dev/vda
+/dev/sda2
+/dev/vda2
+/dev/mapper/root
+/mnt/host
+/mnt/root
+/root
+
+# /proc filesystem escapes
+/proc/1/root
+/proc/1/environ
+/proc/1/cmdline
+/proc/1/exe
+/proc/1/mounts
+/proc/1/cgroup
+/proc/sys/kernel/core_pattern
+/proc/sysrq-trigger
+/proc/self/environ
+/proc/self/cgroup
+/proc/self/mounts
+
+# /sys filesystem escapes
+/sys/kernel/debug
+/sys/kernel/security
+/sys/fs/cgroup
+/sys/devices/virtual/dmi/id/product_uuid
+/sys/firmware/devicetree/base/serial-number
+
+# ============================================
+# SENSITIVE PATHS TO MOUNT
+# ============================================
+
+# Host filesystem root
+/
+/host
+/hostname
+/etc/hostname
+/etc/hosts
+/etc/resolv.conf
+
+# System directories
+/root
+/root/.ssh
+/root/.aws
+/root/.docker
+/home
+/home/ubuntu
+/home/admin
+/etc
+/etc/passwd
+/etc/shadow
+/etc/sudoers
+/etc/ssh
+/ssh
+/var
+/var/log
+/var/run
+/run
+/boot
+/lib
+/lib64
+/usr/bin/docker
+/usr/local/bin/docker
+
+# Docker daemon paths
+/var/run/docker.sock
+/docker.sock
+/run/docker.sock
+/var/lib/docker
+/.dockerenv
+/proc/1/cgroup
+
+# Kubernetes paths
+/var/log/kubelet
+/etc/kubernetes
+/var/lib/kubelet
+/run/containerd/containerd.sock
+/run/crio/crio.sock
+/run/dockershim.sock
+
+# Cloud metadata
+/metaserver
+169.254.169.254
+/latest/meta-data/
+/latest/meta-data/iam/
+/latest/meta-data/identity-credentials/
+/latest/user-data
+/latest/dynamic/instance-identity/
+
+# ============================================
+# DANGEROUS CAPABILITIES
+# ============================================
+
+# Full escape capabilities
+CAP_SYS_ADMIN
+CAP_SYS_MODULE
+CAP_SYS_PTRACE
+CAP_SYS_RAWIO
+
+# Filesystem capabilities
+CAP_DAC_OVERRIDE
+CAP_DAC_READ_SEARCH
+CAP_FOWNER
+CAP_FSETID
+CAP_SETUID
+CAP_SETGID
+CAP_SETPCAP
+CAP_LINUX_IMMUTABLE
+CAP_CHOWN
+CAP_MKNOD
+
+# Network capabilities
+CAP_NET_ADMIN
+CAP_NET_RAW
+CAP_NET_BIND_SERVICE
+
+# Other system capabilities
+CAP_SYS_BOOT
+CAP_SYS_TIME
+CAP_SYSLOG
+CAP_SYS_CHROOT
+CAP_SYS_PACCT
+CAP_SYS_NICE
+CAP_SYS_RESOURCE
+CAP_SYS_TTY_CONFIG
+
+# IPC capabilities
+CAP_IPC_LOCK
+CAP_IPC_OWNER
+
+# Device capabilities
+CAP_BLOCK_SUSPEND
+CAP_LEASE
+
+# MAC capabilities
+CAP_MAC_OVERRIDE
+CAP_MAC_ADMIN
+
+# Audit capabilities
+CAP_AUDIT_CONTROL
+CAP_AUDIT_READ
+CAP_AUDIT_WRITE
+
+# Miscellaneous
+CAP_WAKE_ALARM
+
+# ============================================
+# DOCKER API COMMANDS
+# ============================================
+
+# Docker socket commands
+GET /version
+GET /info
+GET /containers/json
+GET /images/json
+POST /containers/create
+POST /containers/%s/start
+POST /containers/%s/exec
+POST /exec/%s/start
+
+# Container breakout via Docker socket
+POST /containers/create?HostConfig={"Privileged":true}
+POST /containers/create?HostConfig={"Binds":["/:/host"]}
+POST /containers/create?HostConfig={"Binds":["/var/run/docker.sock":"/var/run/docker.sock"]}
+POST /containers/create?HostConfig={"CapAdd":["ALL"]}
+POST /containers/create?HostConfig={"Devices":["/dev/sda1"]}
+
+# ============================================
+# DOCKERFILE INSTRUCTIONS
+# ============================================
+
+# Dangerous FROM patterns
+FROM ubuntu:latest
+FROM alpine:latest
+FROM node:latest
+FROM python:latest
+FROM centos:latest
+
+# Untrusted sources
+FROM gcr.io/mirrors/ubuntu
+FROM quay.io/
+FROM docker.io/
+FROM registry.hub.docker.com/
+
+# Dangerous USER patterns
+USER root
+USER 0
+USER 0:0
+
+# Dangerous ADD patterns
+ADD http://
+ADD https://
+ADD ftp://
+
+# Dangerous RUN patterns
+RUN curl
+RUN wget
+RUN eval
+RUN exec
+
+# ============================================
+# DOCKER COMPOSE CONFIGS
+# ============================================
+
+# Privileged mode
+privileged: true
+
+# Namespace sharing
+pid_mode: host
+network_mode: host
+ipc_mode: host
+userns_mode: host
+
+# Dangerous capabilities
+cap_add:
+- ALL
+- SYS_ADMIN
+- NET_ADMIN
+- SYS_MODULE
+
+# Dangerous volumes
+volumes:
+- /:/host
+- /var/run/docker.sock:/docker.sock
+- /:/root
+- /etc:/host-etc
+- /root:/root
+- /var:/host-var
+- /proc:/proc
+- /sys:/sys
+
+# Dangerous devices
+devices:
+- /dev/sda1
+- /dev/mem
+- /dev/kmem
+
+# Security options
+security_opt:
+- seccomp:unconfined
+- apparmor:unconfined
+- no-new-privileges:false
+
+# ============================================
+# KUBERNETES MANIFEST CONFIGS
+# ============================================
+
+# Privileged containers
+privileged: true
+
+# Host namespaces
+hostPID: true
+hostNetwork: true
+hostIPC: true
+
+# Dangerous hostPath mounts
+hostPath:
+path: /
+path: /root
+path: /etc
+path: /var/run/docker.sock
+
+# Dangerous capabilities
+capabilities:
+add:
+- SYS_ADMIN
+- ALL
+
+# ============================================
+# IMAGE VULNERABILITIES
+# ============================================
+
+# Known vulnerable base images
+alpine:3.1
+alpine:3.2
+alpine:3.3
+ubuntu:12.04
+ubuntu:14.04
+centos:6
+centos:7
+
+# ============================================
+# RUNTIME ESCAPE COMMANDS
+# ============================================
+
+# runc escape attempts
+runc --root /host
+runc exec
+runc run
+
+# Containerd commands
+ctr --address /run/containerd/containerd.sock
+ctr containers
+ctr tasks exec
+
+# CRI-O commands
+crictl --runtime-endpoint=/run/crio/crio.sock
+crictl exec
+crictl pods
+
+# ============================================
+# MOUNT ESCAPE TECHNIQUES
+# ============================================
+
+# Mount host filesystem
+mount /dev/sda1 /mnt
+mount --bind /host /root
+mount -t proc none /proc
+mount -t sysfs none /sys
+mount -t devtmpfs none /dev
+
+# ============================================
+# PROCESS ESCAPE
+# ============================================
+
+# Ptrace-based escape
+ptrace
+strace
+gdb
+
+# Process manipulation
+kill -HUP 1
+kill -USR1 1
+kill -9 1
+
+# Namespace manipulation
+unshare
+nsenter
+
+# ============================================
+# KERNEL EXPLOITATION
+# ============================================
+
+# Kernel module loading
+insmod
+modprobe
+lsmod
+
+# Kernel parameters
+sysctl
+/proc/sys/kernel/
+
+# ============================================
+# FILE SYSTEM ESCAPE
+# ============================================
+
+# Sensitive file access
+/root/.ssh/id_rsa
+/root/.ssh/authorized_keys
+/root/.aws/credentials
+/etc/shadow
+/etc/sudoers
+/var/log/auth.log
+/proc/kcore
+
+# ============================================
+# NETWORK ESCAPE
+# ============================================
+
+# Host network access
+eth0
+docker0
+virbr0
+br-
+veth
+
+# Port scanning
+localhost:2375
+localhost:2376
+localhost:3375
+0.0.0.0:2375
+
+# ============================================
+# CONTAINER ENUMERATION
+# ============================================
+
+# Container metadata
+/.dockerenv
+/proc/self/cgroup
+/proc/1/environ
+/proc/1/cpuset
+/etc/hostname
+
+# Docker environment
+DOCKER_CONTAINER
+DOCKER_HOST
+
+# ============================================
+# LOG/TMP ESCAPE
+# ============================================
+
+# Log file injection
+/var/log
+/tmp
+/var/tmp
+/dev/shm
+/run/shm
+
+# ============================================
+# SPECIAL DEVICE FILES
+# ============================================
+
+/dev/mem
+/dev/kmem
+/dev/port
+/dev/sda
+/dev/hda
+/dev/vda
+/dev/xvda
+
+# ============================================
+# DOCKER REGISTRY ESCAPE
+# ============================================
+
+# Private registry access
+localhost:5000
+registry:5000
+docker-registry:5000
+
+# ============================================
+# SHELL ESCAPE PAYLOADS
+# ============================================
+
+# Shell command injection
+; cat /etc/passwd
+| curl
+`wget `
+$(nc -e /bin/sh
+
+# Reverse shell patterns
+nc -e /bin/sh
+bash -i >& /dev/tcp/
+sh -i >& /dev/udp/
+
+# ============================================
+# BINARY INJECTION
+# ============================================
+
+# Dangerous binaries in PATH
+/bin/chroot
+/usr/bin/chroot
+/bin/mount
+/usr/bin/mount
+/bin/umount
+/usr/bin/umount
+/sbin/insmod
+/usr/sbin/insmod
+/sbin/modprobe
+/usr/sbin/modprobe
+
+# ============================================
+# CLOUD PROVIDER ESCAPE
+# ============================================
+
+# AWS ECS
+/ECS/data
+/ecs/data
+
+# GCP Container-Optimized OS
+/mnt/stateful_partition
+/etc/boto.cfg
+
+# Azure AKS
+/var/run/azure-vnet.json
+
+# ============================================
+# DOCKER SWARM ESCAPE
+# ============================================
+
+# Swarm sockets
+/var/run/docker.sock
+/swarm/manager/socket
+/swarm/worker/socket
+
+# ============================================
+# CONTAINER RUNTIME ESCAPE
+# ============================================
+
+# Podman
+podman --remote
+podman -H unix:///run/podman/podman.sock
+
+# LXC/LXD
+lxc exec
+lxc-start
+lxc-attach
+lxd exec
+
+# ============================================
+# ESCAPE VIA DOCKER BUILD
+# ============================================
+
+# Dangerous build patterns
+COPY . /
+ADD . /
+RUN chown root:root /
+COPY --from=0 /
+
+# ============================================
+# MULTI-STAGE ESCAPE
+# ============================================
+
+# Copying from previous stages
+COPY --from=builder /root /
+COPY --from=deps /app/secrets /
+
+# ============================================
+# DOCKER SOCKET PROXY ESCAPE
+# ============================================
+
+# Socket proxy commands
+DOCKER_HOST=tcp://localhost:2375
+DOCKER_HOST=unix:///var/run/docker.sock
+DOCKER_HOST=tcp://127.0.0.1:2376
+
+# ============================================
+# ROOTLESS DOCKER BYPASS
+# ============================================
+
+# Rootless context escape
+XDG_RUNTIME_DIR
+.X11-unix
+wayland-0
+
+# ============================================
+# STORAGE DRIVER ESCAPE
+# ============================================
+
+# Overlayfs escape
+/overlay2
+/overlay
+/var/lib/docker/overlay2
+
+# Btrfs/ZFS escape
+/var/lib/docker/btrfs
+/var/lib/docker/zfs
+
+# ============================================
+# NETWORK ESCAPE VIA BRIDGE
+# ============================================
+
+# Bridge manipulation
+brctl
+ip link add
+ovs-vsctl
+
+# ============================================
+# DOCKER API ENUMERATION
+# ============================================
+
+# API endpoints for info gathering
+/images/json
+/containers/json
+/networks
+/volumes
+/info
+/version
+/_catalog
+
+# ============================================
+# ESCAPE VIA DOCKER PLUGIN
+# ============================================
+
+# Plugin socket paths
+/var/lib/docker/plugins
+/run/docker/plugins
+
+# ============================================
+# CRI-O ESCAPE
+# ============================================
+
+# CRI-O socket
+/run/crio/crio.sock
+/var/run/crio/crio.sock
+
+# ============================================
+# CONTAINERD ESCAPE
+# ============================================
+
+# Containerd namespaces
+moby
+containerd
+
+# Containerd socket
+/run/containerd/containerd.sock
+/var/run/containerd/containerd.sock
+
+# ============================================
+# RUNC ESCAPE
+# ============================================
+
+# runc state
+/run/runc
+/var/run/runc
+
+# ============================================
+# DOCKER SECRETS ESCAPE
+# ============================================
+
+# Docker secrets paths
+/run/secrets/
+/secrets/
+docker-secret
+swarm-secret
+
+# ============================================
+# ESCAPE VIA DOCKER LOGGING
+# ============================================
+
+# Log drivers
+json-file
+syslog
+journald
+fluentd
+awslogs
+
+# ============================================
+# ESCAPE VIA HEALTHCHECK
+# ============================================
+
+# Healthcheck manipulation
+HEALTHCHECK --interval=
+HEALTHCHECK --timeout=
+HEALTHCHECK --retries=
+
+# ============================================
+# ESCAPE VIA DOCKER NETWORK
+# ============================================
+
+# Network drivers
+bridge
+overlay
+macvlan
+ipvlan
+host
+
+# ============================================
+# DOCKER SWARM SERVICES
+# ============================================
+
+# Swarm service escape
+docker service create
+docker service update
+docker service scale
+
+# ============================================
+# ESCAPE VIA DOCKER CONFIG
+# ============================================
+
+# Docker config paths
+/config.json
+/daemon.json
+.docker/config.json
+
+# ============================================
+# ESCAPE VIA DOCKER CONTEXT
+# ============================================
+
+# Context manipulation
+docker context use
+docker context create
+docker context ls
+
+# ============================================
+# ESCAPE VIA DOCKER BUILDER
+# ============================================
+
+# BuildKit escapes
+#mount=type=bind
+#mount=type=cache
+#mount=type=secret
+#mount=type=ssh
+
+# ============================================
+# ESCAPE VIA DOCKER TRUST
+# ============================================
+
+# Docker trust manipulation
+DOCKER_CONTENT_TRUST=0
+docker trust sign
+docker trust verify
+
+# ============================================
+# ESCAPE VIA DOCKER SCAN
+# ============================================
+
+# Docker scan bypass
+docker scan --severity
+docker scan --exclude-base
+
+# ============================================
+# ESCAPE VIA DOCKER HUB
+# ============================================
+
+# Docker Hub tokens
+hub.docker.com
+auth.docker.com
+registry-1.docker.io
+
+# ============================================
+# END OF DOCKER SECURITY WORDLIST
+# ============================================

