@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.1] - 2026-03-16
+
+### Fixed
+- **Windows Self-Update Bug** - Fixed "Access denied (os error 5)" error
+  - Improved batch script with longer wait times
+  - Added warden.exe process detection before replacement
+  - Better error messages for troubleshooting
+  - Uses START /B /MIN to run script independently
+
 ## [0.8.0] - 2026-03-16
 
 ### MEGA RELEASE
@@ -437,7 +446,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CLI with colored output
 - Multi-platform support (Windows, macOS, Linux)
 
-[Unreleased]: https://github.com/Pamacea/warden/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/Pamacea/warden/compare/v0.8.1...HEAD
+[0.8.1]: https://github.com/Pamacea/warden/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/Pamacea/warden/compare/v0.7.5...v0.8.0
 [0.7.5]: https://github.com/Pamacea/warden/compare/v0.7.1...v0.7.5
 [0.7.1]: https://github.com/Pamacea/warden/compare/v0.7.0...v0.7.1

@@ -182,6 +182,25 @@ export class FindingsProvider implements vscode.TreeDataProvider<FindingTreeItem
   }
 
   /**
+   * Convert severity description string to VulnSeverity enum
+   */
+  private getSeverityFromDescription(description: string): VulnSeverity {
+    switch (description) {
+      case 'Critical':
+        return VulnSeverity.Critical;
+      case 'High':
+        return VulnSeverity.High;
+      case 'Medium':
+        return VulnSeverity.Medium;
+      case 'Low':
+        return VulnSeverity.Low;
+      case 'Info':
+      default:
+        return VulnSeverity.Info;
+    }
+  }
+
+  /**
    * Build tooltip markdown for a finding
    */
   private buildTooltip(vuln: Vuln): string {
@@ -270,11 +289,13 @@ export class FileFindingsProvider implements vscode.TreeDataProvider<FindingTree
       const activeFindings = findings.filter((f) => !f.ignored);
       if (activeFindings.length > 0) {
         const filename = vscode.Uri.parse(uri).fsPath.split('/').pop() || uri;
+        const highestSeverity = this.getHighestSeverity(activeFindings);
         items.push({
           id: `file-${uri}`,
           label: `${filename} (${activeFindings.length})`,
-          description: this.getHighestSeverity(activeFindings),
+          description: highestSeverity,
           icon: this.getSeverityIcon(activeFindings),
+          severity: this.getSeverityFromDescription(highestSeverity),
           collapsibleState: vscode.TreeItemCollapsibleState.Collapsed,
           uri,
         });
@@ -324,5 +345,21 @@ export class FileFindingsProvider implements vscode.TreeDataProvider<FindingTree
 
   private getSeverityIcon(findings: Vuln[]): string {
     return SEVERITY_ICONS[this.getHighestSeverity(findings) as VulnSeverity];
+  }
+
+  private getSeverityFromDescription(description: string): VulnSeverity {
+    switch (description) {
+      case 'Critical':
+        return VulnSeverity.Critical;
+      case 'High':
+        return VulnSeverity.High;
+      case 'Medium':
+        return VulnSeverity.Medium;
+      case 'Low':
+        return VulnSeverity.Low;
+      case 'Info':
+      default:
+        return VulnSeverity.Info;
+    }
   }
 }

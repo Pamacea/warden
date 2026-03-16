@@ -167,29 +167,57 @@ fn self_update_windows(_force: bool, use_git: bool) -> Result<()> {
     let script_content = format!(
         r#"
 @echo off
-echo Updating Warden...
-timeout /t 2 /nobreak > nul
-move /Y "{}" "{}" > nul 2>&1
+set "BINARY={}"
+set "CURRENT={}"
+set "TEMP_DIR={}"
+set "SCRIPT=%~nx0"
+
+echo Waiting for Warden to close...
+REM Wait longer to ensure warden.exe has fully terminated
+timeout /t 3 /nobreak > nul
+
+REM Check if warden is still running
+tasklist /FI "IMAGENAME eq warden.exe" 2>nul | find /I "warden.exe" >nul
+if %ERRORLEVEL% EQU 0 (
+    echo Warden is still running, waiting 5 more seconds...
+    timeout /t 5 /nobreak > nul
+)
+
+echo Updating Warden binary...
+move /Y "%BINARY%" "%CURRENT%" > nul 2>&1
 if errorlevel 1 (
-    echo Update failed - try running as Administrator
+    echo Update failed - Access denied.
+    echo.
+    echo Possible reasons:
+    echo   - Warden is still running
+    echo   - Insufficient permissions
+    echo   - Antivirus is blocking the operation
+    echo.
+    echo Try:
+    echo   1. Close all terminal windows and VS Code instances
+    echo   2. Run warden update --force again
+    echo   3. Or run as Administrator
     pause
     exit /b 1
 )
-rmdir /S /Q "{}" > nul 2>&1
-del "{}" > nul 2>&1
+
+REM Cleanup
+rmdir /S /Q "%TEMP_DIR%" > nul 2>&1
+del "%SCRIPT%" > nul 2>&1
+
 echo.
 echo ==================================================
-echo   Warden updated successfully!
+echo   Warden v{} updated successfully!
 echo ==================================================
 echo.
 echo Run 'warden --version' to verify
 echo.
-timeout /t 5 /nobreak
+timeout /t 3 /nobreak
 "#,
         temp_binary.display(),
         current_exe.display(),
         temp_root.display(),
-        update_script.display()
+        env!("CARGO_PKG_VERSION")
     );
 
     let mut script_file = File::create(&update_script)?;
@@ -202,12 +230,16 @@ timeout /t 5 /nobreak
     println!("{}", "A batch script will automatically replace the binary.".dimmed());
     println!();
 
-    // Launch the update script detached and exit
+    // Launch the update script detached using START to ensure it runs independently
+    // This is critical on Windows to avoid the parent process blocking the replacement
+    let script_path = update_script.to_string_lossy().to_string();
+    let script_arg = format!("start /B /MIN \"\" \"{}\"", script_path);
     Command::new("cmd")
-        .args(["/C", &update_script.to_string_lossy().to_string()])
+        .arg("/C")
+        .arg(&script_arg)
         .spawn()?;
 
-    // Exit immediately - the batch script will do the replacement
+    // Exit immediately - the batch script will wait and do the replacement
     std::process::exit(0);
 }
 

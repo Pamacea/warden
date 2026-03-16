@@ -47,7 +47,7 @@ export class ScannerManager {
    */
   private updateConfig(): void {
     const config = this.configManager.getConfiguration();
-    this.cli = new WardenCli(configManager.getExecutablePath());
+    this.cli = new WardenCli(this.configManager.getExecutablePath());
     this.maxConcurrentScans = config.maxConcurrentScans;
   }
 

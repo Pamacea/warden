@@ -42,15 +42,6 @@ export async function activate(context: vscode.ExtensionContext) {
     showCollapseAll: true,
   });
 
-  const dashboardView = vscode.window.createWebViewView(
-    'warden.dashboard',
-    {
-      webviewOptions: {
-        retainContextWhenHidden: true,
-      },
-    }
-  );
-
   // Register commands
   registerCommands(context, {
     configManager,
