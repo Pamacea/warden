@@ -537,7 +537,7 @@ impl SiemExporter {
         &self,
         url: &str,
         token: &str,
-        index: Option<&str>,
+        _index: Option<&str>,
         formatted: &FormattedEvent,
     ) -> AuditResult<()> {
         let builder = self.client
@@ -627,7 +627,7 @@ impl SiemExporter {
     async fn send_to_syslog(
         &self,
         config: &SyslogConfig,
-        formatted: &FormattedEvent,
+        _formatted: &FormattedEvent,
     ) -> AuditResult<()> {
         // Note: Actual syslog sending would use a syslog library
         // For now, we'll just log

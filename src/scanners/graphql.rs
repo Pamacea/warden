@@ -1,5 +1,7 @@
 //! GraphQL Security Scanner
 
+#![allow(dead_code)]
+
 use crate::scanners::{ScanReport, ScannerConfig, Target, Vuln, VulnSeverity};
 use anyhow::Result;
 use reqwest::Client;

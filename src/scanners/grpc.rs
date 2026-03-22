@@ -7,6 +7,8 @@
 //! - Compression abuse (DoS via compression bombs)
 //! - Large message handling
 
+#![allow(dead_code)]
+
 use crate::scanners::{ScanReport, ScannerConfig, Target, Vuln, VulnSeverity};
 use anyhow::Result;
 use reqwest::Client;

@@ -551,8 +551,9 @@ impl FalsePositiveAnalyzer {
             return 0.0;
         }
 
-        let match_distance = a_len.max(b_len) / 2 - 1;
-        if match_distance < 0 {
+        let match_distance = a_len.max(b_len) / 2;
+        // The subtraction of 1 was removed as match_distance is always >= 0 for usize
+        if match_distance == 0 {
             return 0.0;
         }
 

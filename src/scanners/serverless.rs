@@ -13,6 +13,8 @@
 //! - Layer dependencies
 //! - Timeout and memory configurations
 
+#![allow(dead_code)]
+
 use crate::scanners::{ScanReport, ScannerConfig, Target, Vuln, VulnSeverity};
 use anyhow::Result;
 use regex::Regex;
@@ -148,7 +150,7 @@ impl ServerlessScanner {
         // Check for exposed secrets in environment variables
         for (pattern_name, pattern) in self.get_secret_patterns() {
             if let Ok(re) = Regex::new(pattern) {
-                for mat in re.find_iter(content) {
+                for _mat in re.find_iter(content) {
                     findings.push(Vuln {
                         severity: VulnSeverity::Critical,
                         title: format!("Exposed Secret in {}: {}", filename, pattern_name),
@@ -725,7 +727,7 @@ impl ServerlessScanner {
         // Check for hardcoded secrets in code
         for (pattern_name, pattern) in self.get_secret_patterns() {
             if let Ok(re) = Regex::new(pattern) {
-                for mat in re.find_iter(content) {
+                for _mat in re.find_iter(content) {
                     findings.push(Vuln {
                         severity: VulnSeverity::Critical,
                         title: format!("Hardcoded Secret: {}", pattern_name),

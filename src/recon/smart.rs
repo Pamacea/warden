@@ -163,7 +163,7 @@ impl SmartReconScanner {
         let mut records = Vec::new();
 
         // Common DNS record types to check
-        let record_types = vec![
+        let _record_types = vec![
             "A", "AAAA", "CNAME", "MX", "NS", "TXT", "SRV", "DMARC",
         ];
 

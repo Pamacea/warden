@@ -14,6 +14,7 @@
 use crate::scanners::{ScanReport, VulnSeverity};
 use crate::scoring::CategoryScore;
 
+#[allow(dead_code)]
 const MFA_KEYWORDS: &[&str] = &[
     "mfa", "multi-factor", "2fa", "two-factor",
     "totp", "totp backup", "authenticator app",

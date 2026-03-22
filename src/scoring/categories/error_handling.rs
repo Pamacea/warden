@@ -24,11 +24,13 @@ const ERROR_LEAK_KEYWORDS: &[&str] = &[
     "path disclosure", "file path", "server path",
 ];
 
+#[allow(dead_code)]
 const GENERIC_ERROR_KEYWORDS: &[&str] = &[
     "generic error", "safe error", "error handling",
     "proper error", "secure error",
 ];
 
+#[allow(dead_code)]
 const LOGGING_KEYWORDS: &[&str] = &[
     "security logging", "audit log", "error logging",
     "log security event", "audit trail", "security event",

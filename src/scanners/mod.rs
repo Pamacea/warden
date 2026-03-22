@@ -1,5 +1,11 @@
 //! Scanner modules
 
+// Core scanner trait and registry
+pub mod r#trait;
+
+// Tree-sitter parser cache for efficient AST reuse
+pub mod parser_cache;
+
 // AST parsers - temporarily disabled
 // pub mod ast_parsers;
 

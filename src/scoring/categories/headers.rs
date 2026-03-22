@@ -44,6 +44,7 @@ const CORS_KEYWORDS: &[&str] = &[
     "permissive cors", "cors misconfiguration", "origin *",
 ];
 
+#[allow(dead_code)]
 const XCSP_KEYWORDS: &[&str] = &[
     "x-xss-protection", "xss protection",
     "missing x-xss-protection",

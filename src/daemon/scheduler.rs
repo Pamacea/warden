@@ -335,6 +335,31 @@ impl CronExpression {
         Ok(values)
     }
 
+    /// Get the minutes field
+    pub fn minutes(&self) -> &[u32] {
+        &self.minutes
+    }
+
+    /// Get the hours field
+    pub fn hours(&self) -> &[u32] {
+        &self.hours
+    }
+
+    /// Get the days of month field
+    pub fn days_of_month(&self) -> &[u32] {
+        &self.days_of_month
+    }
+
+    /// Get the months field
+    pub fn months(&self) -> &[u32] {
+        &self.months
+    }
+
+    /// Get the days of week field
+    pub fn days_of_week(&self) -> &[u32] {
+        &self.days_of_week
+    }
+
     /// Get the next time this cron expression should run
     pub fn next_after(&self, after: DateTime<Utc>) -> DateTime<Utc> {
         let mut next = after + chrono::Duration::seconds(60);

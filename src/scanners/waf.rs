@@ -6,6 +6,8 @@
 //! This scanner performs passive detection only and does NOT attempt bypass techniques.
 //! Bypass techniques are documented for informational purposes in recommendations.
 
+#![allow(dead_code)]
+
 use crate::scanners::{ScanReport, ScannerConfig, Target, Vuln, VulnSeverity};
 use anyhow::Result;
 use reqwest::Client;

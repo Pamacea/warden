@@ -6,6 +6,8 @@
 //! - Container escape vectors (cgroup, device mounting, socket exposure)
 //! - Image analysis (base vulnerabilities, layers, size)
 
+#![allow(dead_code)]
+
 use crate::scanners::{ScanReport, ScannerConfig, Target, Vuln, VulnSeverity};
 use anyhow::Result;
 use regex::Regex;

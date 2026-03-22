@@ -441,7 +441,7 @@ pub fn verify_log_file(path: &std::path::Path) -> Result<LogVerification, AuditE
 
         // Parse the entry (without signature first)
         let parts: Vec<&str> = line.rsplitn(2, ' ').collect();
-        let (json_part, signature) = if parts.len() == 2 {
+        let (json_part, _signature) = if parts.len() == 2 {
             (parts[1], Some(parts[0].to_string()))
         } else {
             (line, None)

@@ -11,6 +11,8 @@
 //!
 //! WARNING: Always requires user confirmation before scanning.
 
+#![allow(dead_code)]
+
 use crate::scanners::{ScanReport, ScannerConfig, Target, Vuln, VulnSeverity};
 use anyhow::Result;
 use reqwest::Client;

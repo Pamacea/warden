@@ -534,7 +534,7 @@ impl DeserializationScanner {
     }
 
     /// Check for Java deserialization vulnerabilities
-    async fn check_java_deserialization(&self, url: &str, format: &SerializationFormat) -> Result<ScanReport> {
+    async fn check_java_deserialization(&self, url: &str, _format: &SerializationFormat) -> Result<ScanReport> {
         let mut report = ScanReport::new(Target::Url(url.to_string()));
 
         for (payload, name, technique) in JAVA_PAYLOADS {
@@ -859,7 +859,7 @@ impl DeserializationScanner {
     }
 
     /// Create vulnerability finding
-    fn create_vuln(&self, name: &str, technique: &DeserTechnique, location: &str, response: &str) -> Vuln {
+    fn create_vuln(&self, name: &str, technique: &DeserTechnique, location: &str, _response: &str) -> Vuln {
         Vuln {
             severity: technique.severity(),
             title: format!("Deserialization RCE: {} - {}", name, technique.description()),
@@ -933,7 +933,7 @@ mod tests {
 
         assert_eq!(
             scanner.detect_format_from_text("O:8:\"stdClass\":0:{}"),
-            Some(SerializationFormat::PhpSerialized)
+            SerializationFormat::PhpSerialized
         );
     }
 
@@ -944,7 +944,7 @@ mod tests {
 
         assert_eq!(
             scanner.detect_format_from_text("(dp0\nS'test'\np1\n."),
-            Some(SerializationFormat::PythonPickle)
+            SerializationFormat::PythonPickle
         );
     }
 

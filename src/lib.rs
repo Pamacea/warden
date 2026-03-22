@@ -1,4 +1,4 @@
-//! Warden library
+//! Oalacea Warden library
 //!
 //! This library provides the core functionality for the Warden security scanner.
 
@@ -9,6 +9,7 @@ pub mod cli;
 pub mod config;
 pub mod daemon;
 pub mod detection;
+pub mod error;
 pub mod integrations;
 pub mod ml;
 pub mod payloads;
@@ -38,6 +39,7 @@ pub use auth::{
 };
 pub use cli::{Cli, Commands, ConfigAction};
 pub use config::{Config, ConfigError, ProfileConfig};
+pub use error::{ScannerError, StaticAnalysisError};
 pub use detection::{DetectInfo, Framework, Language};
 pub use ml::{
     AdaptiveSeverity, Anomaly, AnomalyConfig, AnomalyReport, AnomalySeverity, AnomalyType,
@@ -59,6 +61,10 @@ pub use recon::{
 };
 pub use reporters::ReportFormat;
 pub use scanners::{ScannerEngine, ScanReport, Vuln, VulnSeverity};
+pub use scanners::r#trait::{
+    ScannerCategory, ScannerMetadata, ScannerRegistry, ScannerSeverity, SecurityScanner, TargetType,
+};
+pub use scanners::parser_cache::{parse_file_cached, CachedParse, ParserCache, ParserLanguage};
 pub use scoring::{CategoryScore, Grade, SecurityScore};
 
 /// Daemon exports for v0.8.0 Enterprise Edition

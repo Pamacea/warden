@@ -12,6 +12,8 @@
 //! Default Redis port: 6379
 //! TLS Redis port: 6380
 
+#![allow(dead_code)]
+
 use crate::scanners::{ScanReport, ScannerConfig, Target, Vuln, VulnSeverity};
 use anyhow::Result;
 use std::time::Duration;

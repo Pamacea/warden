@@ -132,6 +132,7 @@ impl GitLabClient {
     }
 
     /// Make a PUT request to the GitLab API
+    #[allow(dead_code)]
     async fn put(&self, endpoint: &str, body: serde_json::Value) -> Result<reqwest::Response> {
         let url = format!("{}{}", self.api_url(), endpoint);
         let response = self.client
@@ -1107,11 +1108,11 @@ impl GitLabMRScanner {
         self.client.create_mr_note(mr_iid, &comment).await?;
 
         // For critical findings, create inline comments
-        for (idx, vuln) in scan_report.findings.iter().enumerate() {
+        for (_idx, vuln) in scan_report.findings.iter().enumerate() {
             if vuln.severity == crate::scanners::VulnSeverity::Critical
                 || vuln.severity == crate::scanners::VulnSeverity::High
             {
-                if let Some(location) = &vuln.location {
+                if let Some(_location) = &vuln.location {
                     // Try to create inline comment for file-specific findings
                     let _ = self.create_inline_comment(mr_iid, vuln, &changes).await;
                 }
@@ -1125,7 +1126,7 @@ impl GitLabMRScanner {
     fn generate_mr_comment(
         &self,
         report: &crate::scanners::ScanReport,
-        mr: &GitLabMergeRequest,
+        _mr: &GitLabMergeRequest,
     ) -> String {
         let mut comment = String::from("## Warden Security Scan Report\n\n");
 
@@ -1660,7 +1661,7 @@ impl GitLabIntegration {
     /// Upload security artifacts to GitLab
     pub async fn upload_artifacts(
         &self,
-        report_path: &Path,
+        _report_path: &Path,
         artifact_name: &str,
     ) -> Result<String> {
         // This would use GitLab's project file upload API

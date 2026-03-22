@@ -114,7 +114,7 @@ pub struct ScanMonitor {
 
 /// Entry in scan history
 #[derive(Clone, Debug, Serialize, Deserialize)]
-struct ScanHistoryEntry {
+pub struct ScanHistoryEntry {
     job_id: Uuid,
     timestamp: DateTime<Utc>,
     duration: f64,

@@ -626,7 +626,7 @@ mod tests {
     #[test]
     fn test_webhook_config_builder() {
         let config = WebhookConfig::slack("https://hooks.slack.com/test".to_string())
-            .with_channel("#security")
+            .with_channel("#security".to_string())
             .with_username("Security Bot");
 
         assert_eq!(config.webhook_type, WebhookType::Slack);
@@ -661,14 +661,14 @@ mod tests {
     #[test]
     fn test_cron_parse_every_minute() {
         let cron = super::super::scheduler::CronExpression::parse("* * * * *").unwrap();
-        assert_eq!(cron.minutes.len(), 60);
+        assert_eq!(cron.minutes().len(), 60);
     }
 
     #[test]
     fn test_cron_parse_specific() {
         let cron = super::super::scheduler::CronExpression::parse("30 9 * * 1").unwrap();
-        assert_eq!(cron.minutes, vec![30]);
-        assert_eq!(cron.hours, vec![9]);
-        assert_eq!(cron.days_of_week, vec![1]);
+        assert_eq!(cron.minutes(), &[30]);
+        assert_eq!(cron.hours(), &[9]);
+        assert_eq!(cron.days_of_week(), &[1]);
     }
 }

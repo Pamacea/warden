@@ -1,12 +1,12 @@
-# Warden Architecture
+# Oalacea Warden Architecture
 
 ## Overview
 
-Warden is a 100% Rust security review CLI tool designed for speed, safety, and simplicity.
+Oalacea Warden is a 100% Rust security review CLI tool designed for speed, safety, and simplicity.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
-│                              Warden CLI                                  │
+│                         Oalacea Warden CLI                              │
 │  ┌──────────────────────────────────────────────────────────────────┐  │
 │  │                       Command Layer (clap)                        │  │
 │  └──────────────────────────────────────────────────────────────────┘  │
@@ -32,7 +32,7 @@ Warden is a 100% Rust security review CLI tool designed for speed, safety, and s
 ## Project Structure
 
 ```
-warden/
+oalacea-warden/
 ├── src/
 │   ├── main.rs                 # CLI entry point
 │   ├── cli.rs                  # Command line definitions
@@ -91,7 +91,7 @@ warden/
 use clap::{Parser, Subcommand};
 
 #[derive(Parser)]
-#[command(name = "warden")]
+#[command(name = "oalacea-warden")]
 #[command(about = "AI-powered security review CLI", long_about = None)]
 struct Cli {
     #[command(subcommand)]
@@ -414,7 +414,7 @@ mod tests {
 // tests/integration_test.rs
 #[tokio::test]
 async fn test_full_scan() {
-    let result = warden::scan("http://localhost:8080").await;
+    let result = oalacea_warden::scan("http://localhost:8080").await;
     assert!(result.is_ok());
 }
 
@@ -431,8 +431,8 @@ fn benchmark_http_scan(c: &mut Criterion) {
 
 ## Deployment
 
-Warden is distributed via:
-1. **crates.io**: `cargo install warden-sec`
+Oalacea Warden is distributed via:
+1. **crates.io**: `cargo install oalacea-warden`
 2. **GitHub Releases**: Pre-built binaries for all platforms
-3. **Homebrew**: `brew install warden`
-4. **Scoop**: `scoop install warden`
+3. **Homebrew**: `brew install oalacea-warden`
+4. **Scoop**: `scoop install oalacea-warden`

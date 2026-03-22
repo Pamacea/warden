@@ -121,13 +121,12 @@ impl AuditMetadata {
         actor: String,
     ) -> Self {
         use uuid::Uuid;
-        use sha2::Digest;
 
         let id = Uuid::new_v4().to_string();
         let timestamp = chrono::Utc::now();
 
         let mut metadata = Self {
-            id: id.clone(),
+            id,
             timestamp,
             event_type: event_type.to_string(),
             severity: severity.to_string(),

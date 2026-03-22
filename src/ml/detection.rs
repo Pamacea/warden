@@ -613,7 +613,7 @@ impl MlDetector {
         stats.anomaly_score > self.anomaly_config.anomaly_threshold
     }
 
-    fn generate_zero_day_tests(&self, target: &str, stats: &dyn StatsContainer) -> Vec<String> {
+    fn generate_zero_day_tests(&self, target: &str, _stats: &dyn StatsContainer) -> Vec<String> {
         vec![
             format!("Fuzz parameter '{}' with boundary values", target),
             format!("Test parameter '{}' with type confusion payloads", target),
@@ -946,6 +946,7 @@ pub struct EndpointStats {
 }
 
 /// Trait for stats containers
+#[allow(dead_code)]
 trait StatsContainer {
     fn anomaly_score(&self) -> f64;
     fn anomaly_description(&self) -> &str;

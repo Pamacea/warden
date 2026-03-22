@@ -1,10 +1,10 @@
-# Warden
+# Oalacea Warden
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Crates.io](https://img.shields.io/crates/v/warden-sec)](https://crates.io/crates/warden-sec)
+[![Crates.io](https://img.shields.io/crates/v/oalacea-warden)](https://crates.io/crates/oalacea-warden)
 [![Rust](https://img.shields.io/badge/rust-1.85+-orange.svg)](https://www.rust-lang.org/)
 
-**AI-powered security review CLI tool for web applications.** 100% Rust, zero dependencies.
+**AI-powered security review CLI tool for web applications.** Part of the Oalacea Security Suite. 100% Rust, zero dependencies.
 
 ## Features
 
@@ -51,7 +51,7 @@ Tailwind, shadcn/ui, Chakra UI, Mantine
 
 ```bash
 # Install from crates.io
-cargo install warden-sec
+cargo install oalacea-warden
 
 # Or build from source
 cargo install --path .

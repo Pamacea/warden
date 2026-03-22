@@ -1,6 +1,6 @@
-# Warden + Claude Code - Tutoriel d'Intégration
+# Oalacea Warden + Claude Code - Tutoriel d'Intégration
 
-> Guide complet pour utiliser Warden avec Claude Code afin de scanner, détecter et corriger automatiquement les vulnérabilités de sécurité.
+> Guide complet pour utiliser Oalacea Warden avec Claude Code afin de scanner, détecter et corriger automatiquement les vulnérabilités de sécurité.
 
 ---
 
@@ -19,11 +19,11 @@
 
 ## 1. Installation
 
-### 1.1 Installer Warden
+### 1.1 Installer Oalacea Warden
 
 ```bash
 # Depuis crates.io
-cargo install warden-sec
+cargo install oalacea-warden
 
 # Ou depuis le source
 cd /path/to/warden
@@ -33,43 +33,43 @@ cargo install --path .
 ### 1.2 Vérifier l'installation
 
 ```bash
-warden --version
-# Output: Warden v0.6.3
+oalacea-warden --version
+# Output: Oalacea Warden v0.8.2
 ```
 
 ---
 
 ## 2. Mise à jour
 
-### 2.1 Mettre à jour Warden
+### 2.1 Mettre à jour Oalacea Warden
 
 ```bash
 # Vérifier et installer la dernière version
-warden update
+oalacea-warden update
 
 # Forcer la réinstallation
-warden update --force
+oalacea-warden update --force
 
 # Installer depuis GitHub (version de dev)
-warden update --git
+oalacea-warden update --git
 ```
 
 **Sortie si déjà à jour :**
 ```
 🔄 Checking for updates...
-✓ Already up to date (v0.6.3)
+✓ Already up to date (v0.8.2)
 ```
 
 **Sortie si mise à jour disponible :**
 ```
 🔄 Checking for updates...
-Update available: 0.6.2 → 0.6.3
+Update available: 0.8.1 → 0.8.2
 
 Installing latest version...
 Installing from crates.io...
-✓ Warden updated successfully!
+✓ Oalacea Warden updated successfully!
 
-Run 'warden --version' to verify
+Run 'oalacea-warden --version' to verify
 ```
 
 ---
@@ -83,11 +83,11 @@ Run 'warden --version' to verify
 cd /path/to/your-project
 
 # Lancer le scan
-warden scan
+oalacea-warden scan
 ```
 
 **Ce qui se passe :**
-1. Warden analyse le projet
+1. Oalacea Warden analyse le projet
 2. Détecte les frameworks et langages
 3. Scanne le code pour les vulnérabilités
 4. **Crée automatiquement `WARDEN_SECURITY_REPORT.md`** dans le répertoire
@@ -96,12 +96,12 @@ warden scan
 
 ```
 ╔═══════════════════════════════════════╗
-║   Warden                         ║
-║   v0.6.1                         ║
+║   Oalacea Warden                 ║
+║   v0.8.2                         ║
 ║   Security Review                         ║
 ╚═══════════════════════════════════════╝
 
-Warden Security Scan v0.6.1
+Oalacea Warden Security Scan v0.8.2
 ────────────────────────────────────────────────────────────
 → 📁 Target: your-project
 → 🔍 Detected: Rust, Axum
@@ -122,7 +122,7 @@ Starting Scan
 Le fichier `WARDEN_SECURITY_REPORT.md` contient :
 
 ```markdown
-# Warden Security Scan Report
+# Oalacea Warden Security Scan Report
 
 > **AI Agent Instructions:** This report is structured for systematic security fixes.
 > Each finding includes file path, line numbers, and actionable recommendations.
@@ -229,7 +229,7 @@ fn get_user(id: &str) -> Result<User, Error> {
 ### 5.1 Re-scanner après corrections
 
 ```bash
-warden scan
+oalacea-warden scan
 ```
 
 ### 5.2 Vérifier les résultats
@@ -248,15 +248,15 @@ Le rapport est mis à jour avec les nouvelles trouvailles (ou confirme que tout 
 
 ```bash
 #!/bin/bash
-# warden-workflow.sh
+# oalacea-warden-workflow.sh
 
 set -e
 
-echo "🛡️  Warden Security Scan Workflow"
+echo "🛡️  Oalacea Warden Security Scan Workflow"
 
 # 1. Scanner
 echo "📋 Step 1: Scanning..."
-warden scan --format ai
+oalacea-warden scan --format ai
 
 # 2. Compter les vulnérabilités
 TOTAL=$(grep -c "### 🔴\|### 🟡\|### 🔵" WARDEN_SECURITY_REPORT.md || echo 0)
@@ -291,7 +291,7 @@ chmod +x warden-workflow.sh
 
 ```bash
 # Faire un scan avant de committer
-warden scan --quick
+oalacea-warden scan --quick
 
 # Si tout est OK, committer
 git add .
@@ -311,8 +311,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - run: cargo install warden-sec
-      - run: warden scan --format json --output warden-report.json
+      - run: cargo install oalacea-warden
+      - run: oalacea-warden scan --format json --output warden-report.json
       - uses: actions/upload-artifact@v3
         with:
           name: security-report
@@ -323,16 +323,16 @@ jobs:
 
 ```bash
 # Scan silencieux (pas de requêtes actives)
-warden scan --mode passive
+oalacea-warden scan --mode passive
 
 # Scan rapide
-warden scan --profile quick
+oalacea-warden scan --profile quick
 
 # Format JSON pour parsing
-warden scan --format json --output report.json
+oalacea-warden scan --format json --output report.json
 
 # Générer des fixes structurés
-warden scan --format ai --generate-fixes
+oalacea-warden scan --format ai --generate-fixes
 ```
 
 ---
@@ -352,10 +352,10 @@ async fn login(username: &str, password: &str) -> Result<User> {
 }
 ```
 
-### 8.2 Scan Warden
+### 8.2 Scan Oalacea Warden
 
 ```bash
-$ warden scan
+$ oalacea-warden scan
 ✓ AI report saved to WARDEN_SECURITY_REPORT.md
 ```
 
@@ -369,7 +369,7 @@ Je vais corriger en utilisant des requêtes préparées..."
 ### 8.4 Vérification
 
 ```bash
-$ warden scan
+$ oalacea-warden scan
 ✓ No vulnerabilities found!
 ```
 
@@ -381,16 +381,16 @@ $ warden scan
 
 ```bash
 # Installer
-cargo install warden-sec
+cargo install oalacea-warden
 
 # Scanner (auto-sauvegarde le rapport)
-warden scan
+oalacea-warden scan
 
 // Dans Claude Code:
 "Lis WARDEN_SECURITY_REPORT.md et corrige les failles trouvées"
 
 // Re-scanner
-warden scan
+oalacea-warden scan
 ```
 
 ### 9.2 Fichiers générés
@@ -406,8 +406,8 @@ your-project/
 
 ## 11. Prochaines étapes
 
-1. **Installer Warden** : `cargo install warden-sec`
-2. **Scanner votre projet** : `warden scan`
+1. **Installer Oalacea Warden** : `cargo install oalacea-warden`
+2. **Scanner votre projet** : `oalacea-warden scan`
 3. **Lire le rapport** : `WARDEN_SECURITY_REPORT.md`
 4. **Demander à Claude Code** de corriger les failles
 5. **Re-scanner** pour vérifier

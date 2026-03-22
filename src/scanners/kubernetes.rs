@@ -13,6 +13,8 @@
 //! - Helm chart analysis
 //! - Kustomize manifests
 
+#![allow(dead_code)]
+
 use crate::scanners::{ScanReport, ScannerConfig, Target, Vuln, VulnSeverity};
 use anyhow::{Context, Result};
 use regex::Regex;

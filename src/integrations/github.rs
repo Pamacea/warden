@@ -1365,7 +1365,7 @@ impl GitHubApp {
         println!("{} Processing push to {}", "🔍".cyan(), webhook.repository.name);
 
         // Scan the repository
-        let clone_dir = format!("/tmp/warden-push-{}", repo.replace('/', "-"));
+        let _clone_dir = format!("/tmp/warden-push-{}", repo.replace('/', "-"));
 
         // Run scan (simplified - in reality, you'd clone and scan)
         let report = ScanReport::new(Target::Url("scan".to_string()));
@@ -1379,7 +1379,7 @@ impl GitHubApp {
     }
 
     /// Handle check suite/run webhook
-    async fn handle_check_webhook(&mut self, webhook: GitHubWebhook) -> Result<()> {
+    async fn handle_check_webhook(&mut self, _webhook: GitHubWebhook) -> Result<()> {
         println!("{} Processing check webhook", "🔍".cyan());
         // Check webhooks are requests to run checks
         // The actual check run is created in response
@@ -1389,8 +1389,8 @@ impl GitHubApp {
     /// Scan a pull request
     async fn scan_pull_request(&self, pr: &PullRequestInfo, clone_dir: &str) -> Result<ScanReport> {
         // Clone the repository
-        let clone_url = pr.head.repo.clone_url.clone();
-        let branch = pr.head.ref_.clone();
+        let _clone_url = pr.head.repo.clone_url.clone();
+        let _branch = pr.head.ref_.clone();
 
         println!("{} Cloning {}...", "📥".cyan(), pr.head.repo.full_name);
 

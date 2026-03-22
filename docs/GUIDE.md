@@ -1,11 +1,11 @@
-# Warden User Guide
+# Oalacea Warden User Guide
 
 ## Installation
 
 ### Via cargo (Recommended)
 
 ```bash
-cargo install warden-sec
+cargo install oalacea-warden
 ```
 
 ### Via Pre-built Binary
@@ -14,22 +14,22 @@ Download from [GitHub Releases](https://github.com/Pamacea/warden/releases/lates
 
 | Platform | Binary |
 |----------|--------|
-| Windows x64 | `warden-x86_64-pc-windows-msvc.exe` |
-| macOS x64 | `warden-x86_64-apple-darwin` |
-| macOS ARM | `warden-aarch64-apple-darwin` |
-| Linux x64 | `warden-x86_64-unknown-linux-gnu` |
+| Windows x64 | `oalacea-warden-x86_64-pc-windows-msvc.exe` |
+| macOS x64 | `oalacea-warden-x86_64-apple-darwin` |
+| macOS ARM | `oalacea-warden-aarch64-apple-darwin` |
+| Linux x64 | `oalacea-warden-x86_64-unknown-linux-gnu` |
 
 ### Via Package Manager
 
 ```bash
 # Homebrew (macOS/Linux)
-brew install warden
+brew install oalacea-warden
 
 # Scoop (Windows)
-scoop install warden
+scoop install oalacea-warden
 
 # AUR (Arch Linux)
-yay -S warden
+yay -S oalacea-warden
 ```
 
 ## Quick Start
@@ -38,42 +38,42 @@ yay -S warden
 
 ```bash
 # Scan current directory
-warden scan
+oalacea-warden scan
 
 # Scan external target
-warden scan https://example.com
+oalacea-warden scan https://example.com
 
 # Scan specific directory
-warden scan /path/to/project
+oalacea-warden scan /path/to/project
 ```
 
 ### With Options
 
 ```bash
 # Aggressive mode (more tests, longer duration)
-warden scan --aggressive
+oalacea-warden scan --aggressive
 
 # Include DDoS resistance testing
-warden scan --include-ddos
+oalacea-warden scan --include-ddos
 
 # JSON output for CI/CD
-warden scan --format json > report.json
+oalacea-warden scan --format json > report.json
 
 # Verbose output
-warden scan --verbose
+oalacea-warden scan --verbose
 
 # Save report to file
-warden scan --output report.md
+oalacea-warden scan --output report.md
 ```
 
 ## Commands
 
-### `warden scan`
+### `oalacea-warden scan`
 
 Scan a target for vulnerabilities.
 
 ```bash
-warden scan [OPTIONS] [TARGET]
+oalacea-warden scan [OPTIONS] [TARGET]
 ```
 
 **Arguments:**
@@ -92,17 +92,17 @@ warden scan [OPTIONS] [TARGET]
 | `--verbose, -v` | Verbose output | false |
 | `--help, -h` | Print help | - |
 
-### `warden detect`
+### `oalacea-warden detect`
 
 Detect framework and language without scanning.
 
 ```bash
-warden detect [PATH]
+oalacea-warden detect [PATH]
 ```
 
 **Example:**
 ```bash
-$ warden detect
+$ oalacea-warden detect
 Detected:
   Language: Rust
   Framework: Axum
@@ -110,14 +110,14 @@ Detected:
   Package Manager: Cargo
 ```
 
-### `warden version`
+### `oalacea-warden version`
 
 Display version information.
 
 ```bash
-warden --version
+oalacea-warden --version
 # or
-warden -V
+oalacea-warden -V
 ```
 
 ## Output Formats
@@ -125,10 +125,10 @@ warden -V
 ### Console (Default)
 
 ```bash
-$ warden scan
+$ oalacea-warden scan
 
 ╔═══════════════════════════════════════╗
-║   Warden v0.2.0                       ║
+║   Oalacea Warden v0.8.2              ║
 ║   Security Review                     ║
 ╚═══════════════════════════════════════╝
 
@@ -149,9 +149,9 @@ Summary: 2 findings (1 high, 1 medium)
 ### JSON
 
 ```bash
-$ warden scan --format json
+$ oalacea-warden scan --format json
 {
-  "version": "0.2.0",
+  "version": "0.8.2",
   "target": "http://localhost:3000",
   "timestamp": "2025-03-14T10:30:00Z",
   "findings": [
@@ -175,7 +175,7 @@ $ warden scan --format json
 ### Markdown
 
 ```bash
-$ warden scan --format markdown --output report.md
+$ oalacea-warden scan --format markdown --output report.md
 ```
 
 Generates a detailed markdown report with:
@@ -189,14 +189,14 @@ Generates a detailed markdown report with:
 ### NestJS
 
 ```bash
-# Guardian auto-detects NestJS and runs:
+# Oalacea Warden auto-detects NestJS and runs:
 # - Guard bypass testing
 # - Pipe injection testing
 # - GraphQL introspection
 # - WebSocket authentication
 # - Throttler bypass
 
-warden scannestjs-project/
+oalacea-warden scannestjs-project/
 ```
 
 ### Rust
@@ -208,7 +208,7 @@ warden scannestjs-project/
 # - Serde deserialization RCE
 # - Framework-specific (Axum, Actix, Rocket)
 
-warden scanrust-project/
+oalacea-warden scanrust-project/
 ```
 
 ### Vite
@@ -220,7 +220,7 @@ warden scanrust-project/
 # - Environment variable leakage
 # - Dev server detection
 
-warden scanvite-project/
+oalacea-warden scanvite-project/
 ```
 
 ## CI/CD Integration
@@ -239,9 +239,9 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions-rs/install@v0
         with:
-          crate: warden
+          crate: oalacea-warden
           use-tool-cache: true
-      - run: warden scan --format json --output report.json
+      - run: oalacea-warden scan --format json --output report.json
       - uses: actions/upload-artifact@v3
         with:
           name: security-report
@@ -254,8 +254,8 @@ jobs:
 security:
   image: rust:latest
   script:
-    - cargo install warden
-    - warden scan --format json --output report.json
+    - cargo install oalacea-warden
+    - oalacea-warden scan --format json --output report.json
   artifacts:
     paths:
       - report.json
@@ -266,25 +266,25 @@ security:
 ### Custom Wordlists
 
 ```bash
-warden scan --wordlist /path/to/custom.txt
+oalacea-warden scan --wordlist /path/to/custom.txt
 ```
 
 ### Exclude Paths
 
 ```bash
-warden scan --exclude node_modules --exclude dist
+oalacea-warden scan --exclude node_modules --exclude dist
 ```
 
 ### Rate Limiting
 
 ```bash
-warden scan --rate-limit 100  # Max 100 requests/second
+oalacea-warden scan --rate-limit 100  # Max 100 requests/second
 ```
 
 ### Timeout Control
 
 ```bash
-warden scan --timeout 10  # 10 second timeout per request
+oalacea-warden scan --timeout 10  # 10 second timeout per request
 ```
 
 ## Troubleshooting
@@ -293,10 +293,10 @@ warden scan --timeout 10  # 10 second timeout per request
 
 ```bash
 # On Unix-like systems
-chmod +x warden
+chmod +x oalacea-warden
 
 # Or install via cargo
-cargo install warden
+cargo install oalacea-warden
 ```
 
 ### Port Already in Use
@@ -311,45 +311,45 @@ curl http://localhost:3000
 
 ```bash
 # Reduce concurrency for slower targets
-warden scan --concurrency 10
+oalacea-warden scan --concurrency 10
 
 # Or increase for faster networks
-warden scan --concurrency 100
+oalacea-warden scan --concurrency 100
 ```
 
 ### Memory Issues
 
 ```bash
-# Warden uses ~50-100MB normally. If more:
+# Oalacea Warden uses ~50-100MB normally. If more:
 # Check for memory leaks in your target
 # Reduce concurrency
-warden scan --concurrency 10
+oalacea-warden scan --concurrency 10
 ```
 
 ## Best Practices
 
 1. **Start with non-aggressive mode**
    ```bash
-   warden scan
+   oalacea-warden scan
    # Then if needed:
-   warden scan --aggressive
+   oalacea-warden scan --aggressive
    ```
 
 2. **Always scan dev/staging first**
    ```bash
-   warden scan http://localhost:3000
+   oalacea-warden scan http://localhost:3000
    # Before:
-   warden scan https://production.example.com
+   oalacea-warden scan https://production.example.com
    ```
 
 3. **Save reports for comparison**
    ```bash
-   warden scan --output report-$(date +%Y%m%d).md
+   oalacea-warden scan --output report-$(date +%Y%m%d).md
    ```
 
 4. **Use JSON for CI/CD**
    ```bash
-   warden scan --format json | jq '.findings | length'
+   oalacea-warden scan --format json | jq '.findings | length'
    ```
 
 5. **Review findings carefully**
@@ -371,25 +371,25 @@ warden scan --concurrency 10
 ### Scan REST API
 
 ```bash
-warden scan https://api.example.com --aggressive
+oalacea-warden scan https://api.example.com --aggressive
 ```
 
 ### Scan GraphQL Endpoint
 
 ```bash
-warden scan https://graphql.example.com --include-graphql
+oalacea-warden scan https://graphql.example.com --include-graphql
 ```
 
 ### Scan Multi-Service Project
 
 ```bash
-warden scan ./microservices --concurrency 100
+oalacea-warden scan ./microservices --concurrency 100
 ```
 
 ### Generate SARIF Report for GitHub Security
 
 ```bash
-warden scan --format json --output sarif.json
+oalacea-warden scan --format json --output sarif.json
 # Convert to SARIF with external tool
 ```
 

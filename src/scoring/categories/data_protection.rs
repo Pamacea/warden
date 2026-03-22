@@ -12,12 +12,14 @@
 use crate::scanners::{ScanReport, VulnSeverity};
 use crate::scoring::CategoryScore;
 
+#[allow(dead_code)]
 const DATA_EXPOSURE_KEYWORDS: &[&str] = &[
     "data exposure", "sensitive data", "password in log",
     "credit card", "ssn", "social security", "personal data",
     "leaked data", "data leak", "information disclosure",
 ];
 
+#[allow(dead_code)]
 const PII_KEYWORDS: &[&str] = &[
     "pii", "personal identifiable", "personal information",
     "personal data", "customer data", "user data",

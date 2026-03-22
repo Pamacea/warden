@@ -13,6 +13,7 @@
 use crate::scanners::{ScanReport, VulnSeverity};
 use crate::scoring::CategoryScore;
 
+#[allow(dead_code)]
 const HTTPS_KEYWORDS: &[&str] = &[
     "https", "http", "ssl", "tls", "encryption",
     "secure connection", "unencrypted", "plaintext",
@@ -39,6 +40,7 @@ const WEAK_PROTOCOL_KEYWORDS: &[&str] = &[
     "tls 1.1", "insecure protocol",
 ];
 
+#[allow(dead_code)]
 const CERT_PINNING_KEYWORDS: &[&str] = &[
     "certificate pinning", "cert pinning", "public key pinning",
     "hpkp", "static pins",

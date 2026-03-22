@@ -636,6 +636,7 @@ impl ScanProcessor {
 
 /// Git changes detected
 #[derive(Clone, Debug)]
+#[allow(dead_code)]
 struct GitChanges {
     has_changes: bool,
     branches: Vec<String>,

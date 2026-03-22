@@ -15,6 +15,8 @@
 //! - GCP: https://cloud.google.com/compute/docs/metadata/overview
 //! - SSRF: https://owasp.org/www-community/attacks/Server_Side_Request_Forgery
 
+#![allow(dead_code)]
+
 use crate::scanners::{ScanReport, ScannerConfig, Target, Vuln, VulnSeverity};
 use anyhow::Result;
 use regex::Regex;

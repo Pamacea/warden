@@ -10,6 +10,8 @@
 //!
 //! OSV API: https://google.github.io/osv.dev/
 
+#![allow(dead_code)]
+
 use crate::scanners::{ScanReport, ScannerConfig, Target, Vuln, VulnSeverity};
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};

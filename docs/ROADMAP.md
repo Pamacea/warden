@@ -1,6 +1,6 @@
-# Warden Development Roadmap
+# Oalacea Warden Development Roadmap
 
-## Current Version: v0.7.5 (In Progress - 2026-03-15)
+## Current Version: v0.8.2 (2026-03-22)
 
 ### ✅ Completed - v0.7.x Series
 
@@ -138,4 +138,4 @@
 
 ---
 
-*Last updated: 2026-03-15*
+*Last updated: 2026-03-22*

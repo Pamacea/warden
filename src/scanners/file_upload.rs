@@ -4,6 +4,8 @@
 //! malicious files that may be executed on the server. Tests various bypass techniques
 //! including MIME type manipulation, extension obfuscation, and webshell detection.
 
+#![allow(dead_code)]
+
 use crate::scanners::{ScanReport, ScannerConfig, Target, Vuln, VulnSeverity};
 use anyhow::Result;
 use reqwest::Client;

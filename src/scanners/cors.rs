@@ -555,6 +555,8 @@ mod tests {
 
     #[test]
     fn test_cors_headers_parsing() {
+        use reqwest::header::HeaderValue;
+
         let config = ScannerConfig::new();
         let scanner = CorsScanner::new(config);
 

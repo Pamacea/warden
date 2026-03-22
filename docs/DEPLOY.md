@@ -1,4 +1,4 @@
-# Warden Deployment Guide
+# Oalacea Warden Deployment Guide
 
 ## Publishing to crates.io
 
@@ -17,7 +17,7 @@ cargo login
 - [ ] Run clippy: `cargo clippy -- -D warnings`
 - [ ] Check formatting: `cargo fmt -- --check`
 - [ ] Build release: `cargo build --release`
-- [ ] Test binary: `./target/release/warden --version`
+- [ ] Test binary: `./target/release/oalacea-warden --version`
 
 ### Publishing
 
@@ -64,19 +64,19 @@ jobs:
         include:
           - target: x86_64-pc-windows-msvc
             os: windows-latest
-            artifact: warden-x86_64-pc-windows-msvc.exe
+            artifact: oalacea-warden-x86_64-pc-windows-msvc.exe
           - target: x86_64-apple-darwin
             os: macos-latest
-            artifact: warden-x86_64-apple-darwin
+            artifact: oalacea-warden-x86_64-apple-darwin
           - target: aarch64-apple-darwin
             os: macos-latest
-            artifact: warden-aarch64-apple-darwin
+            artifact: oalacea-warden-aarch64-apple-darwin
           - target: x86_64-unknown-linux-gnu
             os: ubuntu-latest
-            artifact: warden-x86_64-unknown-linux-gnu
+            artifact: oalacea-warden-x86_64-unknown-linux-gnu
           - target: aarch64-unknown-linux-gnu
             os: ubuntu-latest
-            artifact: warden-aarch64-unknown-linux-gnu
+            artifact: oalacea-warden-aarch64-unknown-linux-gnu
 
     runs-on: ${{ matrix.os }}
 
@@ -97,14 +97,14 @@ jobs:
         shell: bash
         run: |
           if [ "${{ runner.os }}" != "Windows" ]; then
-            strip "target/${{ matrix.target }}/release/warden"
+            strip "target/${{ matrix.target }}/release/oalacea-warden"
           fi
 
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
           name: ${{ matrix.artifact }}
-          path: target/${{ matrix.target }}/release/warden${{ matrix.os == 'Windows' && '.exe' || '' }}
+          path: target/${{ matrix.target }}/release/oalacea-warden${{ matrix.os == 'Windows' && '.exe' || '' }}
 
   release:
     needs: build
@@ -117,7 +117,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            warden-*
+            oalacea-warden-*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
@@ -140,15 +140,15 @@ git push origin v0.2.0
 Create a tap repository:
 
 ```bash
-# Create homebrew-warden repo
-mkdir homebrew-warden
-cd homebrew-warden
+# Create homebrew-oalacea-warden repo
+mkdir homebrew-oalacea-warden
+cd homebrew-oalacea-warden
 
-# Create Formula/warden.rb
-class Warden < Formula
+# Create Formula/oalacea-warden.rb
+class OalaceaWarden < Formula
   desc "AI-powered security review CLI tool"
   homepage "https://github.com/Pamacea/warden"
-  url "https://github.com/Pamacea/warden/archive/refs/tags/v0.2.0.tar.gz"
+  url "https://github.com/Pamacea/warden/archive/refs/tags/v0.8.2.tar.gz"
   sha256 "..." # Use shasum of the tarball
 
   depends_on "rust" => :build
@@ -158,7 +158,7 @@ class Warden < Formula
   end
 
   test do
-    system "#{bin}/warden", "--version"
+    system "#{bin}/oalacea-warden", "--version"
   end
 end
 ```
@@ -166,26 +166,26 @@ end
 User installation:
 ```bash
 brew tap pamacea/warden
-brew install warden
+brew install oalacea-warden
 ```
 
 ### Scoop (Windows)
 
-Create `bucket/warden.json`:
+Create `bucket/oalacea-warden.json`:
 
 ```json
 {
-  "version": "0.2.0",
+  "version": "0.8.2",
   "description": "AI-powered security review CLI tool",
   "homepage": "https://github.com/Pamacea/warden",
   "license": "MIT",
-  "url": "https://github.com/Pamacea/warden/releases/download/v0.2.0/warden-x86_64-pc-windows-msvc.exe",
+  "url": "https://github.com/Pamacea/warden/releases/download/v0.8.2/oalacea-warden-x86_64-pc-windows-msvc.exe",
   "hash": "...",
-  "bin": "warden-x86_64-pc-windows-msvc.exe",
+  "bin": "oalacea-warden-x86_64-pc-windows-msvc.exe",
   "shortcuts": [
     [
-      "warden-x86_64-pc-windows-msvc.exe",
-      "Warden"
+      "oalacea-warden-x86_64-pc-windows-msvc.exe",
+      "Oalacea Warden"
     ]
   ]
 }
@@ -194,7 +194,7 @@ Create `bucket/warden.json`:
 User installation:
 ```bash
 scoop bucket add warden https://github.com/Pamacea/warden-scoop
-scoop install warden
+scoop install oalacea-warden
 ```
 
 ### AUR (Arch Linux)
@@ -202,8 +202,8 @@ scoop install warden
 Create `PKGBUILD`:
 
 ```bash
-pkgname=warden
-pkgver=0.2.0
+pkgname=oalacea-warden
+pkgver=0.8.2
 pkgrel=1
 pkgdesc="AI-powered security review CLI tool"
 arch=('x86_64' 'aarch64')
@@ -220,7 +220,7 @@ build() {
 
 package() {
   cd "$pkgname-$pkgver"
-  install -Dm755 "target/release/warden" "$pkgdir/usr/bin/warden"
+  install -Dm755 "target/release/oalacea-warden" "$pkgdir/usr/bin/oalacea-warden"
   install -Dm644 "LICENSE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
 }
 ```
@@ -241,22 +241,22 @@ RUN cargo build --release
 FROM alpine:latest
 RUN apk add --no-cache ca-certificates
 
-COPY --from=builder /app/target/release/warden /usr/local/bin/warden
+COPY --from=builder /app/target/release/oalacea-warden /usr/local/bin/oalacea-warden
 
-ENTRYPOINT ["warden"]
+ENTRYPOINT ["oalacea-warden"]
 ```
 
 ### Build and Push
 
 ```bash
 # Build
-docker build -t pamacea/warden:0.2.0 .
+docker build -t pamacea/warden:0.8.2 .
 
 # Tag
-docker tag pamacea/warden:0.2.0 pamacea/warden:latest
+docker tag pamacea/warden:0.8.2 pamacea/warden:latest
 
 # Push
-docker push pamacea/warden:0.2.0
+docker push pamacea/warden:0.8.2
 docker push pamacea/warden:latest
 ```
 
@@ -328,7 +328,7 @@ updates:
 
 ## Versioning
 
-Warden follows [Semantic Versioning](https://semver.org/):
+Oalacea Warden follows [Semantic Versioning](https://semver.org/):
 
 - **MAJOR**: Breaking changes
 - **MINOR**: New features (backwards compatible)
@@ -390,7 +390,7 @@ cargo vet
 
 ### Docs.rs
 
-Documentation is automatically built and published to <https://docs.rs/warden> when publishing to crates.io.
+Documentation is automatically built and published to <https://docs.rs/oalacea-warden> when publishing to crates.io.
 
 Ensure:
 - All public items are documented

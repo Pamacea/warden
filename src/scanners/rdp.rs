@@ -8,6 +8,8 @@
 //! - Brute force vulnerabilities
 //! - Port exposure risks
 
+#![allow(dead_code)]
+
 use crate::scanners::{ScanReport, ScannerConfig, Target, Vuln, VulnSeverity};
 use anyhow::{Context, Result};
 use std::time::Duration;
@@ -24,7 +26,7 @@ const RDP_STANDARD_TIMEOUT: Duration = Duration::from_secs(5);
 /// RDP connection flags and security protocols
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[allow(dead_code)]
-enum RdpSecurityProtocol {
+pub enum RdpSecurityProtocol {
     None = 0,
     Standard = 0x01,
     Netscape = 0x02,
@@ -33,15 +35,46 @@ enum RdpSecurityProtocol {
     HybridEx = 0x10,
 }
 
+impl std::str::FromStr for RdpSecurityProtocol {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "none" => Ok(RdpSecurityProtocol::None),
+            "standard" => Ok(RdpSecurityProtocol::Standard),
+            "netscape" => Ok(RdpSecurityProtocol::Netscape),
+            "ssl" | "tls" => Ok(RdpSecurityProtocol::SSL),
+            "hybrid" => Ok(RdpSecurityProtocol::Hybrid),
+            "hybridex" | "hybrid_ex" => Ok(RdpSecurityProtocol::HybridEx),
+            _ => Err(format!("Unknown RDP security protocol: {}", s)),
+        }
+    }
+}
+
 /// RDP encryption levels
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[allow(dead_code)]
-enum RdpEncryptionLevel {
+pub enum RdpEncryptionLevel {
     None = 0,
     Low = 0x01,
     Medium = 0x02,
     High = 0x03,
     Fips140 = 0x04,
+}
+
+impl std::str::FromStr for RdpEncryptionLevel {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "none" => Ok(RdpEncryptionLevel::None),
+            "low" => Ok(RdpEncryptionLevel::Low),
+            "medium" => Ok(RdpEncryptionLevel::Medium),
+            "high" => Ok(RdpEncryptionLevel::High),
+            "fips140" | "fips" => Ok(RdpEncryptionLevel::Fips140),
+            _ => Err(format!("Unknown RDP encryption level: {}", s)),
+        }
+    }
 }
 
 /// RDP Connection result
@@ -657,40 +690,10 @@ impl RdpScanner {
     }
 }
 
-impl std::str::FromStr for RdpSecurityProtocol {
-    type Err = String;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.to_lowercase().as_str() {
-            "none" => Ok(RdpSecurityProtocol::None),
-            "standard" => Ok(RdpSecurityProtocol::Standard),
-            "netscape" => Ok(RdpSecurityProtocol::Netscape),
-            "ssl" => Ok(RdpSecurityProtocol::SSL),
-            "hybrid" => Ok(RdpSecurityProtocol::Hybrid),
-            "hybridex" => Ok(RdpSecurityProtocol::HybridEx),
-            _ => Err(format!("Unknown RDP security protocol: {}", s)),
-        }
-    }
-}
-
-impl std::str::FromStr for RdpEncryptionLevel {
-    type Err = String;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.to_lowercase().as_str() {
-            "none" => Ok(RdpEncryptionLevel::None),
-            "low" => Ok(RdpEncryptionLevel::Low),
-            "medium" => Ok(RdpEncryptionLevel::Medium),
-            "high" => Ok(RdpEncryptionLevel::High),
-            "fips140" => Ok(RdpEncryptionLevel::Fips140),
-            _ => Err(format!("Unknown RDP encryption level: {}", s)),
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::str::FromStr;
 
     #[test]
     fn test_scanner_creation() {

@@ -10,6 +10,8 @@
 //! # Safety
 //! All tests have built-in limits to prevent actual damage during normal scans.
 
+#![allow(dead_code)]
+
 use crate::scanners::{ScanReport, ScannerConfig, Target, Vuln, VulnSeverity};
 use anyhow::Result;
 use reqwest::Client;

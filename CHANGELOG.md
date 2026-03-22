@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.2] - 2026-03-22
+
+### Oalacea Branding & Architecture
+
+> **Package renamed to `oalacea-warden` | Trait-based scanner architecture | Parallel scanning**
+
+### Changed
+- **Package Rename** - `warden-sec` → `oalacea-warden` (CLI command remains `warden`)
+- **Architecture** - New `SecurityScanner` trait for extensible scanner system
+- **Performance** - Parallel file scanning with `rayon` (multi-core)
+- **File Discovery** - Added `ignore` crate (ripgrep) for .gitignore-aware file traversal
+- **Error Handling** - Centralized `thiserror` types (`ScannerError`, `HttpScanError`, etc.)
+- **Tree-sitter** - Parser cache for AST reuse across security checks
+
+### Technical
+- Added `ScannerRegistry`, `ScannerMetadata`, `ScannerCategory` types
+- Added `ParserCache` with thread-safe caching and automatic eviction
+- Improved static analyzer with language-specific parallel processing
+- Better error messages with severity levels and retryable detection
+
+### Dependencies
+- Added: `async-trait`, `ignore`, `once_cell`
+- Updated: Package metadata for Oalacea Security Suite
+
 ## [0.8.1] - 2026-03-16
 
 ### Fixed

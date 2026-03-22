@@ -816,7 +816,7 @@ impl AlertManager {
 
     /// Get alert statistics
     pub async fn statistics(&self) -> AlertStatistics {
-        let state = self.state.read().await;
+        let _state = self.state.read().await;
 
         let total_rules = self.config.rules.len();
         let enabled_rules = self.config.rules.iter()

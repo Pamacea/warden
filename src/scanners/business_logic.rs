@@ -15,6 +15,7 @@ use std::time::Duration;
 
 /// Test configuration for business logic parameters
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 struct BlTest {
     category: &'static str,
     name: &'static str,
@@ -289,6 +290,7 @@ const CART_TESTS: &[BlTest] = &[
 ];
 
 /// Parameter names for business logic testing
+#[allow(dead_code)]
 const BL_PARAMS: &[&[&str]] = &[
     &["price", "amount", "total", "cost"],
     &["coupon", "discount", "promo", "voucher"],

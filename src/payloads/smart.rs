@@ -810,13 +810,13 @@ impl SmartPayloadSelector {
 
         // Score each payload based on analysis
         for payload in &mut scored {
-            let mut score = payload.success_score as i32;
+            let mut _score = payload.success_score as i32;
 
             // Boost priority for payloads with working bypass techniques
             if analysis.blocked || analysis.detected_waf.is_some() {
                 for technique in &payload.bypass_techniques {
                     if self.bypass_strategies.contains(technique) {
-                        score += 20;
+                        _score += 20;
                     }
                 }
             }
@@ -824,14 +824,14 @@ impl SmartPayloadSelector {
             // Penalize if the payload was recently blocked
             if analysis.blocked && !payload.bypass_techniques.is_empty() {
                 // Payload has bypass tech but still blocked - might need different approach
-                score -= 10;
+                _score -= 10;
             }
 
             // Boost successful patterns from learning
             if let Some(learning) = &self.learning {
                 if let Some(recommended) = learning.get_recommended(payload.category) {
                     if recommended.iter().any(|p| payload.payload.contains(p)) {
-                        score += 30;
+                        _score += 30;
                     }
                 }
             }
