@@ -75,7 +75,8 @@ impl DisclosureScanner {
             if let Some(server) = headers.get("Server") {
                 if let Ok(server_str) = server.to_str() {
                     // Check for specific version numbers
-                    let version_pattern = Regex::new(r"\d+\.\d+(\.\d+)?").unwrap();
+                    let version_pattern = Regex::new(r"\d+\.\d+(\.\d+)?")
+                        .expect("Invalid version regex pattern");
 
                     if version_pattern.is_match(server_str) {
                         report.add_finding(Vuln {

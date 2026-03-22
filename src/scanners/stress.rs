@@ -18,7 +18,7 @@ impl StressScanner {
             .timeout(timeout)
             .user_agent(&config.user_agent)
             .build()
-            .expect("Failed to create HTTP client");
+            .expect("Failed to create HTTP client for Stress scanner");
 
         Self { client, config }
     }

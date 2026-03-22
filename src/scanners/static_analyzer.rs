@@ -126,7 +126,7 @@ impl StaticScanner {
                     .extension()
                     .and_then(|e| e.to_str())
                     .and_then(Language::from_extension)
-                    .unwrap();
+                    .expect("Language should be valid after filter");
                 (path_str, lang)
             })
             .collect();

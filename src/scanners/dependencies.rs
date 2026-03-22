@@ -562,7 +562,8 @@ impl DependencyScanner {
             let dep_clone = dep.clone();
 
             let task = tokio::spawn(async move {
-                let _permit = semaphore.acquire().await.unwrap();
+                let _permit = semaphore.acquire().await
+                    .expect("Semaphore should not be closed during dependency vulnerability checks");
 
                 // Query OSV API
                 let url = format!("{}/query", OSV_API_URL);

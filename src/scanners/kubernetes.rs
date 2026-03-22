@@ -466,7 +466,8 @@ impl KubernetesScanner {
         }
 
         // Check runAsUser: 0 (root)
-        let root_pattern = Regex::new(r"runAsUser:\s*0").unwrap();
+        let root_pattern = Regex::new(r"runAsUser:\s*0")
+            .expect("Invalid runAsUser regex pattern");
         if root_pattern.is_match(content) {
             report.add_finding(Vuln {
                 severity: VulnSeverity::High,
@@ -511,7 +512,8 @@ impl KubernetesScanner {
         }
 
         // Check for dangerous hostPath volumes
-        let hostpath_re = Regex::new(r#"hostPath:\s*\n\s*path:\s*['"]?([^'"\n]+)"#).unwrap();
+        let hostpath_re = Regex::new(r#"hostPath:\s*\n\s*path:\s*['"]?([^'"\n]+)"#)
+            .expect("Invalid hostPath regex pattern");
         for cap in hostpath_re.captures_iter(content) {
             let path = &cap[1];
             for dangerous in DANGEROUS_HOST_PATHS {
@@ -531,7 +533,8 @@ impl KubernetesScanner {
         }
 
         // Check for secrets in environment variables
-        let secret_env_re = Regex::new(r#"secretKeyRef:\s*\n\s*name:\s*['"]?([^'"\n]+)"#).unwrap();
+        let secret_env_re = Regex::new(r#"secretKeyRef:\s*\n\s*name:\s*['"]?([^'"\n]+)"#)
+            .expect("Invalid secretKeyRef regex pattern");
         for cap in secret_env_re.captures_iter(content) {
             let secret_name = &cap[1];
             if secret_name.to_lowercase().contains("password")
@@ -552,7 +555,8 @@ impl KubernetesScanner {
         }
 
         // Check for hardcoded secrets
-        let hardcoded_re = Regex::new(r#"value:\s*['"]?(?:password|secret|token|api[_-]?key|private[_-]?key)['"]?:\s*['"]?[^'"\s]+['"]?"#).unwrap();
+        let hardcoded_re = Regex::new(r#"value:\s*['"]?(?:password|secret|token|api[_-]?key|private[_-]?key)['"]?:\s*['"]?[^'"\s]+['"]?"#)
+            .expect("Invalid hardcoded secret regex pattern");
         if hardcoded_re.is_match(content) {
             report.add_finding(Vuln {
                 severity: VulnSeverity::Critical,
@@ -770,7 +774,8 @@ impl KubernetesScanner {
 
         // Check for secret-like keys in ConfigMap
         let secret_keywords = ["password", "secret", "token", "key", "credential", "auth", "private", "api_key"];
-        let data_re = Regex::new(r#"(\w+):\s*['"]?[^'\n]*['"]?\n"#).unwrap();
+        let data_re = Regex::new(r#"(\w+):\s*['"]?[^'\n]*['"]?\n"#)
+            .expect("Invalid ConfigMap data regex pattern");
 
         for cap in data_re.captures_iter(content) {
             let key = &cap[1];

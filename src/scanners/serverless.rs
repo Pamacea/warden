@@ -272,7 +272,8 @@ impl ServerlessScanner {
 
         // Check for excessive timeout
         if content.contains("timeout") {
-            let timeout_re = Regex::new(r"timeout[:\s]+(\d+)").unwrap();
+            let timeout_re = Regex::new(r"timeout[:\s]+(\d+)")
+                .expect("Invalid timeout regex pattern");
             for mat in timeout_re.captures_iter(content) {
                 if let Some(timeout) = mat.get(1) {
                     if let Ok(value) = timeout.as_str().parse::<u32>() {
@@ -299,7 +300,8 @@ impl ServerlessScanner {
 
         // Check for excessive memory
         if content.contains("memorySize") || content.contains("memory_size") {
-            let memory_re = Regex::new(r"memorySize?[:\s]+(\d+)").unwrap();
+            let memory_re = Regex::new(r"memorySize?[:\s]+(\d+)")
+                .expect("Invalid memory size regex pattern");
             for mat in memory_re.captures_iter(content) {
                 if let Some(memory) = mat.get(1) {
                     if let Ok(value) = memory.as_str().parse::<u32>() {

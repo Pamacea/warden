@@ -391,7 +391,8 @@ impl PortScanner {
             let grab_banners = self.options.grab_banners;
 
             let task = tokio::spawn(async move {
-                let _permit = semaphore.acquire().await.unwrap();
+                let _permit = semaphore.acquire().await
+                    .expect("Semaphore should not be closed during port scanning");
 
                 let start = std::time::Instant::now();
                 let (is_open, service_info) = Self::check_and_identify_port(

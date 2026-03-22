@@ -140,7 +140,7 @@ impl RaceConditionScanner {
             .user_agent(&config.user_agent)
             .pool_max_idle_per_host(50)
             .build()
-            .expect("Failed to create HTTP client");
+            .expect("Failed to create HTTP client for RaceCondition scanner");
 
         let test_config = RaceTestConfig::from(&config);
 

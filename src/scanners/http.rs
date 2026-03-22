@@ -1667,7 +1667,8 @@ impl HttpScanner {
                 let text = response.text().await.unwrap_or_default();
 
                 // JWT regex pattern (header.payload.signature)
-                let jwt_re = Regex::new(r"eyJ[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+").unwrap();
+                let jwt_re = Regex::new(r"eyJ[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+")
+                    .expect("Invalid JWT regex pattern");
 
                 if let Some(jwt_token) = jwt_re.find(&text) {
                     let token = jwt_token.as_str();

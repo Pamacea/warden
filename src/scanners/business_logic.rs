@@ -346,7 +346,7 @@ impl BusinessLogicScanner {
             .user_agent(&config.user_agent)
             .redirect(reqwest::redirect::Policy::limited(3))
             .build()
-            .expect("Failed to create HTTP client");
+            .expect("Failed to create HTTP client for business logic scanner");
 
         Self { client, config }
     }

@@ -1,6 +1,6 @@
 [package]
 name = "oalacea-warden"
-version = "0.8.3"
+version = "0.8.4"
 edition = "2021"
 authors = ["Yanis", "Pamacea"]
 license = "MIT"
@@ -14,6 +14,10 @@ rust-version = "1.75"
 [[bin]]
 name = "warden"
 path = "src/main.rs"
+
+[lib]
+name = "warden"
+path = "src/lib.rs"
 
 [dependencies]
 # CLI

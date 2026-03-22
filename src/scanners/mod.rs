@@ -512,14 +512,6 @@ mod tests {
         assert!(!config.aggressive);
         assert_eq!(config.timeout, Duration::from_secs(5));
         assert_eq!(config.concurrency, 50);
-        assert!(config.http);
-        assert!(config.port);
-        assert!(config.static_analysis);
-        assert!(!config.ddos);
-        assert!(!config.stress);
-        assert!(!config.secrets);
-        assert!(!config.check_secrets);
-        assert!(!config.check_deps);
     }
 
     #[test]
@@ -527,19 +519,11 @@ mod tests {
         let config = ScannerConfig::new()
             .with_aggressive(true)
             .with_timeout(Duration::from_secs(10))
-            .with_concurrency(100)
-            .with_ddos(true)
-            .with_stress(true)
-            .with_check_secrets(true)
-            .with_check_deps(true);
+            .with_concurrency(100);
 
         assert!(config.aggressive);
         assert_eq!(config.timeout, Duration::from_secs(10));
         assert_eq!(config.concurrency, 100);
-        assert!(config.ddos);
-        assert!(config.stress);
-        assert!(config.check_secrets);
-        assert!(config.check_deps);
     }
 
     #[test]

@@ -514,9 +514,12 @@ impl ReconScanner {
                         (r#"#.*"#, "Shell/Python comment"),
                     ];
 
-                    let re_html = Regex::new(r#"<!--[\s\S]*?-->"#).unwrap();
-                    let re_js_single = Regex::new(r#"//.*"#).unwrap();
-                    let _re_js_multi = Regex::new(r#"/\*[\s\S]*?\*/"#).unwrap();
+                    let re_html = Regex::new(r#"<!--[\s\S]*?-->"#)
+                        .expect("Invalid HTML comment regex pattern");
+                    let re_js_single = Regex::new(r#"//.*"#)
+                        .expect("Invalid JS single-line comment regex pattern");
+                    let _re_js_multi = Regex::new(r#"/\*[\s\S]*?\*/"#)
+                        .expect("Invalid JS multi-line comment regex pattern");
 
                     // Sensitive keywords in comments
                     let sensitive_keywords = vec![
@@ -556,7 +559,8 @@ impl ReconScanner {
 
                     // Extract JS comments (look for embedded scripts)
                     if text.contains("<script") {
-                        let script_re = Regex::new(r#"<script[^>]*>([\s\S]*?)</script>"#).unwrap();
+                        let script_re = Regex::new(r#"<script[^>]*>([\s\S]*?)</script>"#)
+                            .expect("Invalid script tag regex pattern");
 
                         for script in script_re.captures_iter(&text) {
                             let script_content = &script[1];

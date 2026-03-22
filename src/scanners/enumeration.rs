@@ -211,8 +211,10 @@ impl EnumerationScanner {
         // Check for response length differences
         let lengths: Vec<usize> = signatures.iter().map(|(_, s)| s.content_length).collect();
         if !lengths.is_empty() {
-            let min_len = *lengths.iter().min().unwrap();
-            let max_len = *lengths.iter().max().unwrap();
+            let min_len = *lengths.iter().min()
+                .expect("lengths is non-empty, min() should return Some");
+            let max_len = *lengths.iter().max()
+                .expect("lengths is non-empty, max() should return Some");
 
             if max_len.saturating_sub(min_len) > 100 {
                 vulnerabilities.push(Vuln {
@@ -356,8 +358,10 @@ impl EnumerationScanner {
         // Analyze timing patterns
         if timings.len() >= 3 {
             let durations: Vec<Duration> = timings.iter().map(|t| t.duration).collect();
-            let max_duration = *durations.iter().max().unwrap();
-            let min_duration = *durations.iter().min().unwrap();
+            let max_duration = *durations.iter().max()
+                .expect("durations is non-empty, max() should return Some");
+            let min_duration = *durations.iter().min()
+                .expect("durations is non-empty, min() should return Some");
 
             if max_duration.saturating_sub(min_duration) > Duration::from_millis(200) {
                 report.add_finding(Vuln {

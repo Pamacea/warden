@@ -217,7 +217,7 @@ impl SstiScanner {
             .user_agent(&config.user_agent)
             .redirect(reqwest::redirect::Policy::limited(3))
             .build()
-            .expect("Failed to create HTTP client");
+            .expect("Failed to create HTTP client for SSTI scanner");
 
         Self { client, config }
     }

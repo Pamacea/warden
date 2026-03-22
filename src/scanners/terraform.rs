@@ -560,7 +560,8 @@ impl TerraformScanner {
         let mut findings = Vec::new();
 
         // Find resource blocks
-        let resource_pattern = Regex::new(r#"resource\s+"([^"]+)"\s+"([^"]+)""#).unwrap();
+        let resource_pattern = Regex::new(r#"resource\s+"([^"]+)"\s+"([^"]+)""#)
+            .map_err(|e| anyhow::anyhow!("Invalid regex pattern: {}", e)).unwrap();
 
         for mat in resource_pattern.find_iter(content) {
             let resource_start = mat.start();
@@ -632,7 +633,10 @@ impl TerraformScanner {
         }
 
         // CIS 2.3: S3 bucket policy should prohibit public read/write
-        if Regex::new(r#"acl\s*=\s*"public"#).unwrap().is_match(content) {
+        if Regex::new(r#"acl\s*=\s*"public"#)
+            .map_err(|e| anyhow::anyhow!("Invalid regex pattern: {}", e))
+            .unwrap_or_else(|_| Regex::new(r"x^").unwrap())
+            .is_match(content) {
             findings.push(Vuln {
                 severity: VulnSeverity::Critical,
                 title: "CIS 2.3: S3 Bucket with Public Access".to_string(),
@@ -679,7 +683,10 @@ impl TerraformScanner {
                 }
 
                 // Check for hardcoded AMI IDs
-                if Regex::new(r"ami-[a-f0-9]{17}").unwrap().is_match(&content) {
+                if Regex::new(r"ami-[a-f0-9]{17}")
+                    .map_err(|e| anyhow::anyhow!("Invalid regex pattern: {}", e))
+                    .unwrap_or_else(|_| Regex::new(r"x^").unwrap())
+                    .is_match(&content) {
                     report.add_finding(Vuln {
                         severity: VulnSeverity::Low,
                         title: "Hardcoded AMI ID Detected".to_string(),

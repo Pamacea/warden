@@ -44,7 +44,7 @@ impl GrpcScanner {
             .user_agent(&config.user_agent)
             .redirect(reqwest::redirect::Policy::limited(5))
             .build()
-            .expect("Failed to create HTTP client");
+            .expect("Failed to create HTTP client for gRPC scanner");
         Self { client, config }
     }
 

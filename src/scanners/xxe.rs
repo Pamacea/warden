@@ -305,7 +305,7 @@ impl XxeScanner {
             .user_agent(&config.user_agent)
             .redirect(reqwest::redirect::Policy::limited(2))
             .build()
-            .expect("Failed to create HTTP client");
+            .expect("Failed to create HTTP client for XXE scanner");
 
         Self { client, config }
     }

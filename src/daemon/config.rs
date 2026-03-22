@@ -584,7 +584,8 @@ mod tests {
     #[test]
     fn test_example_config_is_valid_yaml() {
         let yaml = example_config();
-        let config: DaemonConfig = serde_yaml::from_str(&yaml).unwrap();
+        let config: DaemonConfig = serde_yaml::from_str(&yaml)
+            .unwrap_or_else(|e| panic!("Failed to parse example config YAML: {}", e));
         assert_eq!(config.general.name, "warden-daemon");
     }
 

@@ -221,7 +221,7 @@ impl WebhookClient {
         let client = Client::builder()
             .timeout(Duration::from_secs(30))
             .build()
-            .unwrap();
+            .unwrap_or_else(|e| panic!("Failed to build HTTP client for webhook: {}", e));
 
         Self { configs, client }
     }

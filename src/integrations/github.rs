@@ -1447,7 +1447,8 @@ pub fn verify_webhook_signature(payload: &str, signature: &str, secret: &str) ->
     let sig_hash = signature.strip_prefix("sha256=").unwrap_or(signature);
 
     // Compute HMAC
-    let mut mac = HmacSha256::new_from_slice(secret.as_bytes()).unwrap();
+    let mut mac = HmacSha256::new_from_slice(secret.as_bytes())
+        .unwrap_or_else(|_| panic!("HMAC can take any key size, but provided key was invalid"));
     mac.update(payload.as_bytes());
     let expected_hash = mac.finalize().into_bytes();
 

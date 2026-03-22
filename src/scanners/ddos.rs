@@ -191,7 +191,7 @@ impl DdosScanner {
             .user_agent(&config.user_agent)
             .pool_max_idle_per_host(20) // Limit connection pool
             .build()
-            .expect("Failed to create HTTP client");
+            .expect("Failed to create HTTP client for DDoS scanner");
 
         let test_config = DdosTestConfig::from(&config);
 
@@ -210,7 +210,7 @@ impl DdosScanner {
             .user_agent(&config.user_agent)
             .pool_max_idle_per_host(test_config.max_connections as usize)
             .build()
-            .expect("Failed to create HTTP client");
+            .expect("Failed to create HTTP client for DDoS scanner");
 
         Self {
             client,
