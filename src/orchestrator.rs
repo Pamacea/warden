@@ -5,7 +5,31 @@ use crate::{
     detection::{self, DetectInfo},
     progress::{ScanProgress, ScannerType, StatusPrinter},
     reporters::ReportFormat,
-    scanners::{ScannerEngine, ScanReport, Target},
+    scanners::{
+        ScannerEngine, ScanReport, Target,
+        // Import all scanners for full mode
+        api::ApiScanner,
+        graphql::GraphQLScanner,
+        grpc::GrpcScanner,
+        cors::CorsScanner,
+        ssrf::SsrfScanner,
+        open_redirect::OpenRedirectScanner,
+        path_traversal::PathTraversalScanner,
+        xxe::XxeScanner,
+        deserialization::DeserializationScanner,
+        ssti::SstiScanner,
+        enumeration::EnumerationScanner,
+        disclosure::DisclosureScanner,
+        terraform::TerraformScanner,
+        docker::DockerScanner,
+        kubernetes::KubernetesScanner,
+        cloud_metadata::CloudMetadataScanner,
+        business_logic::BusinessLogicScanner,
+        race_condition::RaceConditionScanner,
+        ldap::LdapScanner,
+        rdp::RdpScanner,
+        waf::WafScanner,
+    },
 };
 use crate::scoring::SecurityScore;
 use anyhow::Result;
@@ -28,6 +52,7 @@ pub async fn run_scan(
     show_score: bool,
     check_secrets: bool,
     check_deps: bool,
+    full: bool,
 ) -> Result<()> {
     let status = StatusPrinter::new(verbose);
 
@@ -101,9 +126,19 @@ pub async fn run_scan(
         Target::Url(_) => {
             scanner_count += 1; // HTTP
             scanner_count += 1; // Port
+            if full {
+                // Additional URL scanners in full mode
+                scanner_count += 18; // API, GraphQL, gRPC, CORS, SSRF, Open Redirect, Path Traversal,
+                                     // XXE, Deserialization, SSTI, Enumeration, Disclosure,
+                                     // Business Logic, LDAP, RDP, WAF, Race Condition
+            }
         }
         Target::Path(_) => {
             scanner_count += 1; // Static
+            if full {
+                // Additional path scanners in full mode
+                scanner_count += 4; // Terraform, Docker, Kubernetes, Cloud Metadata
+            }
         }
     }
     if include_ddos { scanner_count += 1; }
@@ -176,6 +211,201 @@ pub async fn run_scan(
                 report.merge(stress_report);
             }
 
+            // Full mode: run all additional URL scanners
+            if full {
+                let scanner_config = crate::scanners::ScannerConfig::new()
+                    .with_aggressive(aggressive)
+                    .with_timeout(std::time::Duration::from_secs(timeout))
+                    .with_concurrency(concurrency);
+
+                // API Scanner
+                progress.start_scanner(ScannerType::Other, Some(50));
+                let api_report = ApiScanner::new(scanner_config.clone()).scan(url).await
+                    .unwrap_or_else(|e| {
+                        progress.update_scanner(&format!("API Scanner Error: {}", e));
+                        ScanReport::new(scan_target.clone())
+                    });
+                progress.finish_scanner();
+                status.print(&format!("{} API Scanner complete: {} findings", "✓".green(), api_report.summary.total));
+                report.merge(api_report);
+
+                // GraphQL Scanner
+                progress.start_scanner(ScannerType::Other, Some(50));
+                let graphql_report = GraphQLScanner::new(scanner_config.clone()).scan(url).await
+                    .unwrap_or_else(|e| {
+                        progress.update_scanner(&format!("GraphQL Scanner Error: {}", e));
+                        ScanReport::new(scan_target.clone())
+                    });
+                progress.finish_scanner();
+                status.print(&format!("{} GraphQL Scanner complete: {} findings", "✓".green(), graphql_report.summary.total));
+                report.merge(graphql_report);
+
+                // gRPC Scanner
+                progress.start_scanner(ScannerType::Other, Some(30));
+                let grpc_report = GrpcScanner::new(scanner_config.clone()).scan(url).await
+                    .unwrap_or_else(|e| {
+                        progress.update_scanner(&format!("gRPC Scanner Error: {}", e));
+                        ScanReport::new(scan_target.clone())
+                    });
+                progress.finish_scanner();
+                status.print(&format!("{} gRPC Scanner complete: {} findings", "✓".green(), grpc_report.summary.total));
+                report.merge(grpc_report);
+
+                // CORS Scanner
+                progress.start_scanner(ScannerType::Other, Some(20));
+                let cors_report = CorsScanner::new(scanner_config.clone()).scan(url).await
+                    .unwrap_or_else(|e| {
+                        progress.update_scanner(&format!("CORS Scanner Error: {}", e));
+                        ScanReport::new(scan_target.clone())
+                    });
+                progress.finish_scanner();
+                status.print(&format!("{} CORS Scanner complete: {} findings", "✓".green(), cors_report.summary.total));
+                report.merge(cors_report);
+
+                // SSRF Scanner
+                progress.start_scanner(ScannerType::Other, Some(40));
+                let ssrf_report = SsrfScanner::new(scanner_config.clone()).scan(url).await
+                    .unwrap_or_else(|e| {
+                        progress.update_scanner(&format!("SSRF Scanner Error: {}", e));
+                        ScanReport::new(scan_target.clone())
+                    });
+                progress.finish_scanner();
+                status.print(&format!("{} SSRF Scanner complete: {} findings", "✓".green(), ssrf_report.summary.total));
+                report.merge(ssrf_report);
+
+                // Open Redirect Scanner
+                progress.start_scanner(ScannerType::Other, Some(30));
+                let open_redirect_report = OpenRedirectScanner::new(scanner_config.clone()).scan(url).await
+                    .unwrap_or_else(|e| {
+                        progress.update_scanner(&format!("Open Redirect Scanner Error: {}", e));
+                        ScanReport::new(scan_target.clone())
+                    });
+                progress.finish_scanner();
+                status.print(&format!("{} Open Redirect Scanner complete: {} findings", "✓".green(), open_redirect_report.summary.total));
+                report.merge(open_redirect_report);
+
+                // Path Traversal Scanner
+                progress.start_scanner(ScannerType::Other, Some(40));
+                let path_traversal_report = PathTraversalScanner::new(scanner_config.clone()).scan(url).await
+                    .unwrap_or_else(|e| {
+                        progress.update_scanner(&format!("Path Traversal Scanner Error: {}", e));
+                        ScanReport::new(scan_target.clone())
+                    });
+                progress.finish_scanner();
+                status.print(&format!("{} Path Traversal Scanner complete: {} findings", "✓".green(), path_traversal_report.summary.total));
+                report.merge(path_traversal_report);
+
+                // XXE Scanner
+                progress.start_scanner(ScannerType::Other, Some(30));
+                let xxe_report = XxeScanner::new(scanner_config.clone()).scan(url).await
+                    .unwrap_or_else(|e| {
+                        progress.update_scanner(&format!("XXE Scanner Error: {}", e));
+                        ScanReport::new(scan_target.clone())
+                    });
+                progress.finish_scanner();
+                status.print(&format!("{} XXE Scanner complete: {} findings", "✓".green(), xxe_report.summary.total));
+                report.merge(xxe_report);
+
+                // Deserialization Scanner
+                progress.start_scanner(ScannerType::Other, Some(40));
+                let deser_report = DeserializationScanner::new(scanner_config.clone()).scan(url).await
+                    .unwrap_or_else(|e| {
+                        progress.update_scanner(&format!("Deserialization Scanner Error: {}", e));
+                        ScanReport::new(scan_target.clone())
+                    });
+                progress.finish_scanner();
+                status.print(&format!("{} Deserialization Scanner complete: {} findings", "✓".green(), deser_report.summary.total));
+                report.merge(deser_report);
+
+                // SSTI Scanner
+                progress.start_scanner(ScannerType::Other, Some(40));
+                let ssti_report = SstiScanner::new(scanner_config.clone()).scan(url).await
+                    .unwrap_or_else(|e| {
+                        progress.update_scanner(&format!("SSTI Scanner Error: {}", e));
+                        ScanReport::new(scan_target.clone())
+                    });
+                progress.finish_scanner();
+                status.print(&format!("{} SSTI Scanner complete: {} findings", "✓".green(), ssti_report.summary.total));
+                report.merge(ssti_report);
+
+                // Enumeration Scanner
+                progress.start_scanner(ScannerType::Other, Some(60));
+                let enum_report = EnumerationScanner::new(scanner_config.clone()).scan(url).await
+                    .unwrap_or_else(|e| {
+                        progress.update_scanner(&format!("Enumeration Scanner Error: {}", e));
+                        ScanReport::new(scan_target.clone())
+                    });
+                progress.finish_scanner();
+                status.print(&format!("{} Enumeration Scanner complete: {} findings", "✓".green(), enum_report.summary.total));
+                report.merge(enum_report);
+
+                // Disclosure Scanner
+                progress.start_scanner(ScannerType::Other, Some(30));
+                let disclosure_report = DisclosureScanner::new(scanner_config.clone()).scan(url).await
+                    .unwrap_or_else(|e| {
+                        progress.update_scanner(&format!("Disclosure Scanner Error: {}", e));
+                        ScanReport::new(scan_target.clone())
+                    });
+                progress.finish_scanner();
+                status.print(&format!("{} Disclosure Scanner complete: {} findings", "✓".green(), disclosure_report.summary.total));
+                report.merge(disclosure_report);
+
+                // Business Logic Scanner
+                progress.start_scanner(ScannerType::Other, Some(50));
+                let business_report = BusinessLogicScanner::new(scanner_config.clone()).scan(url).await
+                    .unwrap_or_else(|e| {
+                        progress.update_scanner(&format!("Business Logic Scanner Error: {}", e));
+                        ScanReport::new(scan_target.clone())
+                    });
+                progress.finish_scanner();
+                status.print(&format!("{} Business Logic Scanner complete: {} findings", "✓".green(), business_report.summary.total));
+                report.merge(business_report);
+
+                // LDAP Scanner
+                progress.start_scanner(ScannerType::Other, Some(40));
+                let ldap_report = LdapScanner::new(scanner_config.clone()).scan(url).await
+                    .unwrap_or_else(|e| {
+                        progress.update_scanner(&format!("LDAP Scanner Error: {}", e));
+                        ScanReport::new(scan_target.clone())
+                    });
+                progress.finish_scanner();
+                status.print(&format!("{} LDAP Scanner complete: {} findings", "✓".green(), ldap_report.summary.total));
+                report.merge(ldap_report);
+
+                // RDP Scanner
+                progress.start_scanner(ScannerType::Other, Some(30));
+                let rdp_report = RdpScanner::new(scanner_config.clone()).scan(url).await
+                    .unwrap_or_else(|e| {
+                        progress.update_scanner(&format!("RDP Scanner Error: {}", e));
+                        ScanReport::new(scan_target.clone())
+                    });
+                progress.finish_scanner();
+                status.print(&format!("{} RDP Scanner complete: {} findings", "✓".green(), rdp_report.summary.total));
+                report.merge(rdp_report);
+
+                // WAF Scanner
+                progress.start_scanner(ScannerType::Other, Some(30));
+                let waf_report = WafScanner::new(scanner_config.clone()).scan(url).await
+                    .unwrap_or_else(|e| {
+                        progress.update_scanner(&format!("WAF Scanner Error: {}", e));
+                        ScanReport::new(scan_target.clone())
+                    });
+                progress.finish_scanner();
+                status.print(&format!("{} WAF Scanner complete: {} findings", "✓".green(), waf_report.summary.total));
+                report.merge(waf_report);
+
+                // Race Condition Scanner
+                progress.start_scanner(ScannerType::Other, Some(40));
+                let race_report = RaceConditionScanner::new(scanner_config.clone()).scan(&scan_target).await
+                    .unwrap_or_else(|e| {
+                        progress.update_scanner(&format!("Race Condition Scanner Error: {}", e));
+                        ScanReport::new(scan_target.clone())
+                    });
+                progress.finish_scanner();
+                status.print(&format!("{} Race Condition Scanner complete: {} findings", "✓".green(), race_report.summary.total));
+                report.merge(race_report);
+            }
+
             report
         }
         Target::Path(path) => {
@@ -213,6 +443,66 @@ pub async fn run_scan(
                 progress.finish_scanner();
                 status.print_scanner_complete(ScannerType::Deps, deps_report.summary.total);
                 report.merge(deps_report);
+            }
+
+            // Full mode: run all additional path scanners
+            if full {
+                let scanner_config = crate::scanners::ScannerConfig::new()
+                    .with_aggressive(aggressive)
+                    .with_timeout(std::time::Duration::from_secs(timeout))
+                    .with_concurrency(concurrency);
+
+                // Terraform Scanner
+                progress.start_scanner(ScannerType::Other, Some(50));
+                let terraform_report = TerraformScanner::new(scanner_config.clone()).scan(path).await
+                    .unwrap_or_else(|e| {
+                        progress.update_scanner(&format!("Terraform Scanner Error: {}", e));
+                        ScanReport::new(scan_target.clone())
+                    });
+                progress.finish_scanner();
+                status.print(&format!("{} Terraform Scanner complete: {} findings", "✓".green(), terraform_report.summary.total));
+                report.merge(terraform_report);
+
+                // Docker Scanner
+                progress.start_scanner(ScannerType::Other, Some(40));
+                let docker_report = DockerScanner::new(scanner_config.clone()).scan(path).await
+                    .unwrap_or_else(|e| {
+                        progress.update_scanner(&format!("Docker Scanner Error: {}", e));
+                        ScanReport::new(scan_target.clone())
+                    });
+                progress.finish_scanner();
+                status.print(&format!("{} Docker Scanner complete: {} findings", "✓".green(), docker_report.summary.total));
+                report.merge(docker_report);
+
+                // Kubernetes Scanner
+                progress.start_scanner(ScannerType::Other, Some(40));
+                let k8s_report = KubernetesScanner::new(scanner_config.clone()).scan(&scan_target).await
+                    .unwrap_or_else(|e| {
+                        progress.update_scanner(&format!("Kubernetes Scanner Error: {}", e));
+                        ScanReport::new(scan_target.clone())
+                    });
+                progress.finish_scanner();
+                status.print(&format!("{} Kubernetes Scanner complete: {} findings", "✓".green(), k8s_report.summary.total));
+                report.merge(k8s_report);
+
+                // Cloud Metadata Scanner (takes &str)
+                progress.start_scanner(ScannerType::Other, Some(30));
+                let cloud_report = CloudMetadataScanner::new(scanner_config.clone()).scan("").await
+                    .unwrap_or_else(|e| {
+                        progress.update_scanner(&format!("Cloud Metadata Scanner Error: {}", e));
+                        ScanReport::new(scan_target.clone())
+                    });
+                progress.finish_scanner();
+                status.print(&format!("{} Cloud Metadata Scanner complete: {} findings", "✓".green(), cloud_report.summary.total));
+                report.merge(cloud_report);
+
+                // XXE Scanner (URL-based, skip for path)
+                // Deserialization Scanner (URL-based, skip for path)
+                // SSTI Scanner (URL-based, skip for path)
+                // File Upload Scanner (URL-based, skip for path)
+                // Business Logic Scanner (URL-based, skip for path)
+                // Enumeration Scanner (URL-based, skip for path)
+                // Disclosure Scanner (URL-based, skip for path)
             }
 
             // DDoS scanner (for static analysis)

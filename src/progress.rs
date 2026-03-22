@@ -20,6 +20,7 @@ pub enum ScannerType {
     Stress,
     Secrets,
     Deps,
+    Other,
 }
 
 impl ScannerType {
@@ -32,6 +33,7 @@ impl ScannerType {
             ScannerType::Stress => "Stress Testing",
             ScannerType::Secrets => "Secrets Detection",
             ScannerType::Deps => "Dependency Check",
+            ScannerType::Other => "Additional Security",
         }
     }
 
@@ -44,6 +46,7 @@ impl ScannerType {
             ScannerType::Stress => "⚡",
             ScannerType::Secrets => "🔑",
             ScannerType::Deps => "📦",
+            ScannerType::Other => "🔍",
         }
     }
 }

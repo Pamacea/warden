@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.3] - 2026-03-22
+
+### Added
+- **`--full` Scan Mode** - Run all available security scanners
+  - URL scanners: API, GraphQL, gRPC, CORS, SSRF, Open Redirect, Path Traversal, XXE, Deserialization, SSTI, Enumeration, Disclosure, Business Logic, LDAP, RDP, WAF, Race Condition
+  - Path scanners: Terraform, Docker, Kubernetes, Cloud Metadata
+  - Activates with `warden scan --full <target>`
+
+### Fixed
+- **Code Safety** - Improved error handling throughout codebase
+  - Replaced `unwrap()` with descriptive `expect()` messages on Mutex locks
+  - Fixed `started_at.unwrap()` potential panic with `unwrap_or_else()` fallback
+  - Added clear error messages for concurrent access failures
+
+### Removed
+- Dead code elimination - removed unused scanner methods and fields
+- Cleaned up unused imports and variables
+- All compiler warnings resolved (0 errors, 0 warnings)
+
 ## [0.8.2] - 2026-03-22
 
 ### Oalacea Branding & Architecture

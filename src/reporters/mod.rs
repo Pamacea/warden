@@ -19,6 +19,7 @@ pub use json::JsonReporter;
 pub use markdown::MarkdownReporter;
 
 // Re-export format generators
+#[allow(unused_imports)]
 pub use formats::{generate_html_report as generate_html_report_legacy, generate_sarif_report};
 
 #[allow(unused_imports)]

@@ -193,6 +193,23 @@ pub enum Commands {
         /// for known security vulnerabilities using public vulnerability databases.
         #[arg(long, default_value = "false")]
         check_deps: bool,
+
+        /// Full scan mode - use ALL available scanners
+        ///
+        /// Enables comprehensive scanning with all security scanners including:
+        /// - HTTP, Port, Static Analysis, DDoS, Stress
+        /// - API, GraphQL, gRPC scanners
+        /// - CORS, SSRF, Open Redirect, Path Traversal
+        /// - XXE, Deserialization, SSTI
+        /// - Secrets, Dependencies, Enumeration
+        /// - Docker, Terraform, Kubernetes, Cloud Metadata
+        /// - Business Logic, Race Conditions
+        /// - LDAP, MongoDB, Redis, Elasticsearch, RDP
+        /// - File Upload, Information Disclosure, WAF
+        ///
+        /// WARNING: This may take significant time and generate many requests.
+        #[arg(long)]
+        full: bool,
     },
 
     /// Detect framework and language

@@ -712,16 +712,22 @@ impl TestSiemDestination {
 
     pub fn receive(&self, event: &AuditEvent) -> AuditResult<()> {
         let value = serde_json::to_value(event)?;
-        self.received_events.lock().unwrap().push(value);
+        self.received_events.lock()
+            .expect("Test SIEM destination mutex poisoned")
+            .push(value);
         Ok(())
     }
 
     pub fn event_count(&self) -> usize {
-        self.received_events.lock().unwrap().len()
+        self.received_events.lock()
+            .expect("Test SIEM destination mutex poisoned")
+            .len()
     }
 
     pub fn clear(&self) {
-        self.received_events.lock().unwrap().clear();
+        self.received_events.lock()
+            .expect("Test SIEM destination mutex poisoned")
+            .clear();
     }
 }
 

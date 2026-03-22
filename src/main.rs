@@ -91,11 +91,12 @@ async fn main() -> Result<()> {
             score,
             check_secrets,
             check_deps,
+            full,
         } => {
             // Prompt for dangerous operations
-            if include_ddos || include_stress {
+            if include_ddos || include_stress || full {
                 let target_str = target.as_ref().map(|t| t.as_str()).unwrap_or(".");
-                if !Prompt::confirm_dangerous("Aggressive scanning with DDoS/Stress tests", target_str)? {
+                if !Prompt::confirm_dangerous("Comprehensive scanning with all scanners", target_str)? {
                     return Ok(());
                 }
             }
@@ -116,6 +117,7 @@ async fn main() -> Result<()> {
                 score,
                 check_secrets,
                 check_deps,
+                full,
             )
             .await
         }

@@ -1,5 +1,7 @@
 //! Advanced Report Formatters - HTML, SARIF, PDF-like formats
 
+#![allow(dead_code)]
+
 use crate::scanners::{ScanReport, VulnSeverity};
 use anyhow::Result;
 use serde_json::json;

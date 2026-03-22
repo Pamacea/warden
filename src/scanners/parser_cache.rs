@@ -180,7 +180,8 @@ impl ParserCache {
 
         // Check cache first
         {
-            let cache = self.cache.lock().unwrap();
+            let cache = self.cache.lock()
+                .expect("Parser cache mutex poisoned (concurrent access error)");
             if let Some(cached) = cache.get(path) {
                 if cached.is_valid(self.max_age) {
                     return Ok(Some(Arc::new(cached.clone())));
@@ -205,7 +206,8 @@ impl ParserCache {
 
         // Update cache (with size management)
         {
-            let mut cache = self.cache.lock().unwrap();
+            let mut cache = self.cache.lock()
+                .expect("Parser cache mutex poisoned (concurrent access error)");
 
             // Evict old entries if cache is too large
             if cache.len() >= self.max_size {
@@ -216,7 +218,8 @@ impl ParserCache {
         }
 
         // Return the cached entry
-        let cache = self.cache.lock().unwrap();
+        let cache = self.cache.lock()
+            .expect("Parser cache mutex poisoned (concurrent access error)");
         Ok(cache.get(path).map(|c| Arc::new(c.clone())))
     }
 
@@ -253,13 +256,15 @@ impl ParserCache {
 
     /// Clear the entire cache
     pub fn clear(&self) {
-        let mut cache = self.cache.lock().unwrap();
+        let mut cache = self.cache.lock()
+            .expect("Parser cache mutex poisoned (concurrent access error)");
         cache.clear();
     }
 
     /// Get cache statistics
     pub fn stats(&self) -> CacheStats {
-        let cache = self.cache.lock().unwrap();
+        let cache = self.cache.lock()
+            .expect("Parser cache mutex poisoned (concurrent access error)");
         let total_entries = cache.len();
         let valid_entries = cache.values().filter(|c| c.is_valid(self.max_age)).count();
         let oldest_entry = cache.values().map(|c| c.age()).max();

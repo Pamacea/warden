@@ -488,7 +488,8 @@ impl ScanProcessor {
     async fn run(mut self) {
         while let Some(scheduled) = self.scan_rx.recv().await {
             // Acquire semaphore (limit concurrent scans)
-            let permit = self.scan_semaphore.acquire().await.unwrap();
+            let permit = self.scan_semaphore.acquire().await
+                .expect("Semaphore acquire failed - daemon shutting down");
 
             // Move job from pending to active
             let (job, target) = {
@@ -583,10 +584,11 @@ impl ScanProcessor {
                 }
 
                 // Record in monitor
+                let start_time = job.started_at.unwrap_or(job.created_at);
                 self.monitor.scan_completed(
                     job.id,
                     true,
-                    job.started_at.unwrap(),
+                    start_time,
                     report.summary.total,
                 ).await;
 
